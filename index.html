@@ -14,12 +14,12 @@
     <!-- Navigation -->
     <nav>
         <div class="nav-container">
-            <a href="/" class="logo
+            <a href="#home" class="logo">R.H.</a>
             <ul class="nav-links" id="navLinks">
-                <li><a href="/">Home</a></li>
-                <li><a href="/experience/">Experience</a></li>
-                <li><a href="/writing/">Writing</a></li>
-                <li><a href="/projects/">Projects</a></li>
+                <li><a href="#home">Home</a></li>
+                <li><a href="./experience/experience.html">Experience</a></li>
+                <li><a href="./writing/writing.html">Writing</a></li>
+                <li><a href="./projects/index.html">Projects</a></li>
             </ul>
             <div class="menu-toggle" id="menuToggle">
                 <span></span>
@@ -31,163 +31,126 @@
 
     <!-- Hero Section -->
     <section class="hero" id="home">
-        <div class="hero-container">
+        <div class="hero-container hero-container-centered">
             <div class="hero-content fade-in">
                 <h1>Rex Heng</h1>
                 <p class="hero-subtitle">Philosophy, Politics and Economics</p>
-                <p class="hero-description">
-                    I am a student at the London School of Economics, where I study Philosophy, Politics and Economics. 
-                    Previously, I worked in ESG consulting at PwC's Asset and Wealth Management division and conducted 
-                    risk analysis at DBS Bank Singapore. I currently serve as Vice President at Cambridge Consulting Network, 
-                    where I work with a team of consultants on various client projects.
-                </p>
-                <div class="cta-buttons">
-                    <a href="https://linkedin.com/in/rexheng" target="_blank" class="btn btn-primary">View LinkedIn</a>
-                    <a href="#contact" class="btn btn-secondary">Contact</a>
-                </div>
-            </div>
-            <div class="hero-visual fade-in">
-                <div class="hero-image-placeholder">
-                    <!-- Professional photo would go here -->
-                </div>
+                <p class="hero-subtitle-secondary">London School of Economics</p>
             </div>
         </div>
     </section>
 
-    <!-- About Me Section -->
+    <!-- About Me Section with Tabs -->
     <section class="about-me">
         <div class="container">
             <h2 class="section-title">About Me</h2>
-            <div class="about-grid">
-                <div class="about-card fade-in">
-                    <h3>Education</h3>
-                    <ul class="about-list">
-                        <li>BSc Philosophy, Politics and Economics at LSE (First-class honours)</li>
-                        <li>Raffles Institution</li>
-                        <li>Laidlaw Scholar</li>
-                        <li>MOE Humanities Scholar</li>
-                    </ul>
-                    <a href="/experience/" class="view-link">View →</a>
+            
+            <!-- Tab Navigation -->
+            <div class="tabs-container">
+                <div class="tabs-list">
+                    <button class="tab-trigger active" data-tab="education">Education</button>
+                    <button class="tab-trigger" data-tab="experience">Work Experience</button>
+                    <button class="tab-trigger" data-tab="cocurricular">Co-Curriculars</button>
                 </div>
-                <div class="about-card fade-in">
-                    <h3>Work Experience</h3>
-                    <ul class="about-list">
-                        <li>PwC: ESG Consulting, Asset and Wealth Management</li>
-                        <li>DBS: Risk Analyst, ESG Risk Management Group</li>
-                        <li>Blackfriars Settlement: Income Development Intern</li>
-                        <li>Singapore Armed Forces: Motorised Transport Officer</li>
-                        <li>Straits Times</li>
-                        <li>Yong Siew Toh Conservatory of Music</li>
-                        <li>F&B: Jia Le Yong Tao Foo, Good Old Days Sentosa</li>
-                    </ul>
-                    <a href="/experience/" class="view-link">View →</a>
-                </div>
-                <div class="about-card fade-in">
-                    <h3>Co-Curriculars</h3>
-                    <ul class="about-list">
-                        <li>Attic - Rock Band</li>
-                        <li>Cambridge Consulting Network - VP</li>
-                        <li>Peter Instagram Network</li>
-                        <li>Green Finance podcast team</li>
-                        <li>Squash</li>
-                        <li>Bouldering and Mountaineering</li>
-                        <li>Chess</li>
-                    </ul>
-                    <a href="/experience/" class="view-link">View →</a>
-                </div>
-            </div>
-        </div>
-    </section>
 
-
-    <!-- Skills Section -->
-    <section class="skills" id="skills">
-        <div class="container">
-            <h2 class="section-title">My Skills</h2>
-            <div class="skills-container">
-                <div class="skill-category fade-in">
-                    <h3>ESG & Sustainability</h3>
-                    <div class="skill-tags">
-                        <span class="skill-tag">TCFD Framework</span>
-                        <span class="skill-tag">SASB Standards</span>
-                        <span class="skill-tag">GRESB</span>
-                        <span class="skill-tag">GRI Standards</span>
-                        <span class="skill-tag">Climate Risk</span>
-                    </div>
-                </div>
-                <div class="skill-category fade-in">
-                    <h3>Financial Analysis</h3>
-                    <div class="skill-tags">
-                        <span class="skill-tag">Technical Analysis</span>
-                        <span class="skill-tag">Risk Assessment</span>
-                        <span class="skill-tag">MACD</span>
-                        <span class="skill-tag">RSI Indicators</span>
-                        <span class="skill-tag">Portfolio Management</span>
-                    </div>
-                </div>
-                <div class="skill-category fade-in">
-                    <h3>Technical Skills</h3>
-                    <div class="skill-tags">
-                        <span class="skill-tag">Python</span>
-                        <span class="skill-tag">ComfyUI</span>
-                        <span class="skill-tag">API Integration</span>
-                        <span class="skill-tag">Data Analysis</span>
-                        <span class="skill-tag">Automation</span>
-                    </div>
-                </div>
-                <div class="skill-category fade-in">
-                    <h3>Languages</h3>
-                    <div class="skill-tags">
-                        <span class="skill-tag">English (Native)</span>
-                        <span class="skill-tag">Mandarin (Fluent)</span>
-                        <span class="skill-tag">Spanish (Proficient)</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Blog Preview -->
-    <section class="blog-preview" id="blog">
-        <div class="container">
-            <h2 class="section-title">Recent Writing</h2>
-            <div class="blog-grid">
-                <article class="blog-card fade-in">
-                    <div class="blog-image"></div>
-                    <div class="blog-content">
-                        <p class="blog-category">ESG & Sustainability</p>
-                        <h3 class="blog-title">Implementing TCFD Recommendations in Asset Management</h3>
-                        <p class="blog-excerpt">An examination of how climate-related financial disclosures can be integrated into investment decision-making processes...</p>
-                        <div class="blog-meta">
-                            <span>15 Sept 2024</span>
-                            <span>8 min read</span>
+                <!-- Education Tab -->
+                <div class="tab-content active" id="education-tab">
+                    <div class="about-grid">
+                        <div class="about-card card-highlight-red fade-in">
+                            <h3>London School of Economics</h3>
+                            <p class="card-subtitle">BSc Philosophy, Politics and Economics</p>
+                            <p class="card-detail">First-class honours</p>
+                            <p class="card-detail">LSE 100 - Awarded Raymond Huang Prize for Outstanding Academic Achievement</p>
+                            <p class="card-detail">83 Mark Average</p>
+                        </div>
+                        <div class="about-card card-highlight-green fade-in">
+                            <h3>Raffles Institution</h3>
+                            <p class="card-subtitle">Perfect Distinctions</p>
+                            <p class="card-detail">H2 History, Economics, Literature and Mathematics</p>
+                            <p class="card-detail">Raffles Academy History</p>
+                        </div>
+                        <div class="about-card card-highlight-yellow fade-in">
+                            <h3>Scholarships</h3>
+                            <p class="card-subtitle">Laidlaw Scholar</p>
+                            <p class="card-subtitle">MOE Humanities Programme Scholar</p>
                         </div>
                     </div>
-                </article>
-                <article class="blog-card fade-in">
-                    <div class="blog-image"></div>
-                    <div class="blog-content">
-                        <p class="blog-category">Financial Markets</p>
-                        <h3 class="blog-title">Technical Analysis of Chinese Technology Stocks</h3>
-                        <p class="blog-excerpt">A review of MACD and RSI indicators across Chinese technology companies and their implications for portfolio positioning...</p>
-                        <div class="blog-meta">
-                            <span>2 Oct 2024</span>
-                            <span>12 min read</span>
+                </div>
+
+                <!-- Work Experience Tab -->
+                <div class="tab-content" id="experience-tab">
+                    <div class="about-grid">
+                        <div class="about-card card-highlight-orange fade-in">
+                            <h3>PwC</h3>
+                            <p class="card-subtitle">ESG Consulting</p>
+                            <p class="card-detail">Asset and Wealth Management</p>
+                        </div>
+                        <div class="about-card card-highlight-dark-red fade-in">
+                            <h3>DBS Bank Singapore</h3>
+                            <p class="card-subtitle">Risk Analyst</p>
+                            <p class="card-detail">ESG Risk Management Group</p>
+                        </div>
+                        <div class="about-card card-highlight-yellow fade-in">
+                            <h3>Blackfriars Settlement</h3>
+                            <p class="card-subtitle">Income Development</p>
+                            <p class="card-detail">130-year old Southwark Community Charity</p>
+                        </div>
+                        <div class="about-card card-highlight-dark-green fade-in">
+                            <h3>Singapore Armed Forces</h3>
+                            <p class="card-subtitle">Lieutenant</p>
+                            <p class="card-detail">Ops-tagged Motorised Transport Officer</p>
+                        </div>
+                        <div class="about-card card-highlight-blue fade-in">
+                            <h3>Cambridge Consulting Network</h3>
+                            <p class="card-subtitle">Vice President</p>
+                            <p class="card-detail">Client Acquisition and Project Lead</p>
+                        </div>
+                        <div class="about-card card-highlight-brown fade-in">
+                            <h3>Other Experience</h3>
+                            <p class="card-subtitle">Straits Times</p>
+                            <p class="card-subtitle">NUS Yong Siew Toh Conservatory of Music</p>
+                            <p class="card-subtitle">Yong Tao Foo Hawker, Sentosa Restaurant</p>
                         </div>
                     </div>
-                </article>
-                <article class="blog-card fade-in">
-                    <div class="blog-image"></div>
-                    <div class="blog-content">
-                        <p class="blog-category">Technology & Automation</p>
-                        <h3 class="blog-title">Building Educational Content Workflows with Python</h3>
-                        <p class="blog-excerpt">Using ComfyUI and API integration to automate content creation for educational platforms...</p>
-                        <div class="blog-meta">
-                            <span>28 Sept 2024</span>
-                            <span>10 min read</span>
+                </div>
+
+                <!-- Co-Curriculars Tab -->
+                <div class="tab-content" id="cocurricular-tab">
+                    <div class="about-grid">
+                        <div class="about-card card-highlight-beige fade-in">
+                            <h3>Attic</h3>
+                            <p class="card-subtitle">Rock Band</p>
+                            <p class="card-detail">Keyboardist, 5 gigs</p>
+                        </div>
+                        <div class="about-card card-highlight-green fade-in">
+                            <h3>The Greenhouse</h3>
+                            <p class="card-subtitle">Podcast Editor</p>
+                            <p class="card-detail">Sustainability and finance discussions</p>
+                        </div>
+                        <div class="about-card card-highlight-blue fade-in">
+                            <h3>Hackathons</h3>
+                            <p class="card-subtitle">LSE x Lovable</p>
+                            <p class="card-subtitle">Oliver Wyman Hackathon</p>
+                        </div>
+                        <div class="about-card card-highlight-red fade-in">
+                            <h3>Instagram Network</h3>
+                            <p class="card-subtitle">Content Creator</p>
+                            <p class="card-detail">Educational content across multiple accounts</p>
+                        </div>
+                        <div class="about-card card-highlight-red fade-in">
+                            <h3>Maju</h3>
+                            <p class="card-subtitle">Policy Explainer and Partnerships</p>
+                            <p class="card-detail">Published 7 papers on Singapore government policy</p>
+                        </div>
+                        <div class="about-card card-highlight-yellow fade-in">
+                            <h3>Sports & Recreation</h3>
+                            <p class="card-subtitle">Squash</p>
+                            <p class="card-subtitle">Bouldering and Mountaineering</p>
+                            <p class="card-subtitle">Chess</p>
+                            <p class="card-subtitle">Calisthenics</p>
                         </div>
                     </div>
-                </article>
+                </div>
             </div>
         </div>
     </section>
@@ -195,28 +158,21 @@
     <!-- Contact Section -->
     <section class="contact" id="contact">
         <div class="contact-container">
-            <h2 class="section-title">Contact</h2>
+            <h2 class="section-title">Contact me</h2>
             <p class="contact-description">
-                I am interested in opportunities related to ESG consulting, financial analysis, and policy research. 
-                Please feel free to reach out if you would like to discuss potential collaborations or projects.
+                Feel free to reach out for any questions or opportunities.
             </p>
-            <div class="contact-links">
-                <a href="mailto:rex.heng@lse.ac.uk" class="contact-link">
-                    <span>Email</span>
-                </a>
-                <a href="https://linkedin.com/in/rexheng" target="_blank" class="contact-link">
-                    <span>LinkedIn</span>
-                </a>
-                <a href="https://github.com/rexheng" target="_blank" class="contact-link">
-                    <span>GitHub</span>
-                </a>
-                <a href="https://instagram.com/lse.peter" target="_blank" class="contact-link">
-                    <span>Instagram</span>
-                </a>
-            </div>
-            <div class="cta-buttons">
-                <a href="https://linkedin.com/in/rexheng" target="_blank" class="btn btn-primary">View LinkedIn Profile</a>
-                <a href="/projects/" class="btn btn-secondary">View Projects</a>
+            <div class="contact-button-wrapper">
+                <button class="contact-btn-container">
+                    <a href="https://www.linkedin.com/in/rexheng/" target="_blank" rel="noopener noreferrer" class="btn2">
+                        <span class="spn2">LinkedIn</span>
+                    </a>
+                </button>
+                <button class="contact-btn-container">
+                    <a href="mailto:rexheng@gmail.com" class="btn2">
+                        <span class="spn2">Email</span>
+                    </a>
+                </button>
             </div>
         </div>
     </section>
@@ -224,18 +180,17 @@
     <!-- Footer -->
     <footer>
         <div class="footer-links">
-            <a href="/">Home</a>
-            <a href="/experience/">Experience</a>
-            <a href="/writing/">Writing</a>
-            <a href="/projects/">Projects</a>
+            <a href="#home">Home</a>
+            <a href="./experience/experience.html">Experience</a>
+            <a href="./writing/writing.html">Writing</a>
+            <a href="./projects/index.html">Projects</a>
         </div>
         <p class="footer-copyright">
-            © 2024 Rex Heng. Philosophy, Politics and Economics at LSE.
+            Rex Heng
         </p>
     </footer>
 
     <script>
-        // Mobile menu toggle
         const menuToggle = document.getElementById('menuToggle');
         const navLinks = document.getElementById('navLinks');
 
@@ -243,14 +198,12 @@
             navLinks.classList.toggle('active');
         });
 
-        // Close mobile menu when clicking a link
         document.querySelectorAll('.nav-links a').forEach(link => {
             link.addEventListener('click', () => {
                 navLinks.classList.remove('active');
             });
         });
 
-        // Smooth scroll for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -264,7 +217,24 @@
             });
         });
 
-        // Fade in animation on scroll
+        const tabTriggers = document.querySelectorAll('.tab-trigger');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabTriggers.forEach(trigger => {
+            trigger.addEventListener('click', () => {
+                const tabName = trigger.getAttribute('data-tab');
+                
+                tabTriggers.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                trigger.classList.add('active');
+                const targetContent = document.getElementById(`${tabName}-tab`);
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                }
+            });
+        });
+
         const observerOptions = {
             threshold: 0.1,
             rootMargin: '0px 0px -50px 0px'
@@ -285,12 +255,10 @@
             });
         }, observerOptions);
 
-        // Observe all fade-in elements
         document.querySelectorAll('.fade-in').forEach(el => {
             observer.observe(el);
         });
 
-        // Nav background on scroll
         window.addEventListener('scroll', () => {
             const nav = document.querySelector('nav');
             if (window.scrollY > 50) {
@@ -302,10 +270,26 @@
             }
         });
 
-        // Dynamic year in footer
-        const currentYear = new Date().getFullYear();
-        document.querySelector('.footer-copyright').innerHTML = 
-            `© ${currentYear} Rex Heng. Philosophy, Politics and Economics at LSE.`;
+        // Spotify embed timeout fallback
+        const spotifyEmbed = document.getElementById('spotify-embed');
+        const spotifyFallback = document.getElementById('spotify-fallback');
+        
+        if (spotifyEmbed && spotifyFallback) {
+            const spotifyTimeout = setTimeout(() => {
+                spotifyEmbed.style.display = 'none';
+                spotifyFallback.classList.add('show');
+            }, 5000);
+
+            spotifyEmbed.addEventListener('load', () => {
+                clearTimeout(spotifyTimeout);
+                spotifyFallback.classList.remove('show');
+            });
+
+            spotifyEmbed.addEventListener('error', () => {
+                spotifyEmbed.style.display = 'none';
+                spotifyFallback.classList.add('show');
+            });
+        }
     </script>
 </body>
 </html>
