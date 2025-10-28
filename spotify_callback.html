@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Authorization Complete</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1DB954 0%, #191414 100%);
+            color: white;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: rgba(25, 20, 20, 0.9);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 600px;
+            margin: 20px;
+        }
+        .spotify-logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1DB954;
+            margin-bottom: 1rem;
+        }
+        .success-icon {
+            font-size: 3rem;
+            color: #1DB954;
+            margin-bottom: 1rem;
+        }
+        .code-container {
+            background: #282828;
+            border: 1px solid #404040;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            font-size: 0.9rem;
+        }
+        .instructions {
+            background: rgba(29, 185, 84, 0.1);
+            border-left: 4px solid #1DB954;
+            padding: 1rem;
+            margin: 1rem 0;
+            text-align: left;
+            border-radius: 4px;
+        }
+        .copy-btn {
+            background: #1DB954;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 0.5rem;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        .copy-btn:hover {
+            background: #1ed760;
+        }
+        .error {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            border-left: 4px solid #ff6b6b;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spotify-logo">🎵 Spotify</div>
+        <div id="content">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Extract URL parameters
+        function getUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                code: urlParams.get('code'),
+                error: urlParams.get('error'),
+                state: urlParams.get('state')
+            };
+        }
+
+        // Copy text to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.style.background = '#1ed760';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#1DB954';
+                }, 2000);
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
+
+        // Main function to handle the callback
+        function handleCallback() {
+            const params = getUrlParams();
+            const contentDiv = document.getElementById('content');
+
+            if (params.error) {
+                // Handle error case
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <h2>❌ Authorization Failed</h2>
+                        <p><strong>Error:</strong> ${params.error}</p>
+                        <p>Please try again or check your Spotify app configuration.</p>
+                    </div>
+                `;
+            } else if (params.code) {
+                // Success case - show the authorization code
+                const fullUrl = window.location.href;
+                contentDiv.innerHTML = `
+                    <div class="success-icon">✅</div>
+                    <h2>Authorization Successful!</h2>
+                    <p>Your Spotify app has been authorized successfully.</p>
+                    
+                    <div class="instructions">
+                        <h3>📋 Copy this URL and paste it into your Python script:</h3>
+                    </div>
+                    
+                    <div class="code-container" id="fullUrl">${fullUrl}</div>
+                    <button class="copy-btn" onclick="copyToClipboard('${fullUrl}')">Copy Full URL</button>
+                    
+                    <div class="instructions">
+                        <h3>🔑 Or just the authorization code:</h3>
+                    </div>
+                    
+                    <div class="code-container" id="authCode">${params.code}</div>
+                    <button class="copy-btn" onclick="copyToClipboard('${params.code}')">Copy Authorization Code</button>
+                    
+                    <div class="instructions">
+                        <p><strong>Next steps:</strong></p>
+                        <ol>
+                            <li>Copy the full URL above</li>
+                            <li>Return to your Python terminal</li>
+                            <li>Paste the URL when prompted: "Enter the URL you were redirected to:"</li>
+                            <li>Your playlist creator will continue running!</li>
+                        </ol>
+                    </div>
+                `;
+            } else {
+                // No code or error - something went wrong
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <h2>❓ Unexpected Response</h2>
+                        <p>No authorization code or error was received.</p>
+                        <p>Current URL: <code>${window.location.href}</code></p>
+                        <p>Please try the authorization process again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Run when page loads
+        document.addEventListener('DOMContentLoaded', handleCallback);
+    </script>
+</body>
+</html>
