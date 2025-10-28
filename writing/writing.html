@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writing | Rex Heng</title>
+    <meta name="description" content="Articles and essays by Rex Heng on ESG, sustainability, financial markets, and technology.">
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="../index.html" class="logo">R.H.</a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../experience/experience.html">Experience</a></li>
+                <li><a href="./writing.html">Writing</a></li>
+                <li><a href="../projects/index.html">Projects</a></li>
+            </ul>
+            <div class="menu-toggle" id="menuToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-content fade-in">
+                <h1>Writing</h1>
+                <p class="hero-subtitle">Essays & Articles</p>
+                <p class="hero-description">
+                    Thoughts on ESG consulting, financial markets, sustainability frameworks, 
+                    and the intersection of technology and social impact.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Blog Articles -->
+    <section class="blog-preview">
+        <div class="container">
+            <div class="blog-grid">
+                <article class="blog-card fade-in">
+                    <div class="blog-image"></div>
+                    <div class="blog-content">
+                        <p class="blog-category">ESG & Sustainability</p>
+                        <h3 class="blog-title">Implementing TCFD Recommendations in Asset Management</h3>
+                        <p class="blog-excerpt">An examination of how climate-related financial disclosures can be integrated into investment decision-making processes...</p>
+                        <div class="blog-meta">
+                            <span>15 Sept 2024</span>
+                            <span>8 min read</span>
+                        </div>
+                    </div>
+                </article>
+                <article class="blog-card fade-in">
+                    <div class="blog-image"></div>
+                    <div class="blog-content">
+                        <p class="blog-category">Financial Markets</p>
+                        <h3 class="blog-title">Technical Analysis of Chinese Technology Stocks</h3>
+                        <p class="blog-excerpt">A review of MACD and RSI indicators across Chinese technology companies and their implications for portfolio positioning...</p>
+                        <div class="blog-meta">
+                            <span>2 Oct 2024</span>
+                            <span>12 min read</span>
+                        </div>
+                    </div>
+                </article>
+                <article class="blog-card fade-in">
+                    <div class="blog-image"></div>
+                    <div class="blog-content">
+                        <p class="blog-category">Technology & Automation</p>
+                        <h3 class="blog-title">Building Educational Content Workflows with Python</h3>
+                        <p class="blog-excerpt">Using ComfyUI and API integration to automate content creation for educational platforms...</p>
+                        <div class="blog-meta">
+                            <span>28 Sept 2024</span>
+                            <span>10 min read</span>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="contact">
+        <div class="contact-container">
+            <h2 class="section-title">Stay Updated</h2>
+            <p class="contact-description">
+                Follow me on LinkedIn for regular updates on ESG trends, financial analysis, and technology insights.
+            </p>
+            <div class="cta-buttons">
+                <a href="https://linkedin.com/in/rexheng" target="_blank" class="btn btn-primary">Follow on LinkedIn</a>
+                <a href="../contact/contact.html" class="btn btn-secondary">Get in Touch</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="../index.html">Home</a>
+            <a href="../experience/experience.html">Experience</a>
+            <a href="./writing.html">Writing</a>
+            <a href="../projects/index.html">Projects</a>
+        </div>
+        <p class="footer-copyright">
+            © 2024 Rex Heng. Philosophy, Politics and Economics at LSE.
+        </p>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const navLinks = document.getElementById('navLinks');
+
+        menuToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+        });
+
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('active');
+            });
+        });
+
+        // Fade in animation
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '0';
+                    entry.target.style.transform = 'translateY(20px)';
+                    setTimeout(() => {
+                        entry.target.style.transition = 'all 0.6s ease';
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }, 100);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Nav background on scroll
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.style.background = 'rgba(255, 255, 255, 0.98)';
+                nav.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.1)';
+            } else {
+                nav.style.background = 'rgba(255, 255, 255, 0.95)';
+                nav.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.06)';
+            }
+        });
+
+        // Dynamic year in footer
+        const currentYear = new Date().getFullYear();
+        document.querySelector('.footer-copyright').innerHTML = 
+            `© ${currentYear} Rex Heng. Philosophy, Politics and Economics at LSE.`;
+    </script>
+</body>
+</html>

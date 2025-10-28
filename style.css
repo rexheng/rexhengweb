@@ -578,6 +578,45 @@ footer {
 }
 
 /* ====================================
+   WORK IN PROGRESS SECTION
+   ==================================== */
+
+.wip-section {
+    margin-top: 80px;
+    padding: 5rem 2rem;
+    min-height: calc(100vh - 80px);
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, var(--lightest-green) 0%, var(--light-green) 50%, var(--light-pink) 100%);
+}
+
+.wip-container {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.wip-content h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+}
+
+.wip-subtitle {
+    font-size: 1.3rem;
+    color: var(--text-light);
+    margin-bottom: 1.5rem;
+    font-weight: normal;
+}
+
+.wip-description {
+    font-size: 1.1rem;
+    color: var(--text-light);
+    margin-bottom: 2rem;
+    line-height: 1.8;
+}
+
+/* ====================================
    RESPONSIVE DESIGN
    ==================================== */
 

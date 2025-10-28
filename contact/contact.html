@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact | Rex Heng</title>
+    <meta name="description" content="Get in touch with Rex Heng for ESG consulting, financial analysis, or collaboration opportunities.">
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="../index.html" class="logo">R.H.</a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../experience/experience.html">Experience</a></li>
+                <li><a href="../writing/writing.html">Writing</a></li>
+                <li><a href="../projects/index.html">Projects</a></li>
+            </ul>
+            <div class="menu-toggle" id="menuToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contact Section -->
+    <section class="contact" style="margin-top: 80px; min-height: calc(100vh - 80px);">
+        <div class="contact-container">
+            <h1 class="section-title">Get In Touch</h1>
+            <p class="contact-description">
+                I am interested in opportunities related to ESG consulting, financial analysis, and policy research. 
+                Please feel free to reach out if you would like to discuss potential collaborations or projects.
+            </p>
+            <div class="contact-links">
+                <a href="mailto:rex.heng@lse.ac.uk" class="contact-link">
+                    <span>📧 rex.heng@lse.ac.uk</span>
+                </a>
+                <a href="https://linkedin.com/in/rexheng" target="_blank" class="contact-link">
+                    <span>💼 LinkedIn</span>
+                </a>
+                <a href="https://github.com/rexheng" target="_blank" class="contact-link">
+                    <span>💻 GitHub</span>
+                </a>
+                <a href="https://instagram.com/lse.peter" target="_blank" class="contact-link">
+                    <span>📷 Instagram</span>
+                </a>
+            </div>
+            <div class="cta-buttons">
+                <a href="../index.html" class="btn btn-secondary">Back to Home</a>
+                <a href="../projects/index.html" class="btn btn-primary">View Projects</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="../index.html">Home</a>
+            <a href="../experience/experience.html">Experience</a>
+            <a href="../writing/writing.html">Writing</a>
+            <a href="../projects/index.html">Projects</a>
+        </div>
+        <p class="footer-copyright">
+            © 2024 Rex Heng. Philosophy, Politics and Economics at LSE.
+        </p>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const navLinks = document.getElementById('navLinks');
+
+        menuToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+        });
+
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('active');
+            });
+        });
+
+        // Dynamic year in footer
+        const currentYear = new Date().getFullYear();
+        document.querySelector('.footer-copyright').innerHTML = 
+            `© ${currentYear} Rex Heng. Philosophy, Politics and Economics at LSE.`;
+    </script>
+</body>
+</html>

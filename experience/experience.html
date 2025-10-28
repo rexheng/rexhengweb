@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experience | Rex Heng</title>
+    <meta name="description" content="Work experience and education history of Rex Heng.">
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="../index.html" class="logo">R.H.</a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="./experience.html">Experience</a></li>
+                <li><a href="../writing/writing.html">Writing</a></li>
+                <li><a href="../projects/index.html">Projects</a></li>
+            </ul>
+            <div class="menu-toggle" id="menuToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Work in Progress Section -->
+    <section class="wip-section">
+        <div class="wip-container">
+            <div class="wip-content">
+                <h1>Experience</h1>
+                <p class="wip-subtitle">This page is currently under construction</p>
+                <p class="wip-description">
+                    I'm working on creating a detailed overview of my work experience, education, and co-curricular activities. 
+                    In the meantime, please feel free to connect with me on LinkedIn or return to the home page.
+                </p>
+                <div class="cta-buttons">
+                    <a href="../index.html" class="btn btn-primary">Back to Home</a>
+                    <a href="https://linkedin.com/in/rexheng" target="_blank" class="btn btn-secondary">LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="../index.html">Home</a>
+            <a href="./experience.html">Experience</a>
+            <a href="../writing/writing.html">Writing</a>
+            <a href="../projects/index.html">Projects</a>
+        </div>
+        <p class="footer-copyright">
+            © 2024 Rex Heng. Philosophy, Politics and Economics at LSE.
+        </p>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const navLinks = document.getElementById('navLinks');
+
+        menuToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+        });
+
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('active');
+            });
+        });
+
+        // Dynamic year in footer
+        const currentYear = new Date().getFullYear();
+        document.querySelector('.footer-copyright').innerHTML = 
+            `© ${currentYear} Rex Heng. Philosophy, Politics and Economics at LSE.`;
+    </script>
+</body>
+</html>
