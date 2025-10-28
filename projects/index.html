@@ -9,6 +9,282 @@
     <meta property="og:title" content="Rex Heng - Projects">
     <meta property="og:description" content="Educational content automation, sustainability analysis tools, and creative projects bridging technology and social impact.">
     <link rel="stylesheet" href="../style.css">
+    <style>
+        /* Tab Navigation Styles */
+        .tabs-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .tabs-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0;
+            margin-bottom: 3rem;
+            background: var(--white);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px var(--soft-shadow);
+        }
+
+        .tab-trigger {
+            padding: 1rem 2rem;
+            background: var(--white);
+            border: none;
+            cursor: pointer;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 1rem;
+            color: var(--text-light);
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            position: relative;
+        }
+
+        .tab-trigger:hover {
+            background: var(--lightest-green);
+            color: var(--text-dark);
+        }
+
+        .tab-trigger.active {
+            background: var(--lightest-green);
+            color: var(--text-dark);
+            border-bottom-color: var(--medium-green);
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Project Cards */
+        .projects-grid {
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .projects-grid.two-col {
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        }
+
+        .projects-grid.three-col {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .project-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px var(--soft-shadow);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(145, 188, 148, 0.2);
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px var(--hover-shadow);
+        }
+
+        .project-header {
+            display: flex;
+            align-items: start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .project-icon {
+            padding: 0.75rem;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(228, 240, 218, 0.3) 0%, rgba(201, 226, 203, 0.3) 100%);
+            color: var(--medium-green);
+            flex-shrink: 0;
+        }
+
+        .project-icon svg {
+            width: 24px;
+            height: 24px;
+            display: block;
+        }
+
+        .project-content {
+            flex: 1;
+        }
+
+        .project-title {
+            font-size: 1.3rem;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .project-description {
+            color: var(--text-light);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .project-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .project-tag {
+            background: var(--light-green);
+            color: var(--text-dark);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .project-tag:hover {
+            background: var(--medium-green);
+            color: var(--white);
+        }
+
+        .project-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--medium-green);
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        .project-link:hover {
+            color: var(--accent-pink);
+        }
+
+        .project-link svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Instagram Gradient Icon */
+        .instagram-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px;
+        }
+
+        .instagram-icon-inner {
+            background: white;
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .instagram-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: #000;
+        }
+
+        .instagram-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .instagram-info {
+            flex: 1;
+        }
+
+        .instagram-name {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--text-dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .instagram-handle {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        /* Section Header */
+        .section-header {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 3rem;
+        }
+
+        .section-header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+        }
+
+        .section-header p {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        .tab-section-intro {
+            margin-bottom: 2rem;
+        }
+
+        .tab-section-intro h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+        }
+
+        .tab-section-intro p {
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .tabs-list {
+                grid-template-columns: 1fr;
+            }
+
+            .projects-grid,
+            .projects-grid.two-col,
+            .projects-grid.three-col {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header h1 {
+                font-size: 2.5rem;
+            }
+
+            .project-header {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-header h1 {
+                font-size: 2rem;
+            }
+
+            .tab-trigger {
+                padding: 0.75rem 1rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
@@ -29,247 +305,357 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="hero" id="projects-hero">
-        <div class="hero-container">
-            <div class="hero-content fade-in">
-                <h1>Projects</h1>
-                <p class="hero-subtitle">Creative & Technical Ventures</p>
-                <p class="hero-description">
-                    A collection of educational content automation, sustainability analysis tools, 
-                    and creative projects that bridge technology, finance, and social impact.
-                </p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Instagram Network Section -->
-    <section class="blog-preview">
-        <div class="container">
-            <h2 class="section-title">Peter Instagram Network</h2>
-            <p class="contact-description">
-                Automated educational content system using Python, Gemini API, and ComfyUI 
-                to create Family Guy-style content explaining complex topics for university students across Asia.
+    <!-- Main Content -->
+    <main style="margin-top: 80px; padding: 4rem 2rem; min-height: calc(100vh - 80px);">
+        <!-- Page Header -->
+        <div class="section-header">
+            <h1>Projects</h1>
+            <p>
+                A showcase of my work spanning ESG technology, educational content creation, 
+                web development, and creative pursuits.
             </p>
-            
-            <div class="blog-grid">
-                <!-- LSE Peter -->
-                <article class="blog-card fade-in">
-                    <div class="blog-content">
-                        <p class="blog-category">London School of Economics</p>
-                        <h3 class="blog-title">@lse.peter</h3>
-                        <p class="blog-excerpt">Educational content for LSE students covering economics, politics, and philosophy through engaging animated storytelling.</p>
-                        <div class="skill-tags">
-                            <span class="skill-tag">10K+ Followers</span>
-                            <span class="skill-tag">Daily Posts</span>
-                        </div>
-                        <div class="cta-buttons">
-                            <a href="https://instagram.com/lse.peter" target="_blank" class="btn btn-primary">View Profile</a>
-                        </div>
-                    </div>
-                </article>
-
-                <!-- NUS Peter -->
-                <article class="blog-card fade-in">
-                    <div class="blog-content">
-                        <p class="blog-category">National University of Singapore</p>
-                        <h3 class="blog-title">@nus.peter</h3>
-                        <p class="blog-excerpt">Tailored content for NUS students covering Southeast Asian economics, technology, and business studies.</p>
-                        <div class="skill-tags">
-                            <span class="skill-tag">8K+ Followers</span>
-                            <span class="skill-tag">ASEAN Focus</span>
-                        </div>
-                        <div class="cta-buttons">
-                            <a href="https://instagram.com/nus.peter" target="_blank" class="btn btn-primary">View Profile</a>
-                        </div>
-                    </div>
-                </article>
-
-                <!-- Government Peter -->
-                <article class="blog-card fade-in">
-                    <div class="blog-content">
-                        <p class="blog-category">Political Science</p>
-                        <h3 class="blog-title">@govt.peter</h3>
-                        <p class="blog-excerpt">Breaking down complex government policies, political theory, and international relations for students worldwide.</p>
-                        <div class="skill-tags">
-                            <span class="skill-tag">Policy Analysis</span>
-                            <span class="skill-tag">Global Politics</span>
-                        </div>
-                        <div class="cta-buttons">
-                            <a href="https://instagram.com/govt.peter" target="_blank" class="btn btn-primary">View Profile</a>
-                        </div>
-                    </div>
-                </article>
-
-                <!-- Economics Peter -->
-                <article class="blog-card fade-in">
-                    <div class="blog-content">
-                        <p class="blog-category">Economics Education</p>
-                        <h3 class="blog-title">@econ.peter</h3>
-                        <p class="blog-excerpt">Simplifying macroeconomics, microeconomics, and econometrics through animated explanations and real-world examples.</p>
-                        <div class="skill-tags">
-                            <span class="skill-tag">Economic Theory</span>
-                            <span class="skill-tag">Data Visualisation</span>
-                        </div>
-                        <div class="cta-buttons">
-                            <a href="https://instagram.com/econ.peter" target="_blank" class="btn btn-primary">View Profile</a>
-                        </div>
-                    </div>
-                </article>
-
-                <!-- Literature Peter -->
-                <article class="blog-card fade-in">
-                    <div class="blog-content">
-                        <p class="blog-category">Literary Studies</p>
-                        <h3 class="blog-title">@literature.peter</h3>
-                        <p class="blog-excerpt">Exploring classic and contemporary literature through creative interpretations and academic analysis.</p>
-                        <div class="skill-tags">
-                            <span class="skill-tag">Literary Theory</span>
-                            <span class="skill-tag">Book Reviews</span>
-                        </div>
-                        <div class="cta-buttons">
-                            <a href="https://instagram.com/literature.peter" target="_blank" class="btn btn-primary">View Profile</a>
-                        </div>
-                    </div>
-                </article>
-
-                <!-- Lawsuit Peter -->
-                <article class="blog-card fade-in">
-                    <div class="blog-content">
-                        <p class="blog-category">Legal Studies</p>
-                        <h3 class="blog-title">@lawsuit.peter</h3>
-                        <p class="blog-excerpt">Demystifying legal concepts, landmark cases, and jurisprudence for law students and enthusiasts.</p>
-                        <div class="skill-tags">
-                            <span class="skill-tag">Case Studies</span>
-                            <span class="skill-tag">Legal Theory</span>
-                        </div>
-                        <div class="cta-buttons">
-                            <a href="https://instagram
-                        </div>
-                    </div>
-                </article>
-            </div>
         </div>
-    </section>
 
-    <!-- Technical Projects Section -->
-    <section class="about-me">
-        <div class="container">
-            <h2 class="section-title">Open Source & Technical Work</h2>
-            
-            <div class="about-grid">
-                <!-- Sustainalytics Scraper -->
-                <div class="about-card fade-in">
-                    <h3>Sustainalytics Data Scraper</h3>
-                    <p>Automated Python tool for extracting ESG ratings and sustainability metrics from the Sustainalytics platform for comprehensive financial analysis.</p>
-                    <div class="skill-tags">
-                        <span class="skill-tag">Python</span>
-                        <span class="skill-tag">Web Scraping</span>
-                        <span class="skill-tag">ESG Data</span>
+        <!-- Tabs Container -->
+        <div class="tabs-container">
+            <!-- Tab Navigation -->
+            <div class="tabs-list" role="tablist">
+                <button class="tab-trigger active" data-tab="technical" role="tab" aria-selected="true">
+                    Technical Projects
+                </button>
+                <button class="tab-trigger" data-tab="content" role="tab" aria-selected="false">
+                    Content Creation
+                </button>
+                <button class="tab-trigger" data-tab="websites" role="tab" aria-selected="false">
+                    Websites
+                </button>
+            </div>
+
+            <!-- Technical Projects Tab -->
+            <div class="tab-content active" id="technical-tab" role="tabpanel">
+                <div class="projects-grid two-col">
+                    <!-- Sustainalytics Scraper -->
+                    <div class="project-card">
+                        <div class="project-header">
+                            <div class="project-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                                </svg>
+                            </div>
+                            <div class="project-content">
+                                <h3 class="project-title">Sustainalytics Scraper</h3>
+                                <p class="project-description">
+                                    Python-based web scraper for extracting ESG data from Sustainalytics platform. 
+                                    Automated data collection for sustainability metrics analysis.
+                                </p>
+                                <div class="project-tags">
+                                    <span class="project-tag">Python</span>
+                                    <span class="project-tag">Web Scraping</span>
+                                    <span class="project-tag">ESG</span>
+                                    <span class="project-tag">Data Analysis</span>
+                                </div>
+                                <a href="https://github.com/rexheng/sustainlyticsscraper/tree/main" target="_blank" rel="noopener noreferrer" class="project-link">
+                                    View on GitHub
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15 3 21 3 21 9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    <div class="blog-meta">
-                        <span>⭐ Open Source</span>
-                        <span>📊 Data Analysis</span>
-                    </div>
-                    <br>
-                    <div class="cta-buttons">
-                        <a href="https://github.com/rexheng/sustainlyticsscraper" target="_blank" class="btn btn-secondary">View on GitHub</a>
-                    </div>
-                </div>
-                
-                <!-- Sustainability Report Analyser -->
-                <div class="about-card fade-in">
-                    <h3>Sustainability Report Analyser</h3>
-                    <p>Advanced prompt engineering system for analysing corporate sustainability reports against TCFD, GRI, and SASB frameworks using AI.</p>
-                    <div class="skill-tags">
-                        <span class="skill-tag">TCFD Analysis</span>
-                        <span class="skill-tag">GRI Standards</span>
-                        <span class="skill-tag">SASB Metrics</span>
-                        <span class="skill-tag">AI Integration</span>
-                    </div>
-                    <div class="blog-meta">
-                        <span>🤖 Prompt Engineering</span>
-                        <span>📈 ESG Reporting</span>
-                    </div>
-                    <br>
-                    <div class="cta-buttons">
-                        <a href="https://docs.google.com/document/d/1e5PgHN8UrYMhesZB3XK-g0LJO-lboEt4aJv-cW73s4Y/edit?usp=sharing" target="_blank" class="btn btn-primary">View Documentation</a>
+
+                    <!-- Sustainable Report Analyser -->
+                    <div class="project-card">
+                        <div class="project-header">
+                            <div class="project-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                            </div>
+                            <div class="project-content">
+                                <h3 class="project-title">Sustainable Report Analyser</h3>
+                                <p class="project-description">
+                                    AI-powered prompt engineering solution for analyzing sustainability reports. 
+                                    Leverages advanced NLP techniques to extract key ESG metrics and insights.
+                                </p>
+                                <div class="project-tags">
+                                    <span class="project-tag">Prompt Engineering</span>
+                                    <span class="project-tag">AI</span>
+                                    <span class="project-tag">ESG</span>
+                                    <span class="project-tag">NLP</span>
+                                </div>
+                                <a href="https://docs.google.com/document/d/1e5PgHN8UrYMhesZB3XK-g0LJO-lboEt4aJv-cW73s4Y/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="project-link">
+                                    View Documentation
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15 3 21 3 21 9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <!-- Creative Ventures Section -->
-    <section class="skills">
-        <div class="container">
-            <h2 class="section-title">Creative Ventures</h2>
-            
-            <div class="skills-container">
-                <!-- Attic Band Website -->
-                <div class="skill-category fade-in">
-                    <h3>Attic - Rock Band</h3>
-                    <p class="hero-description">
-                        Official website for six-piece rock band where I serve as keyboardist. 
-                        Features music releases, tour dates, band information, and booking details.
+            <!-- Content Creation Tab -->
+            <div class="tab-content" id="content-tab" role="tabpanel">
+                <div class="tab-section-intro">
+                    <h3>Peter Instagram Network</h3>
+                    <p>
+                        Educational content series across multiple Instagram accounts, creating engaging 
+                        learning resources for students in various disciplines.
                     </p>
-                    <div class="skill-tags">
-                        <span class="skill-tag">Music</span>
-                        <span class="skill-tag">Performance</span>
-                        <span class="skill-tag">Creative Direction</span>
-                        <span class="skill-tag">Web Design</span>
-                    </div>
-                    <br>
-                    <div class="cta-buttons">
-                        <a href="https://attictheband.com" target="_blank" class="btn btn-primary">Visit Website</a>
-                    </div>
                 </div>
-                
-                <!-- Rex Tech Consult -->
-                <div class="skill-category fade-in">
-                    <h3>Rex Tech Consult</h3>
-                    <p class="hero-description">
-                        Professional consulting portfolio showcasing technical consulting services, 
-                        ESG advisory, and automation solutions for businesses across Asia-Pacific.
-                    </p>
-                    <div class="skill-tags">
-                        <span class="skill-tag">Consulting</span>
-                        <span class="skill-tag">Web Development</span>
-                        <span class="skill-tag">Business Strategy</span>
-                        <span class="skill-tag">ESG Advisory</span>
+                <div class="projects-grid three-col">
+                    <!-- LSE Peter -->
+                    <div class="project-card">
+                        <div class="instagram-card">
+                            <div class="instagram-icon">
+                                <div class="instagram-icon-inner">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="instagram-info">
+                                <div class="instagram-name">LSE Peter</div>
+                                <div class="instagram-handle">@lse.peter</div>
+                            </div>
+                        </div>
+                        <a href="https://www.instagram.com/lse.peter" target="_blank" rel="noopener noreferrer" class="project-link">
+                            Visit Profile
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                        </a>
                     </div>
-                    <br>
-                    <div class="cta-buttons">
-                        <a href="https://rextechconsult.vercel.app/" target="_blank" class="btn btn-primary">Visit Website</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
-    <!-- Call to Action Section -->
-    <section class="contact">
-        <div class="contact-container">
-            <h2 class="section-title">Collaborate With Me</h2>
-            <p class="contact-description">
-                I'm always interested in working on innovative projects that combine technology, 
-                sustainability, and social impact. Whether it's ESG consulting, technical development, 
-                or creative ventures, I'd love to hear from you.
-            </p>
-            <div class="cta-buttons">
-                <a href="mailto:rex.heng@lse.ac.uk" class="btn btn-primary">Get in Touch</a>
-                <a href="index.html#contact" class="btn btn-secondary">View Contact Info</a>
+                    <!-- NUS Peter -->
+                    <div class="project-card">
+                        <div class="instagram-card">
+                            <div class="instagram-icon">
+                                <div class="instagram-icon-inner">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="instagram-info">
+                                <div class="instagram-name">NUS Peter</div>
+                                <div class="instagram-handle">@nus.peter</div>
+                            </div>
+                        </div>
+                        <a href="https://www.instagram.com/nus.peter" target="_blank" rel="noopener noreferrer" class="project-link">
+                            Visit Profile
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                        </a>
+                    </div>
+
+                    <!-- Govt Peter -->
+                    <div class="project-card">
+                        <div class="instagram-card">
+                            <div class="instagram-icon">
+                                <div class="instagram-icon-inner">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="instagram-info">
+                                <div class="instagram-name">Govt Peter</div>
+                                <div class="instagram-handle">@govt.peter</div>
+                            </div>
+                        </div>
+                        <a href="https://www.instagram.com/govt.peter" target="_blank" rel="noopener noreferrer" class="project-link">
+                            Visit Profile
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                        </a>
+                    </div>
+
+                    <!-- Econ Peter -->
+                    <div class="project-card">
+                        <div class="instagram-card">
+                            <div class="instagram-icon">
+                                <div class="instagram-icon-inner">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="instagram-info">
+                                <div class="instagram-name">Econ Peter</div>
+                                <div class="instagram-handle">@econ.peter</div>
+                            </div>
+                        </div>
+                        <a href="https://www.instagram.com/econ.peter" target="_blank" rel="noopener noreferrer" class="project-link">
+                            Visit Profile
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                        </a>
+                    </div>
+
+                    <!-- Literature Peter -->
+                    <div class="project-card">
+                        <div class="instagram-card">
+                            <div class="instagram-icon">
+                                <div class="instagram-icon-inner">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="instagram-info">
+                                <div class="instagram-name">Literature Peter</div>
+                                <div class="instagram-handle">@literature.peter</div>
+                            </div>
+                        </div>
+                        <a href="https://www.instagram.com/literature.peter" target="_blank" rel="noopener noreferrer" class="project-link">
+                            Visit Profile
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                        </a>
+                    </div>
+
+                    <!-- Lawsuit Peter -->
+                    <div class="project-card">
+                        <div class="instagram-card">
+                            <div class="instagram-icon">
+                                <div class="instagram-icon-inner">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="instagram-info">
+                                <div class="instagram-name">Lawsuit Peter</div>
+                                <div class="instagram-handle">@lawsuit.peter</div>
+                            </div>
+                        </div>
+                        <a href="https://www.instagram.com/lawsuit.peter" target="_blank" rel="noopener noreferrer" class="project-link">
+                            Visit Profile
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Websites Tab -->
+            <div class="tab-content" id="websites-tab" role="tabpanel">
+                <div class="projects-grid two-col">
+                    <!-- Attic Band -->
+                    <div class="project-card">
+                        <div class="project-header">
+                            <div class="project-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                                </svg>
+                            </div>
+                            <div class="project-content">
+                                <h3 class="project-title">Attic Band</h3>
+                                <p class="project-description">
+                                    Official website for Attic, a rock band. Features music streaming, tour dates, and band information.
+                                </p>
+                                <div class="project-tags">
+                                    <span class="project-tag">Web Design</span>
+                                    <span class="project-tag">Music</span>
+                                    <span class="project-tag">Creative</span>
+                                </div>
+                                <a href="https://attictheband.com" target="_blank" rel="noopener noreferrer" class="project-link">
+                                    Visit Website
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15 3 21 3 21 9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rex Tech Consult -->
+                    <div class="project-card">
+                        <div class="project-header">
+                            <div class="project-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                                </svg>
+                            </div>
+                            <div class="project-content">
+                                <h3 class="project-title">Rex Tech Consult</h3>
+                                <p class="project-description">
+                                    Technology consulting portfolio showcasing technical expertise and consulting projects.
+                                </p>
+                                <div class="project-tags">
+                                    <span class="project-tag">Consulting</span>
+                                    <span class="project-tag">Tech</span>
+                                    <span class="project-tag">Portfolio</span>
+                                </div>
+                                <a href="https://rextechconsult.vercel.app/" target="_blank" rel="noopener noreferrer" class="project-link">
+                                    Visit Website
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15 3 21 3 21 9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </section>
+    </main>
 
     <!-- Footer -->
     <footer>
         <div class="footer-links">
-            <a href="../index.html">Home</a>
-            <a href="../experience.html">Experience</a>
-            <a href="../writing.html">Writing</a>
-            <a href="index.html">Projects</a>
+            <a href="/">Home</a>
+            <a href="/experience/">Experience</a>
+            <a href="/writing/">Writing</a>
+            <a href="/projects/">Projects</a>
         </div>
         <p class="footer-copyright">
             © 2024 Rex Heng. Philosophy, Politics and Economics at LSE.
@@ -285,52 +671,43 @@
             navLinks.classList.toggle('active');
         });
 
-        // Close mobile menu when clicking a link
         document.querySelectorAll('.nav-links a').forEach(link => {
             link.addEventListener('click', () => {
                 navLinks.classList.remove('active');
             });
         });
 
-        // Smooth scroll for navigation links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
+        // Tab switching functionality
+        const tabTriggers = document.querySelectorAll('.tab-trigger');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabTriggers.forEach(trigger => {
+            trigger.addEventListener('click', () => {
+                const tabName = trigger.getAttribute('data-tab');
+                
+                tabTriggers.forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                trigger.classList.add('active');
+                trigger.setAttribute('aria-selected', 'true');
+                
+                const targetContent = document.getElementById(`${tabName}-tab`);
+                if (targetContent) {
+                    targetContent.classList.add('active');
                 }
             });
         });
 
-        // Fade in animation on scroll
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '0';
-                    entry.target.style.transform = 'translateY(20px)';
-                    setTimeout(() => {
-                        entry.target.style.transition = 'all 0.6s ease';
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0)';
-                    }, 100);
-                    observer.unobserve(entry.target);
-                }
-            });
-        }, observerOptions);
-
-        // Observe all fade-in elements
-        document.querySelectorAll('.fade-in').forEach(el => {
-            observer.observe(el);
-        });
+        // Dynamic year in footer
+        const currentYear = new Date().getFullYear();
+        document.querySelector('.footer-copyright').innerHTML = 
+            `© ${currentYear} Rex Heng. Philosophy, Politics and Economics at LSE.`;
 
         // Nav background on scroll
         window.addEventListener('scroll', () => {
@@ -343,26 +720,6 @@
                 nav.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.06)';
             }
         });
-
-        // Dynamic year in footer
-        const currentYear = new Date().getFullYear();
-        document.querySelector('.footer-copyright').innerHTML = 
-            `© ${currentYear} Rex Heng. Philosophy, Politics and Economics at LSE.`;
     </script>
-
-    <!-- Instagram Embed -->
-    <iframe src="https://www.instagram.com/lsepeter/embed" width="400" height="480" frameborder="0" scrolling="no" allowtransparency="true"></iframe>
-
-    <!-- Instagram Card -->
-    <div class="instagram-card">
-        <a href="https://instagram.com/lsepeter" target="_blank" rel="noopener">
-            <div class="social-preview">
-                <div class="instagram-icon">📷</div>
-                <h3>@lsepeter</h3>
-                <p>Educational content explaining LSE topics</p>
-                <span class="follow-btn">Follow on Instagram →</span>
-            </div>
-        </a>
-    </div>
 </body>
 </html>
