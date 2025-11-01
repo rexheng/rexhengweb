@@ -667,13 +667,11 @@
                 this.dots = Array.from(galleryColumn.querySelectorAll('.gallery-dot'));
                 this.currentIndex = 0;
                 this.startX = 0;
-                this.startY = 0;
                 this.currentTranslate = 0;
                 this.prevTranslate = 0;
                 this.isDragging = false;
                 this.animationID = null;
                 this.columnWidth = this.column.offsetWidth;
-                this.scrollY = 0;
                 
                 this.init();
             }
@@ -707,12 +705,12 @@
                     });
                 });
 
-                // Touch/mouse drag navigation with improved scroll prevention
+                // Touch/mouse drag navigation
                 this.wrapper.addEventListener('mousedown', (e) => this.touchStart(e));
                 this.wrapper.addEventListener('touchstart', (e) => this.touchStart(e), { passive: true });
                 
                 this.wrapper.addEventListener('mousemove', (e) => this.touchMove(e));
-                this.wrapper.addEventListener('touchmove', (e) => this.touchMove(e), { passive: false });
+                this.wrapper.addEventListener('touchmove', (e) => this.touchMove(e), { passive: true });
                 
                 this.wrapper.addEventListener('mouseup', (e) => this.touchEnd(e));
                 this.wrapper.addEventListener('touchend', (e) => this.touchEnd(e));
@@ -729,37 +727,17 @@
                 return event.type.includes('mouse') ? event.pageX : event.touches[0].clientX;
             }
 
-            getPositionY(event) {
-                return event.type.includes('mouse') ? event.pageY : event.touches[0].clientY;
-            }
-
             touchStart(event) {
                 this.isDragging = true;
                 this.startX = this.getPositionX(event);
-                this.startY = this.getPositionY(event);
                 this.animationID = requestAnimationFrame(() => this.animation());
                 this.wrapper.style.transition = 'none';
-                
-                // Save current scroll position
-                this.scrollY = window.scrollY;
             }
 
             touchMove(event) {
                 if (this.isDragging) {
-                    const currentX = this.getPositionX(event);
-                    const currentY = this.getPositionY(event);
-                    const diffX = Math.abs(currentX - this.startX);
-                    const diffY = Math.abs(currentY - this.startY);
-                    
-                    // Only prevent scroll if horizontal movement is greater than vertical
-                    if (diffX > diffY && diffX > 10) {
-                        this.currentTranslate = this.prevTranslate + currentX - this.startX;
-                        
-                        // Prevent page scroll only during horizontal swipe
-                        if (event.type === 'touchmove') {
-                            event.preventDefault();
-                        }
-                    }
+                    const currentPosition = this.getPositionX(event);
+                    this.currentTranslate = this.prevTranslate + currentPosition - this.startX;
                 }
             }
 
@@ -786,7 +764,7 @@
             }
 
             animation() {
-                if this.isDragging) {
+                if (this.isDragging) {
                     this.setSliderPosition();
                     requestAnimationFrame(() => this.animation());
                 }
