@@ -768,7 +768,7 @@ footer {
         width: 100%;
         background: var(--white);
         flex-direction: column;
-        padding: 1rem;
+        padding: 0;
         box-shadow: 0 5px 20px var(--soft-shadow);
     }
 
@@ -778,6 +778,34 @@ footer {
 
     .menu-toggle {
         display: flex;
+    }
+
+    /* Make entire mobile nav item clickable */
+    .nav-links li {
+        width: 100%;
+        margin: 0;
+    }
+
+    .nav-links a {
+        display: block;
+        width: 100%;
+        padding: 1.2rem 2rem;
+        margin: 0;
+        border-bottom: 1px solid var(--bg-light);
+        transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .nav-links li:last-child a {
+        border-bottom: none;
+    }
+
+    .nav-links a:hover {
+        background: var(--lightest-green);
+        color: var(--text-dark);
+    }
+
+    .nav-links a::after {
+        display: none;
     }
 
     /* Hero */

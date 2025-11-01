@@ -705,12 +705,12 @@
                     });
                 });
 
-                // Touch/mouse drag navigation
+                // Touch/mouse drag navigation with scroll prevention
                 this.wrapper.addEventListener('mousedown', (e) => this.touchStart(e));
-                this.wrapper.addEventListener('touchstart', (e) => this.touchStart(e), { passive: true });
+                this.wrapper.addEventListener('touchstart', (e) => this.touchStart(e), { passive: false });
                 
                 this.wrapper.addEventListener('mousemove', (e) => this.touchMove(e));
-                this.wrapper.addEventListener('touchmove', (e) => this.touchMove(e), { passive: true });
+                this.wrapper.addEventListener('touchmove', (e) => this.touchMove(e), { passive: false });
                 
                 this.wrapper.addEventListener('mouseup', (e) => this.touchEnd(e));
                 this.wrapper.addEventListener('touchend', (e) => this.touchEnd(e));
@@ -732,16 +732,30 @@
                 this.startX = this.getPositionX(event);
                 this.animationID = requestAnimationFrame(() => this.animation());
                 this.wrapper.style.transition = 'none';
+                
+                // Prevent page scroll on mobile when swiping gallery
+                if (event.type === 'touchstart') {
+                    document.body.style.overflow = 'hidden';
+                    document.body.style.position = 'fixed';
+                    document.body.style.width = '100%';
+                }
             }
 
             touchMove(event) {
                 if (this.isDragging) {
                     const currentPosition = this.getPositionX(event);
                     this.currentTranslate = this.prevTranslate + currentPosition - this.startX;
+                    
+                    // Prevent page scroll during horizontal swipe
+                    if (event.type === 'touchmove') {
+                        event.preventDefault();
+                    }
                 }
             }
 
             touchEnd() {
+                if (!this.isDragging) return;
+                
                 this.isDragging = false;
                 cancelAnimationFrame(this.animationID);
                 
@@ -759,6 +773,11 @@
 
                 this.updateSlidePosition(true);
                 this.updateDots();
+                
+                // Re-enable page scroll
+                document.body.style.overflow = '';
+                document.body.style.position = '';
+                document.body.style.width = '';
             }
 
             animation() {
