@@ -110,16 +110,17 @@
             width: 100%;
             height: 100%;
             user-select: none;
+            display: flex;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            will-change: transform;
         }
 
         .gallery-slide {
-            display: none;
+            min-width: 100%;
             width: 100%;
             height: 100%;
-        }
-
-        .gallery-slide.active {
-            display: block;
+            flex-shrink: 0;
+            position: relative;
         }
 
         .gallery-slide img {
@@ -127,6 +128,12 @@
             height: 100%;
             object-fit: cover;
             object-position: center;
+            pointer-events: none;
+        }
+
+        /* Specific positioning for bouldering-1 image */
+        .gallery-wrapper[data-gallery="2"] .gallery-slide:nth-child(1) img {
+            object-position: center calc(50% - -45px);
         }
 
         /* Video styles */
@@ -136,6 +143,7 @@
             object-fit: cover;
             object-position: center;
             background: #000;
+            pointer-events: auto;
         }
 
         .video-play-btn {
@@ -421,7 +429,7 @@
                             </svg>
                         </button>
                         <div class="gallery-wrapper" data-gallery="0">
-                            <div class="gallery-slide active">
+                            <div class="gallery-slide">
                                 <img src="../assets/images/mountaineering-1.jpg" 
                                      alt="Mountain landscape">
                             </div>
@@ -466,7 +474,7 @@
                             </svg>
                         </button>
                         <div class="gallery-wrapper" data-gallery="1">
-                            <div class="gallery-slide active">
+                            <div class="gallery-slide">
                                 <img src="../assets/images/music-1.jpg" 
                                      alt="Attic band performance">
                             </div>
@@ -506,25 +514,13 @@
                             </svg>
                         </button>
                         <div class="gallery-wrapper" data-gallery="2">
-                            <div class="gallery-slide active">
-                                <video playsinline loop muted class="gallery-video" data-video-id="0">
-                                    <source src="../assets/videos/bouldering-1.mp4" type="video/mp4">
-                                </video>
-                                <button class="video-play-btn" data-video-control="0">
-                                    <svg viewBox="0 0 24 24" fill="white" stroke="none">
-                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                                    </svg>
-                                </button>
+                            <div class="gallery-slide">
+                                <img src="../assets/images/bouldering-1.jpg" 
+                                     alt="Bouldering route 1">
                             </div>
                             <div class="gallery-slide">
-                                <video playsinline loop muted class="gallery-video" data-video-id="1">
-                                    <source src="../assets/videos/bouldering-2.mp4" type="video/mp4">
-                                </video>
-                                <button class="video-play-btn" data-video-control="1">
-                                    <svg viewBox="0 0 24 24" fill="white" stroke="none">
-                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                                    </svg>
-                                </button>
+                                <img src="../assets/images/bouldering-2.jpg" 
+                                     alt="Bouldering route 2">
                             </div>
                         </div>
                         <div class="gallery-nav">
@@ -662,7 +658,7 @@
             });
         });
 
-        // Gallery navigation system
+        // Gallery navigation system with smooth swipe transitions
         class GalleryNavigator {
             constructor(galleryColumn) {
                 this.column = galleryColumn;
@@ -671,141 +667,145 @@
                 this.dots = Array.from(galleryColumn.querySelectorAll('.gallery-dot'));
                 this.currentIndex = 0;
                 this.startX = 0;
+                this.currentTranslate = 0;
+                this.prevTranslate = 0;
                 this.isDragging = false;
+                this.animationID = null;
+                this.columnWidth = this.column.offsetWidth;
                 
                 this.init();
             }
 
             init() {
+                // Update wrapper position on load
+                this.updateSlidePosition(false);
+
                 // Arrow button navigation
                 const leftArrow = this.column.querySelector('.gallery-arrow-left');
                 const rightArrow = this.column.querySelector('.gallery-arrow-right');
                 
-                if (leftArrow) leftArrow.addEventListener('click', () => this.prevSlide());
-                if (rightArrow) rightArrow.addEventListener('click', () => this.nextSlide());
+                if (leftArrow) {
+                    leftArrow.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.prevSlide();
+                    });
+                }
+                if (rightArrow) {
+                    rightArrow.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.nextSlide();
+                    });
+                }
 
                 // Dot navigation
                 this.dots.forEach((dot, index) => {
-                    dot.addEventListener('click', () => this.goToSlide(index));
+                    dot.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.goToSlide(index);
+                    });
                 });
 
                 // Touch/mouse drag navigation
-                this.wrapper.addEventListener('mousedown', (e) => this.handleDragStart(e));
-                this.wrapper.addEventListener('touchstart', (e) => this.handleDragStart(e));
+                this.wrapper.addEventListener('mousedown', (e) => this.touchStart(e));
+                this.wrapper.addEventListener('touchstart', (e) => this.touchStart(e), { passive: true });
                 
-                this.wrapper.addEventListener('mousemove', (e) => this.handleDragMove(e));
-                this.wrapper.addEventListener('touchmove', (e) => this.handleDragMove(e));
+                this.wrapper.addEventListener('mousemove', (e) => this.touchMove(e));
+                this.wrapper.addEventListener('touchmove', (e) => this.touchMove(e), { passive: true });
                 
-                this.wrapper.addEventListener('mouseup', (e) => this.handleDragEnd(e));
-                this.wrapper.addEventListener('touchend', (e) => this.handleDragEnd(e));
-                this.wrapper.addEventListener('mouseleave', (e) => this.handleDragEnd(e));
+                this.wrapper.addEventListener('mouseup', (e) => this.touchEnd(e));
+                this.wrapper.addEventListener('touchend', (e) => this.touchEnd(e));
+                this.wrapper.addEventListener('mouseleave', (e) => this.touchEnd(e));
 
-                // Video play button handlers
-                this.setupVideoControls();
-            }
-
-            setupVideoControls() {
-                const playButtons = this.column.querySelectorAll('.video-play-btn');
-                playButtons.forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const videoId = btn.getAttribute('data-video-control');
-                        const video = this.column.querySelector(`.gallery-video[data-video-id="${videoId}"]`);
-                        
-                        if (video.paused) {
-                            video.play();
-                            btn.style.opacity = '0';
-                        } else {
-                            video.pause();
-                            btn.style.opacity = '1';
-                        }
-                    });
-                });
-
-                // Show play button when video ends
-                const videos = this.column.querySelectorAll('.gallery-video');
-                videos.forEach(video => {
-                    video.addEventListener('ended', () => {
-                        const videoId = video.getAttribute('data-video-id');
-                        const playBtn = this.column.querySelector(`.video-play-btn[data-video-control="${videoId}"]`);
-                        if (playBtn) playBtn.style.opacity = '1';
-                    });
-
-                    video.addEventListener('click', () => {
-                        const videoId = video.getAttribute('data-video-id');
-                        const playBtn = this.column.querySelector(`.video-play-btn[data-video-control="${videoId}"]`);
-                        if (video.paused) {
-                            video.play();
-                            if (playBtn) playBtn.style.opacity = '0';
-                        } else {
-                            video.pause();
-                            if (playBtn) playBtn.style.opacity = '1';
-                        }
-                    });
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    this.columnWidth = this.column.offsetWidth;
+                    this.updateSlidePosition(false);
                 });
             }
 
-            handleDragStart(e) {
+            getPositionX(event) {
+                return event.type.includes('mouse') ? event.pageX : event.touches[0].clientX;
+            }
+
+            touchStart(event) {
                 this.isDragging = true;
-                this.startX = e.type.includes('mouse') ? e.pageX : e.touches[0].pageX;
+                this.startX = this.getPositionX(event);
+                this.animationID = requestAnimationFrame(() => this.animation());
+                this.wrapper.style.transition = 'none';
             }
 
-            handleDragMove(e) {
-                if (!this.isDragging) return;
-                e.preventDefault();
+            touchMove(event) {
+                if (this.isDragging) {
+                    const currentPosition = this.getPositionX(event);
+                    this.currentTranslate = this.prevTranslate + currentPosition - this.startX;
+                }
             }
 
-            handleDragEnd(e) {
-                if (!this.isDragging) return;
+            touchEnd() {
+                this.isDragging = false;
+                cancelAnimationFrame(this.animationID);
                 
-                const currentX = e.type.includes('mouse') ? e.pageX : e.changedTouches[0].pageX;
-                const diffX = this.startX - currentX;
+                const movedBy = this.currentTranslate - this.prevTranslate;
                 
-                if (Math.abs(diffX) > 50) {
-                    if (diffX > 0) {
-                        this.nextSlide();
-                    } else {
-                        this.prevSlide();
-                    }
+                // If moved enough negative (right swipe), go to previous slide
+                if (movedBy < -50 && this.currentIndex < this.slides.length - 1) {
+                    this.currentIndex += 1;
                 }
                 
-                this.isDragging = false;
+                // If moved enough positive (left swipe), go to next slide
+                if (movedBy > 50 && this.currentIndex > 0) {
+                    this.currentIndex -= 1;
+                }
+
+                this.updateSlidePosition(true);
+                this.updateDots();
             }
 
-            goToSlide(index) {
-                this.currentIndex = index;
-                this.updateGallery();
+            animation() {
+                if (this.isDragging) {
+                    this.setSliderPosition();
+                    requestAnimationFrame(() => this.animation());
+                }
             }
 
-            nextSlide() {
-                this.currentIndex = (this.currentIndex + 1) % this.slides.length;
-                this.updateGallery();
+            setSliderPosition() {
+                this.wrapper.style.transform = `translateX(${this.currentTranslate}px)`;
             }
 
-            prevSlide() {
-                this.currentIndex = (this.currentIndex - 1 + this.slides.length) % this.slides.length;
-                this.updateGallery();
+            updateSlidePosition(withTransition = true) {
+                this.wrapper.style.transition = withTransition ? 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none';
+                this.currentTranslate = -this.currentIndex * this.columnWidth;
+                this.prevTranslate = this.currentTranslate;
+                this.setSliderPosition();
             }
 
-            updateGallery() {
-                // Pause all videos when switching slides
-                const videos = this.column.querySelectorAll('.gallery-video');
-                videos.forEach(video => {
-                    video.pause();
-                    const videoId = video.getAttribute('data-video-id');
-                    const playBtn = this.column.querySelector(`.video-play-btn[data-video-control="${videoId}"]`);
-                    if (playBtn) playBtn.style.opacity = '1';
-                });
-
-                // Update slides
-                this.slides.forEach((slide, index) => {
-                    slide.classList.toggle('active', index === this.currentIndex);
-                });
-
-                // Update dots
+            updateDots() {
                 this.dots.forEach((dot, index) => {
                     dot.classList.toggle('active', index === this.currentIndex);
                 });
+            }
+
+            goToSlide(index) {
+                if (index === this.currentIndex) return;
+                this.currentIndex = index;
+                this.updateSlidePosition(true);
+                this.updateDots();
+            }
+
+            nextSlide() {
+                if (this.currentIndex < this.slides.length - 1) {
+                    this.currentIndex += 1;
+                    this.updateSlidePosition(true);
+                    this.updateDots();
+                }
+            }
+
+            prevSlide() {
+                if (this.currentIndex > 0) {
+                    this.currentIndex -= 1;
+                    this.updateSlidePosition(true);
+                    this.updateDots();
+                }
             }
         }
 
