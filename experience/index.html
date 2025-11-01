@@ -4,8 +4,375 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Experience | Rex Heng</title>
-    <meta name="description" content="Work experience and education history of Rex Heng.">
+    <meta name="description" content="Personal journey through sports, music, and outdoor adventures - Rex Heng">
     <link rel="stylesheet" href="../style.css">
+    <style>
+        /* Timeline Container */
+        .timeline-section {
+            margin-top: 80px;
+            padding: 3rem 1.5rem;
+            min-height: calc(100vh - 80px);
+            background: var(--bg-light);
+        }
+
+        .timeline-header {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 3rem;
+        }
+
+        .timeline-header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+        }
+
+        .timeline-header p {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        /* Timeline Wrapper */
+        .timeline-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            position: relative;
+            padding-left: 60px;
+        }
+
+        /* Timeline Line */
+        .timeline-line {
+            position: absolute;
+            left: 30px;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--medium-green) 0%, var(--light-pink) 100%);
+            border-radius: 2px;
+        }
+
+        /* Timeline Item */
+        .timeline-item {
+            position: relative;
+            margin-bottom: 3rem;
+        }
+
+        /* Timeline Dot */
+        .timeline-dot {
+            position: absolute;
+            left: -38px;
+            top: 2rem;
+            width: 20px;
+            height: 20px;
+            background: var(--white);
+            border: 4px solid var(--medium-green);
+            border-radius: 50%;
+            box-shadow: 0 4px 10px var(--soft-shadow);
+            z-index: 10;
+        }
+
+        /* Content Cards - Two Column Layout */
+        .timeline-content {
+            background: var(--white);
+            border-radius: 15px;
+            box-shadow: 0 5px 20px var(--soft-shadow);
+            transition: box-shadow 0.3s ease;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 407.7px 1fr;
+            min-height: 320px;
+            max-height: 320px;
+        }
+
+        /* Remove hover lift effect */
+        .timeline-content:hover {
+            box-shadow: 0 5px 20px var(--soft-shadow);
+        }
+
+        /* Gallery Column */
+        .gallery-column {
+            position: relative;
+            overflow: hidden;
+            background: var(--bg-light);
+            cursor: grab;
+            width: 407.7px;
+            height: 320px;
+            flex-shrink: 0;
+        }
+
+        .gallery-column:active {
+            cursor: grabbing;
+        }
+
+        .gallery-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            user-select: none;
+        }
+
+        .gallery-slide {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .gallery-slide.active {
+            display: block;
+        }
+
+        .gallery-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        /* Video styles */
+        .gallery-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            background: #000;
+        }
+
+        .video-play-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 3px solid white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 15;
+            transition: all 0.3s ease;
+            padding-left: 4px;
+        }
+
+        .video-play-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .video-play-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Gallery Navigation */
+        .gallery-nav {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.5rem;
+            z-index: 5;
+        }
+
+        .gallery-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .gallery-dot.active {
+            background: var(--white);
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        /* Gallery Arrow Navigation */
+        .gallery-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .gallery-column:hover .gallery-arrow {
+            opacity: 1;
+        }
+
+        .gallery-arrow:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .gallery-arrow-left {
+            left: 1rem;
+        }
+
+        .gallery-arrow-right {
+            right: 1rem;
+        }
+
+        .gallery-arrow svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text-dark);
+        }
+
+        /* Hide arrows if only one image */
+        .gallery-column[data-slides="1"] .gallery-arrow {
+            display: none;
+        }
+
+        /* Text Column */
+        .text-column {
+            padding: 2rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        .activity-title {
+            font-size: 1.8rem;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .activity-subtitle {
+            color: var(--medium-green);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .activity-description {
+            color: var(--text-light);
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+
+        /* Progress Bars (for Calisthenics) */
+        .progress-section {
+            margin-top: 1.5rem;
+        }
+
+        .progress-item {
+            margin: 1rem 0;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-light);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--medium-green) 0%, var(--light-green) 100%);
+            border-radius: 10px;
+            transition: width 1s ease;
+        }
+
+        /* Responsive Timeline */
+        @media (max-width: 968px) {
+            .timeline-content {
+                grid-template-columns: 1fr;
+                max-height: none;
+            }
+
+            .gallery-column {
+                width: 100%;
+                height: 280px;
+            }
+
+            .text-column {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .timeline-container {
+                padding-left: 50px;
+            }
+
+            .timeline-line {
+                left: 25px;
+            }
+
+            .timeline-dot {
+                left: -33px;
+                top: 1.5rem;
+            }
+
+            .timeline-header h1 {
+                font-size: 2.5rem;
+            }
+
+            .activity-title {
+                font-size: 1.5rem;
+            }
+
+            .gallery-column {
+                width: 100%;
+                height: 250px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .timeline-container {
+                padding-left: 40px;
+            }
+
+            .timeline-line {
+                left: 20px;
+            }
+
+            .timeline-dot {
+                left: -28px;
+                width: 16px;
+                height: 16px;
+            }
+
+            .text-column {
+                padding: 1.25rem;
+            }
+
+            .gallery-column {
+                width: 100%;
+                height: 220px;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
@@ -26,20 +393,244 @@
         </div>
     </nav>
 
-    <!-- Work in Progress Section -->
-    <section class="wip-section">
-        <div class="wip-container">
-            <div class="wip-content">
-                <h1>Experience</h1>
-                <p class="wip-subtitle">This page is currently WIP</p>
-                <p class="wip-description">
-                    Give me some time :) 
-                </p>
-                <div class="cta-buttons">
-                    <a href="/" class="btn btn-primary">Back to Home</a>
-                    <a href="https://linkedin.com/in/rexheng" target="_blank" class="btn btn-secondary">LinkedIn</a>
+    <!-- Timeline Section -->
+    <section class="timeline-section">
+        <div class="timeline-header fade-in">
+            <h1>My Hobbies</h1>
+            <p>
+                When I'm not immersed in my work, you'll find me pursuing these!
+            </p>
+        </div>
+
+        <div class="timeline-container">
+            <div class="timeline-line"></div>
+
+            <!-- Mountaineering -->
+            <div class="timeline-item fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="gallery-column" data-slides="3">
+                        <button class="gallery-arrow gallery-arrow-left" data-gallery="0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </button>
+                        <button class="gallery-arrow gallery-arrow-right" data-gallery="0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
+                        <div class="gallery-wrapper" data-gallery="0">
+                            <div class="gallery-slide active">
+                                <img src="../assets/images/mountaineering-1.jpg" 
+                                     alt="Mountain landscape">
+                            </div>
+                            <div class="gallery-slide">
+                                <img src="../assets/images/mountaineering-2.jpg" 
+                                     alt="Himalayan peaks">
+                            </div>
+                            <div class="gallery-slide">
+                                <img src="../assets/images/mountaineering-3.jpg" 
+                                     alt="Mountain trail">
+                            </div>
+                        </div>
+                        <div class="gallery-nav">
+                            <span class="gallery-dot active" data-gallery="0" data-item="0"></span>
+                            <span class="gallery-dot" data-gallery="0" data-item="1"></span>
+                            <span class="gallery-dot" data-gallery="0" data-item="2"></span>
+                        </div>
+                    </div>
+                    <div class="text-column">
+                        <h2 class="activity-title">Mountaineering</h2>
+                        <p class="activity-subtitle">High-Altitude Adventures</p>
+                        <p class="activity-description">
+                            Completed expeditions in Nepal including the Annapurna Circuit, and other fun hikes across other regions.
+                        </p>
+                    </div>
                 </div>
             </div>
+
+            <!-- Music -->
+            <div class="timeline-item fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="gallery-column" data-slides="2">
+                        <button class="gallery-arrow gallery-arrow-left" data-gallery="1">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </button>
+                        <button class="gallery-arrow gallery-arrow-right" data-gallery="1">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
+                        <div class="gallery-wrapper" data-gallery="1">
+                            <div class="gallery-slide active">
+                                <img src="../assets/images/music-1.jpg" 
+                                     alt="Attic band performance">
+                            </div>
+                            <div class="gallery-slide">
+                                <img src="../assets/images/music-2.jpg" 
+                                     alt="Keyboard playing">
+                            </div>
+                        </div>
+                        <div class="gallery-nav">
+                            <span class="gallery-dot active" data-gallery="1" data-item="0"></span>
+                            <span class="gallery-dot" data-gallery="1" data-item="1"></span>
+                        </div>
+                    </div>
+                    <div class="text-column">
+                        <h2 class="activity-title">Music</h2>
+                        <p class="activity-subtitle">Attic Band - Keyboardist</p>
+                        <p class="activity-description">
+                            Keyboardist for Attic, a rock band. Performed 5 gigs and continuing to develop our sound.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bouldering -->
+            <div class="timeline-item fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="gallery-column" data-slides="2">
+                        <button class="gallery-arrow gallery-arrow-left" data-gallery="2">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </button>
+                        <button class="gallery-arrow gallery-arrow-right" data-gallery="2">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
+                        <div class="gallery-wrapper" data-gallery="2">
+                            <div class="gallery-slide active">
+                                <video playsinline loop muted class="gallery-video" data-video-id="0">
+                                    <source src="../assets/videos/bouldering-1.mp4" type="video/mp4">
+                                </video>
+                                <button class="video-play-btn" data-video-control="0">
+                                    <svg viewBox="0 0 24 24" fill="white" stroke="none">
+                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="gallery-slide">
+                                <video playsinline loop muted class="gallery-video" data-video-id="1">
+                                    <source src="../assets/videos/bouldering-2.mp4" type="video/mp4">
+                                </video>
+                                <button class="video-play-btn" data-video-control="1">
+                                    <svg viewBox="0 0 24 24" fill="white" stroke="none">
+                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="gallery-nav">
+                            <span class="gallery-dot active" data-gallery="2" data-item="0"></span>
+                            <span class="gallery-dot" data-gallery="2" data-item="1"></span>
+                        </div>
+                    </div>
+                    <div class="text-column">
+                        <h2 class="activity-title">Bouldering</h2>
+                        <p class="activity-subtitle">Indoor climbing</p>
+                        <p class="activity-description">
+                            Regular training at V4-V6 grade levels.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Squash -->
+            <div class="timeline-item fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="gallery-column" data-slides="1">
+                        <div class="gallery-wrapper" data-gallery="3">
+                            <div class="gallery-slide active">
+                                <img src="../assets/images/squash-1.jpg" 
+                                     alt="Squash">
+                            </div>
+                        </div>
+                        <div class="gallery-nav">
+                            <span class="gallery-dot active" data-gallery="3" data-item="0"></span>
+                        </div>
+                    </div>
+                    <div class="text-column">
+                        <h2 class="activity-title">Squash</h2>
+                        <p class="activity-subtitle">Competitive Racquet Sport</p>
+                        <p class="activity-description">
+                            Represented school team in competitive squash tournaments.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chess -->
+            <div class="timeline-item fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="gallery-column" data-slides="1">
+                        <div class="gallery-wrapper" data-gallery="4">
+                            <div class="gallery-slide active">
+                                <img src="../assets/images/chess-1.jpg" 
+                                     alt="Chess">
+                            </div>
+                        </div>
+                        <div class="gallery-nav">
+                            <span class="gallery-dot active" data-gallery="4" data-item="0"></span>
+                        </div>
+                    </div>
+                    <div class="text-column">
+                        <h2 class="activity-title">Chess</h2>
+                        <p class="activity-subtitle">1900+ rating</p>
+                        <p class="activity-description">
+                            I enjoy bullet chess, and play the Jobava London and French defense. 
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calisthenics -->
+            <div class="timeline-item fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="gallery-column" data-slides="0" style="background: linear-gradient(135deg, var(--lightest-green) 0%, var(--light-green) 100%);">
+                        <div class="gallery-wrapper" data-gallery="5">
+                            <!-- No image for calisthenics -->
+                        </div>
+                    </div>
+                    <div class="text-column">
+                        <h2 class="activity-title">Calisthenics</h2>
+                        <p class="activity-subtitle">Bodyweight Training</p>
+                        <p class="activity-description"> 
+                            Currently working towards the front lever and one-arm pull-up.
+                        </p>
+                        <div class="progress-section">
+                            <div class="progress-item">
+                                <div class="progress-label">
+                                    <span>Front Lever</span>
+                                    <span>85%</span>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" style="width: 85%;"></div>
+                                </div>
+                            </div>
+                            <div class="progress-item">
+                                <div class="progress-label">
+                                    <span>One-Arm Pull-up</span>
+                                    <span>50%</span>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" style="width: 70%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </section>
 
@@ -69,6 +660,205 @@
             link.addEventListener('click', () => {
                 navLinks.classList.remove('active');
             });
+        });
+
+        // Gallery navigation system
+        class GalleryNavigator {
+            constructor(galleryColumn) {
+                this.column = galleryColumn;
+                this.wrapper = galleryColumn.querySelector('.gallery-wrapper');
+                this.slides = Array.from(galleryColumn.querySelectorAll('.gallery-slide'));
+                this.dots = Array.from(galleryColumn.querySelectorAll('.gallery-dot'));
+                this.currentIndex = 0;
+                this.startX = 0;
+                this.isDragging = false;
+                
+                this.init();
+            }
+
+            init() {
+                // Arrow button navigation
+                const leftArrow = this.column.querySelector('.gallery-arrow-left');
+                const rightArrow = this.column.querySelector('.gallery-arrow-right');
+                
+                if (leftArrow) leftArrow.addEventListener('click', () => this.prevSlide());
+                if (rightArrow) rightArrow.addEventListener('click', () => this.nextSlide());
+
+                // Dot navigation
+                this.dots.forEach((dot, index) => {
+                    dot.addEventListener('click', () => this.goToSlide(index));
+                });
+
+                // Touch/mouse drag navigation
+                this.wrapper.addEventListener('mousedown', (e) => this.handleDragStart(e));
+                this.wrapper.addEventListener('touchstart', (e) => this.handleDragStart(e));
+                
+                this.wrapper.addEventListener('mousemove', (e) => this.handleDragMove(e));
+                this.wrapper.addEventListener('touchmove', (e) => this.handleDragMove(e));
+                
+                this.wrapper.addEventListener('mouseup', (e) => this.handleDragEnd(e));
+                this.wrapper.addEventListener('touchend', (e) => this.handleDragEnd(e));
+                this.wrapper.addEventListener('mouseleave', (e) => this.handleDragEnd(e));
+
+                // Video play button handlers
+                this.setupVideoControls();
+            }
+
+            setupVideoControls() {
+                const playButtons = this.column.querySelectorAll('.video-play-btn');
+                playButtons.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const videoId = btn.getAttribute('data-video-control');
+                        const video = this.column.querySelector(`.gallery-video[data-video-id="${videoId}"]`);
+                        
+                        if (video.paused) {
+                            video.play();
+                            btn.style.opacity = '0';
+                        } else {
+                            video.pause();
+                            btn.style.opacity = '1';
+                        }
+                    });
+                });
+
+                // Show play button when video ends
+                const videos = this.column.querySelectorAll('.gallery-video');
+                videos.forEach(video => {
+                    video.addEventListener('ended', () => {
+                        const videoId = video.getAttribute('data-video-id');
+                        const playBtn = this.column.querySelector(`.video-play-btn[data-video-control="${videoId}"]`);
+                        if (playBtn) playBtn.style.opacity = '1';
+                    });
+
+                    video.addEventListener('click', () => {
+                        const videoId = video.getAttribute('data-video-id');
+                        const playBtn = this.column.querySelector(`.video-play-btn[data-video-control="${videoId}"]`);
+                        if (video.paused) {
+                            video.play();
+                            if (playBtn) playBtn.style.opacity = '0';
+                        } else {
+                            video.pause();
+                            if (playBtn) playBtn.style.opacity = '1';
+                        }
+                    });
+                });
+            }
+
+            handleDragStart(e) {
+                this.isDragging = true;
+                this.startX = e.type.includes('mouse') ? e.pageX : e.touches[0].pageX;
+            }
+
+            handleDragMove(e) {
+                if (!this.isDragging) return;
+                e.preventDefault();
+            }
+
+            handleDragEnd(e) {
+                if (!this.isDragging) return;
+                
+                const currentX = e.type.includes('mouse') ? e.pageX : e.changedTouches[0].pageX;
+                const diffX = this.startX - currentX;
+                
+                if (Math.abs(diffX) > 50) {
+                    if (diffX > 0) {
+                        this.nextSlide();
+                    } else {
+                        this.prevSlide();
+                    }
+                }
+                
+                this.isDragging = false;
+            }
+
+            goToSlide(index) {
+                this.currentIndex = index;
+                this.updateGallery();
+            }
+
+            nextSlide() {
+                this.currentIndex = (this.currentIndex + 1) % this.slides.length;
+                this.updateGallery();
+            }
+
+            prevSlide() {
+                this.currentIndex = (this.currentIndex - 1 + this.slides.length) % this.slides.length;
+                this.updateGallery();
+            }
+
+            updateGallery() {
+                // Pause all videos when switching slides
+                const videos = this.column.querySelectorAll('.gallery-video');
+                videos.forEach(video => {
+                    video.pause();
+                    const videoId = video.getAttribute('data-video-id');
+                    const playBtn = this.column.querySelector(`.video-play-btn[data-video-control="${videoId}"]`);
+                    if (playBtn) playBtn.style.opacity = '1';
+                });
+
+                // Update slides
+                this.slides.forEach((slide, index) => {
+                    slide.classList.toggle('active', index === this.currentIndex);
+                });
+
+                // Update dots
+                this.dots.forEach((dot, index) => {
+                    dot.classList.toggle('active', index === this.currentIndex);
+                });
+            }
+        }
+
+        // Initialize all galleries
+        document.querySelectorAll('.gallery-column').forEach(column => {
+            new GalleryNavigator(column);
+        });
+
+        // Fade-in animation
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '0';
+                    setTimeout(() => {
+                        entry.target.style.transform = 'translateY(0)';
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transition = 'all 0.6s ease';
+                    }, 100);
+                } else {
+                    entry.target.style.transform = 'translateY(20px)';
+                    entry.target.style.opacity = '0';
+                    entry.target.style.transition = 'none';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Animate progress bars on scroll
+        const progressObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const progressBars = entry.target.querySelectorAll('.progress-bar-fill');
+                    progressBars.forEach(bar => {
+                        const width = bar.style.width;
+                        setTimeout(() => {
+                            bar.style.width = width;
+                        }, 200);
+                    });
+                    progressObserver.unobserve(entry.target);
+                }
+            });
+        });
+
+        document.querySelectorAll('.progress-section').forEach(el => {
+            progressObserver.observe(el);
         });
     </script>
 </body>
