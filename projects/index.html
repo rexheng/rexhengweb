@@ -18,7 +18,7 @@
 
         .tabs-list {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 0;
             margin-bottom: 3rem;
             background: var(--white);
@@ -325,9 +325,6 @@
                 </button>
                 <button class="tab-trigger" data-tab="content" role="tab" aria-selected="false">
                     Content Creation
-                </button>
-                <button class="tab-trigger" data-tab="websites" role="tab" aria-selected="false">
-                    Websites
                 </button>
             </div>
 
@@ -644,106 +641,7 @@
                 </div>
             </div>
 
-            <!-- Websites Tab -->
-            <div class="tab-content" id="websites-tab" role="tabpanel">
-                <div class="projects-grid two-col">
-                    <!-- Neo-Riemannian Explorer -->
-                    <div class="project-card">
-                        <div class="project-header">
-                            <div class="project-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M9 18V5l12-2v13"></path>
-                                    <circle cx="6" cy="18" r="3"></circle>
-                                    <circle cx="18" cy="16" r="3"></circle>
-                                </svg>
-                            </div>
-                            <div class="project-content">
-                                <h3 class="project-title">Neo-Riemannian Explorer</h3>
-                                <p class="project-description">
-                                    Interactive music theory visualisation tool for chord transformations and negative harmony exploration.
-                                </p>
-                                <div class="project-tags">
-                                    <span class="project-tag">React</span>
-                                    <span class="project-tag">Music Theory</span>
-                                    <span class="project-tag">Interactive</span>
-                                </div>
-                                <a href="https://neoriemannian.vercel.app/" target="_blank" rel="noopener noreferrer" class="project-link">
-                                    Visit Website
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                        <polyline points="15 3 21 3 21 9"></polyline>
-                                        <line x1="10" y1="14" x2="21" y2="3"></line>
-                                    </svg>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Attic Band -->
-                    <div class="project-card">
-                        <div class="project-header">
-                            <div class="project-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="2" y1="12" x2="22" y2="12"></line>
-                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                                </svg>
-                            </div>
-                            <div class="project-content">
-                                <h3 class="project-title">Attic Band</h3>
-                                <p class="project-description">
-                                    Official website for Attic, a rock band. Features music streaming, tour dates, and band information.
-                                </p>
-                                <div class="project-tags">
-                                    <span class="project-tag">Web Design</span>
-                                    <span class="project-tag">Music</span>
-                                    <span class="project-tag">Creative</span>
-                                </div>
-                                <a href="https://attictheband.com" target="_blank" rel="noopener noreferrer" class="project-link">
-                                    Visit Website
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                        <polyline points="15 3 21 3 21 9"></polyline>
-                                        <line x1="10" y1="14" x2="21" y2="3"></line>
-                                    </svg>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Rex Tech Consult -->
-                    <div class="project-card">
-                        <div class="project-header">
-                            <div class="project-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="2" y1="12" x2="22" y2="12"></line>
-                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                                </svg>
-                            </div>
-                            <div class="project-content">
-                                <h3 class="project-title">Rex Tech Consult</h3>
-                                <p class="project-description">
-                                    Technology consulting portfolio proof of concept for a tech consulting startup.
-                                </p>
-                                <div class="project-tags">
-                                    <span class="project-tag">Consulting</span>
-                                    <span class="project-tag">Tech</span>
-                                    <span class="project-tag">Portfolio</span>
-                                </div>
-                                <a href="https://rextechconsult.vercel.app/" target="_blank" rel="noopener noreferrer" class="project-link">
-                                    Visit Website
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                        <polyline points="15 3 21 3 21 9"></polyline>
-                                        <line x1="10" y1="14" x2="21" y2="3"></line>
-                                    </svg>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </main>
 
