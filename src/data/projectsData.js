@@ -82,8 +82,21 @@ export const projects = [
     linkText: 'Enter Portal',
     icon: 'globe',
     image: '/screenshots/rex-tech.png'
+  },
+  {
+    id: 10,
+    title: 'Amogus',
+    description: 'Among Us-themed AI deliberation council. Four agents with distinct archetypes debate planning prompts through isolated rounds, producing refined PRDs. MCP server for Cursor and Claude Code. 2nd place at Cursor Hack London 2026.',
+    tags: ['TypeScript', 'MCP', 'Anthropic API', 'Next.js', 'WebSocket'],
+    link: 'https://github.com/rexheng/amogus',
+    linkText: 'View on GitHub',
+    icon: 'grid',
+    github: 'https://github.com/rexheng/amogus'
   }
 ]
+
+export const technicalProjects = projects.filter((project) => project.icon !== 'globe')
+export const websiteProjects = projects.filter((project) => project.icon === 'globe')
 
 // Instagram Network
 export const instagramAccounts = [
