@@ -3,8 +3,8 @@ export const projects = [
   {
     id: 1,
     title: 'Landmark',
-    description: 'A data collection network and platform for optimising agriculture policy. Combines field sensors with satellite data and correlation models to provide public advisories and farmer dashboards.',
-    tags: ['IoT', 'React', 'Mapbox', 'Data Collection'],
+    description: 'Agricultural IoT and policy optimisation platform built at Hack London 2026. Low-cost STM32 LoRaWAN sensor nodes transmit soil, water, and climate telemetry into a Next.js dashboard that fuses ground readings with NASA GIBS satellite overlays. Five routes cover overview, a sensor map with GPU-driven Mapbox clustering, satellite intelligence, risk forecasts, and a proof-of-concept Solana-anchored audit trail.',
+    tags: ['Next.js', 'Mapbox GL', 'IoT', 'LoRaWAN'],
     link: 'https://the-delta-ten.vercel.app/',
     linkText: 'View Project',
     icon: 'farming',
