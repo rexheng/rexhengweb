@@ -92,6 +92,17 @@ export const projects = [
     linkText: 'View on GitHub',
     icon: 'grid',
     github: 'https://github.com/rexheng/amogus'
+  },
+  {
+    id: 11,
+    title: 'Olympic Way Interchange',
+    description: 'Data-driven proposal for a new London Underground station at Wembley Stadium, built over 72 hours for the LSESU x Susquehanna Datathon 2026 (1st place). Composite station need score across all 4,994 London LSOAs, graph-theoretic network efficiency modelling on 358 Tube nodes, and historical validation via Elizabeth Line and Northern Line Extension natural experiments. Monte Carlo sensitivity across 10,000 weight perturbations held the recommendation.',
+    tags: ['Python', 'GeoPandas', 'NetworkX', 'Mapbox', 'Geospatial'],
+    link: 'https://tfl-lsoa-visual.vercel.app',
+    linkText: 'Explore LSOA Map',
+    icon: 'research',
+    github: 'https://github.com/rexheng/london_lsoa_map',
+    image: '/screenshots/olympic-way-interchange.png'
   }
 ]
 
