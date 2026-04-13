@@ -103,6 +103,17 @@ export const projects = [
     icon: 'research',
     github: 'https://github.com/rexheng/london_lsoa_map',
     image: '/screenshots/olympic-way-interchange.png'
+  },
+  {
+    id: 12,
+    title: 'Peel',
+    description: 'Tokenised food-waste marketplace on Hedera. AI agents autonomously negotiate surplus inventory trades between restaurants via HCS, with settlements on HTS.',
+    tags: ['TypeScript', 'Hedera', 'LangChain', 'AI Agents'],
+    link: 'https://peel-market.vercel.app',
+    linkText: 'View Live',
+    icon: 'plant',
+    github: 'https://github.com/rexheng/peel-market',
+    image: '/screenshots/peel.png'
   }
 ]
 
