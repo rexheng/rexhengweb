@@ -114,6 +114,16 @@ export const projects = [
     icon: 'plant',
     github: 'https://github.com/rexheng/peel-market',
     image: '/screenshots/peel.png'
+  },
+  {
+    id: 13,
+    title: 'ManusMan',
+    description: 'AI-powered meeting prep platform that turns 2 hours of pre-call research into 2 minutes — winner of Most Commercial at the Manus Vibecoding Hackathon.',
+    tags: ['React', 'TypeScript', 'Vite', 'Tailwind', 'Manus AI'],
+    link: '#',
+    linkText: 'View Project',
+    icon: 'research',
+    image: '/screenshots/manusman.png'
   }
 ]
 
