@@ -60,7 +60,6 @@ export class ControlsPanel {
     // Physics section — toggles + segmented controls + sliders + compass.
     const phys = this._sectionShell("Physics");
     phys.appendChild(this._row("Paused", this._toggle("paused", (v) => this._set("paused", v))));
-    phys.appendChild(this._row("Hold Stand", this._toggle("standHold", (v) => this._set("standHold", v))));
 
     phys.appendChild(this._labelLine("Gravity"));
     phys.appendChild(this._segmented("gravity", GRAVITY_OPTIONS, (opt) => {

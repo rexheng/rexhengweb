@@ -37,47 +37,6 @@ const WIND_DIRS = [
   { label: "NW", rad: Math.PI * 0.75 },
 ];
 
-// Neutral stand pose for humanoid — all joints at 0, arms relaxed at sides.
-// Applied to qpos on load/reset so the humanoid starts upright and stable.
-// qpos layout: [root_xyz(3), root_quat(4), spine(3), R-leg(6), L-leg(6), R-arm(3), L-arm(3)]
-const HUMANOID_STAND_QPOS = [
-  0, 0, 1.282,                    // root xyz — matches body pos in XML
-  1, 0, 0, 0,                     // root quat (identity)
-  0, 0, 0,                        // abdomen_z, abdomen_y, abdomen_x
-  0, 0, 0, 0, 0, 0,               // R hip_x, hip_z, hip_y, knee, ankle_y, ankle_x
-  0, 0, 0, 0, 0, 0,               // L hip_x, hip_z, hip_y, knee, ankle_y, ankle_x
-  0, 0, 0,                        // R shoulder1, shoulder2, elbow — T-pose baseline
-  0, 0, 0,                        // L shoulder1, shoulder2, elbow
-];
-
-// Joint names for PD stand-hold (match XML actuators in order).
-const ACT_NAMES = [
-  "abdomen_z", "abdomen_y", "abdomen_x",
-  "hip_x_right", "hip_z_right", "hip_y_right", "knee_right", "ankle_y_right", "ankle_x_right",
-  "hip_x_left", "hip_z_left", "hip_y_left", "knee_left", "ankle_y_left", "ankle_x_left",
-  "shoulder1_right", "shoulder2_right", "elbow_right",
-  "shoulder1_left", "shoulder2_left", "elbow_left",
-];
-// PD targets matching the stand pose above.
-const ACT_TARGETS = {
-  abdomen_z: 0, abdomen_y: 0, abdomen_x: 0,
-  hip_x_right: 0, hip_z_right: 0, hip_y_right: 0, knee_right: 0, ankle_y_right: 0, ankle_x_right: 0,
-  hip_x_left: 0, hip_z_left: 0, hip_y_left: 0, knee_left: 0, ankle_y_left: 0, ankle_x_left: 0,
-  shoulder1_right: -0.6, shoulder2_right: 0.8, elbow_right: 0,
-  shoulder1_left: -0.6, shoulder2_left: 0.8, elbow_left: 0,
-};
-// PD gains per joint — tuned so the humanoid holds upright but remains responsive
-// to grabbing. Ankle & leg gains high (balance), arm gains lower (feels ragdolly).
-const PD_GAINS = {
-  abdomen_z: [200, 20], abdomen_y: [200, 20], abdomen_x: [200, 20],
-  hip_x_right: [200, 20], hip_z_right: [200, 20], hip_y_right: [300, 30],
-  knee_right: [300, 30], ankle_y_right: [150, 15], ankle_x_right: [150, 15],
-  hip_x_left: [200, 20], hip_z_left: [200, 20], hip_y_left: [300, 30],
-  knee_left: [300, 30], ankle_y_left: [150, 15], ankle_x_left: [150, 15],
-  shoulder1_right: [60, 6], shoulder2_right: [60, 6], elbow_right: [60, 6],
-  shoulder1_left: [60, 6], shoulder2_left: [60, 6], elbow_left: [60, 6],
-};
-
 class App {
   constructor() {
     this.scene = null;
@@ -95,7 +54,6 @@ class App {
       perturb: () => this.randomPerturb(),
       trails: false,
       sparks: false,
-      standHold: true, // PD keeps humanoid upright until grabbed
       windEnabled: false,
       wind: 0.0,
       windDir: 0,
@@ -106,13 +64,6 @@ class App {
     this.mujocoTime = 0;
     this.camTween = null;
     this._lastFrameMs = 0;
-    this._suspendPD = false; // temporarily disable stand-hold while grabber is active
-
-    // PD index cache — filled on scene load.
-    this._pdActIdx = {};
-    this._pdQposAdr = {};
-    this._pdDofAdr = {};
-    this._pdGear = {};
     this._torsoId = -1;
   }
 
@@ -336,7 +287,6 @@ class App {
     this.mujocoTime = 0;
     this._rebuildGrabbables();
     this._indexHumanoid();
-    this._applyStandPose();
     this._orbitCenter = null;
     this.frameCamera();
     this.trails?.onSceneSwitch();
@@ -345,55 +295,22 @@ class App {
     this.controlsPanel?.refresh();
   }
 
-  // Build name-keyed lookup tables for PD control + find torso body id.
+  // Cache torso body id for cinematic orbit tracking.
   _indexHumanoid() {
     if (!this.model) return;
-    this._pdActIdx = {};
-    this._pdQposAdr = {};
-    this._pdDofAdr = {};
-    this._pdGear = {};
     this._torsoId = -1;
     const dec = new TextDecoder();
     const names = dec.decode(this.model.names);
     const read = (adr) => names.slice(adr).split("\0")[0];
-    for (let i = 0; i < this.model.nu; i++) {
-      const n = read(this.model.name_actuatoradr[i]);
-      this._pdActIdx[n] = i;
-      this._pdGear[n] = this.model.actuator_gear[i * 6] || 1;
-    }
-    for (let j = 0; j < this.model.njnt; j++) {
-      const n = read(this.model.name_jntadr[j]);
-      this._pdQposAdr[n] = this.model.jnt_qposadr[j];
-      this._pdDofAdr[n] = this.model.jnt_dofadr[j];
-    }
     for (let b = 0; b < this.model.nbody; b++) {
-      if (read(this.model.name_bodyadr[b]) === "torso") this._torsoId = b;
+      if (read(this.model.name_bodyadr[b]) === "torso") { this._torsoId = b; break; }
     }
-  }
-
-  // Write the neutral stand qpos to data.qpos, zero qvel + residual forces,
-  // then mj_forward so mesh transforms refresh before the next render.
-  _applyStandPose() {
-    if (!this.data || !this.model) return;
-    const nq = this.model.nq;
-    for (let i = 0; i < Math.min(nq, HUMANOID_STAND_QPOS.length); i++) {
-      this.data.qpos[i] = HUMANOID_STAND_QPOS[i];
-    }
-    for (let i = 0; i < this.model.nv; i++) this.data.qvel[i] = 0;
-    if (this.data.xfrc_applied) {
-      for (let i = 0; i < this.data.xfrc_applied.length; i++) this.data.xfrc_applied[i] = 0;
-    }
-    if (this.data.ctrl) {
-      for (let i = 0; i < this.data.ctrl.length; i++) this.data.ctrl[i] = 0;
-    }
-    this.mujoco.mj_forward(this.model, this.data);
   }
 
   resetSim() {
     if (!this.model) return;
     this.mujoco.mj_resetData(this.model, this.data);
-    this._applyStandPose();
-    // Also ease camera back to the default framing (tracks humanoid torso).
+    this.mujoco.mj_forward(this.model, this.data);
     this._orbitCenter = null;
     this.frameCamera();
   }
@@ -415,38 +332,6 @@ class App {
     const n = this.model.nv;
     for (let i = 0; i < n; i++) this.data.qfrc_applied[i] = (Math.random() - 0.5) * 400;
     setTimeout(() => { for (let i = 0; i < n; i++) this.data.qfrc_applied[i] = 0; }, 80);
-  }
-
-  // PD stand-hold — writes data.ctrl to track ACT_TARGETS on every listed actuator.
-  // Runs only when standHold toggle is on AND grabber isn't actively manipulating the humanoid.
-  applyStandHold() {
-    if (!this.params.standHold || !this.data || !this.model) return;
-    if (this.grabber?.active) {
-      // While grabbing, zero ctrl so the body goes ragdoll for the user.
-      if (!this._ctrlZeroed) {
-        for (const name of ACT_NAMES) {
-          const ai = this._pdActIdx[name];
-          if (ai != null) this.data.ctrl[ai] = 0;
-        }
-        this._ctrlZeroed = true;
-      }
-      return;
-    }
-    this._ctrlZeroed = false;
-    for (const name of ACT_NAMES) {
-      const ai = this._pdActIdx[name];
-      if (ai == null) continue;
-      const qposAdr = this._pdQposAdr[name];
-      const dofAdr = this._pdDofAdr[name];
-      const gear = this._pdGear[name];
-      const target = ACT_TARGETS[name] ?? 0;
-      const [Kp, Kd] = PD_GAINS[name] ?? [100, 10];
-      const q = this.data.qpos[qposAdr];
-      const qd = this.data.qvel[dofAdr];
-      const tau = Kp * (target - q) - Kd * qd;
-      const ctrl = tau / gear;
-      this.data.ctrl[ai] = ctrl < -1 ? -1 : ctrl > 1 ? 1 : ctrl;
-    }
   }
 
   applyWind() {
@@ -479,13 +364,10 @@ class App {
     this._simAccumMs = (this._simAccumMs ?? 0) + realDtMs * scale;
     const stepMs = timestep * 1000;
     const simStart = performance.now();
-    let steps = 0;
     while (this._simAccumMs >= stepMs) {
       this.mujoco.mj_step(this.model, this.data);
       this._simAccumMs -= stepMs;
-      steps++;
       if (performance.now() - simStart > 30) {
-        // Drop remaining accumulator debt so we don't spiral next frame.
         this._simAccumMs = 0;
         break;
       }
@@ -569,7 +451,6 @@ class App {
     this.controls.update();
     this.applyWind();
     this.grabber?.apply();
-    this.applyStandHold();
     this.stepPhysics();
     this.replay?.update();
     this.syncMeshes();
