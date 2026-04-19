@@ -692,12 +692,38 @@ const CSS = `
   padding: 18px 24px 20px;
 }
 .rex-ui-card-body p {
-  margin: 0;
+  margin: 0 0 16px;
   font-size: 12px;
   line-height: 1.7;
   color: var(--rex-ivory-2);
   letter-spacing: 0.01em;
 }
+.rex-ui-card-ability {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  color: var(--accent, var(--rex-amber));
+  border: 1px solid var(--accent, var(--rex-amber));
+  padding: 10px 18px 10px 16px;
+  font-family: var(--rex-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+.rex-ui-card-ability::after {
+  content: "→";
+  letter-spacing: 0;
+  transition: transform 180ms cubic-bezier(.2,.8,.2,1);
+}
+.rex-ui-card-ability:hover {
+  background: var(--accent, var(--rex-amber));
+  color: var(--rex-ink);
+}
+.rex-ui-card-ability:hover::after { transform: translateX(4px); }
+.rex-ui-card-ability:active { transform: translateY(1px); }
 .rex-ui-card-links {
   display: flex;
   gap: 0;

@@ -182,13 +182,19 @@
       </body>
     </body>
 
-    <!-- Portfolio project stubs. Rendered with a custom Three.js mesh group
-         in projects.js; this body is just the physics proxy. Capsule along
-         local z covers the torso volume; a small cap-sphere sits at the top. -->
-    <body name="project_amogus" pos="1.6 -1.0 0.32">
-      <freejoint/>
-      <geom name="amogus_body" type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/>
-    </body>
+    <!-- Portfolio project slot pool. Eight dormant freejoint capsules parked
+         well below the floor. ProjectSystem claims a slot on demand, teleports
+         it into the scene, and attaches a procedural Three.js mesh group on
+         top. Empty slots stay parked at z=-60 so they never render or collide
+         visibly with anything. -->
+    <body name="project_slot_0" pos="0 0 -60"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
+    <body name="project_slot_1" pos="0 0 -60.5"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
+    <body name="project_slot_2" pos="0 0 -61"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
+    <body name="project_slot_3" pos="0 0 -61.5"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
+    <body name="project_slot_4" pos="0 0 -62"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
+    <body name="project_slot_5" pos="0 0 -62.5"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
+    <body name="project_slot_6" pos="0 0 -63"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
+    <body name="project_slot_7" pos="0 0 -63.5"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
   </worldbody>
 
   <contact>

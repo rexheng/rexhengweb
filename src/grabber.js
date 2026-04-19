@@ -70,9 +70,11 @@ export class Grabber {
     window.addEventListener("pointercancel", this.onUp);
     // GMod physics-gun: wheel during drag pushes / pulls along view ray.
     el.addEventListener("wheel", this.onWheel, { passive: false });
-    // Right-click during drag toggles "freeze" — zeros velocity and locks pose.
-    el.addEventListener("contextmenu", this.onContext);
-    // Phys-gun rotate keys: E = +, Q = -, around camera-forward axis.
+    // Suppress the OS right-click menu so the canvas always feels interactive.
+    el.addEventListener("contextmenu", (e) => e.preventDefault());
+    // Key bindings: E/Q rotate while dragging · F freezes the currently-held
+    // body in mid-air · P punts the body under the crosshair regardless of
+    // drag state.
     window.addEventListener("keydown", this.onKey);
     window.addEventListener("keyup", this.onKeyUp);
     // Block the browser's default image-drag ghost on canvas.
@@ -208,26 +210,47 @@ export class Grabber {
   onKey = (ev) => {
     const tag = (ev.target?.tagName || "").toLowerCase();
     if (tag === "input" || tag === "textarea") return;
-    if (ev.key === "e" || ev.key === "E") this.rotateKey = 1;
-    else if (ev.key === "q" || ev.key === "Q") this.rotateKey = -1;
+    if (ev.code === "KeyE") this.rotateKey = 1;
+    else if (ev.code === "KeyQ") this.rotateKey = -1;
+    else if (ev.code === "KeyF") {
+      // Freeze the currently-held body in mid-air. No-op if nothing is held.
+      if (this.active) this.toggleFreeze();
+    } else if (ev.code === "KeyP") {
+      // Punt the body under the crosshair along the camera ray.
+      // Works whether or not anything is being held.
+      this.puntAtCrosshair();
+    }
   };
   onKeyUp = (ev) => {
-    if (ev.key === "e" || ev.key === "E" || ev.key === "q" || ev.key === "Q") {
+    if (ev.code === "KeyE" || ev.code === "KeyQ") {
       this.rotateKey = 0;
     }
   };
 
-  onContext = (ev) => {
-    // Suppress the OS context menu whenever the canvas is interactive.
-    ev.preventDefault();
+  // Toggle freeze on the currently-held body. While frozen, we zero
+  // linear+angular velocity every tick and peg the spring target onto
+  // the grab point (no pull), so the body hovers in place like GMod's
+  // physics gun freeze. The visual grab dot changes colour to signal state.
+  toggleFreeze() {
     if (!this.active) return;
-    // Toggle freeze: while frozen, we zero linear+angular velocity every tick
-    // and peg the spring target onto the grab point (no pull), so the body hovers
-    // in place like GMod's physics gun freeze.
     this.frozen = !this.frozen;
     this.dot.material.color.setHex(this.frozen ? 0x66ccff : 0xffc04d);
     this.grabDot.material.color.setHex(this.frozen ? 0x66ccff : 0xff5533);
-  };
+  }
+
+  // Punt whatever is under the cursor/crosshair along the camera ray. Uses
+  // the same impulse recipe as middle-click punt — only freejoint bodies
+  // can be punted (articulated limbs aren't standalone enough). NDC comes
+  // from the crosshair (which tracks the live mouse position) so this works
+  // whether or not a drag is in progress.
+  puntAtCrosshair() {
+    if (!this.app.mujocoRoot || !this.app.data) return;
+    const ndc = this.app.crosshair?._ndc ?? this.mouseNDC ?? new THREE.Vector2(0, 0);
+    this.raycaster.setFromCamera(ndc, this.app.camera);
+    const hs = this.raycaster.intersectObjects(this.app.getGrabbables(), false);
+    if (!hs.length) return;
+    this.punt(hs[0]);
+  }
 
   onUp = (ev) => {
     if (!this.active) return;

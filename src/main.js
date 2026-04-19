@@ -231,10 +231,10 @@ class App {
     this._hintsEl = hud.querySelector("#hud-hints");
     this._currentHintKey = "";
     this._HINT_PRESETS = {
-      idle:    `Left-drag grab · Middle-click punt · R replay`,
-      hover:   `Left-drag to grab · Middle-click punt · R replay`,
-      grab:    `Wheel: push/pull · E/Q: rotate · Right-click: freeze · Release to let go`,
-      frozen:  `Body frozen mid-air · Release mouse to keep floating · Right-click to unfreeze`,
+      idle:    `Left-drag grab · P punt · R replay`,
+      hover:   `Left-drag to grab · P punt · R replay`,
+      grab:    `Wheel push/pull · E/Q rotate · F freeze · Release to let go`,
+      frozen:  `Body frozen mid-air · Release mouse to keep floating · F to unfreeze`,
       replay:  `◉ Slo-mo replay — press R again to return to live`,
     };
     this._updateHints();
