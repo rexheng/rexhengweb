@@ -6,17 +6,18 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import Stats from "three/addons/libs/stats.module.js";
-import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { loadSceneFromURL, getPosition, getQuaternion } from "./mujocoLoader.js";
 import { Grabber } from "./grabber.js";
 import { Trails } from "./trails.js";
-import { ContactAudio } from "./audio.js";
 import { Sparks } from "./sparks.js";
 import { MetricsHud } from "./metricsHud.js";
 import { Crosshair } from "./crosshair.js";
 import { HoverHighlight } from "./hoverHighlight.js";
 import { Replay } from "./replay.js";
 import { PortfolioOverlay } from "./portfolioOverlay.js";
+import { ProjectSystem } from "./projects.js";
+import { ControlsPanel } from "./controlsPanel.js";
+import { injectUI } from "./ui.js";
 import load_mujoco from "../vendor/mujoco/mujoco_wasm.js";
 
 const SCENE_FILE = "humanoid.xml";
@@ -45,8 +46,8 @@ const HUMANOID_STAND_QPOS = [
   0, 0, 0,                        // abdomen_z, abdomen_y, abdomen_x
   0, 0, 0, 0, 0, 0,               // R hip_x, hip_z, hip_y, knee, ankle_y, ankle_x
   0, 0, 0, 0, 0, 0,               // L hip_x, hip_z, hip_y, knee, ankle_y, ankle_x
-  -0.6, 0.8, 0,                   // R shoulder1, shoulder2, elbow — arms down at sides
-  -0.6, 0.8, 0,                   // L shoulder1, shoulder2, elbow
+  0, 0, 0,                        // R shoulder1, shoulder2, elbow — T-pose baseline
+  0, 0, 0,                        // L shoulder1, shoulder2, elbow
 ];
 
 // Joint names for PD stand-hold (match XML actuators in order).
@@ -93,7 +94,6 @@ class App {
       reset: () => this.resetSim(),
       perturb: () => this.randomPerturb(),
       trails: false,
-      audio: true,    // default ON per spec
       sparks: false,
       standHold: true, // PD keeps humanoid upright until grabbed
       windEnabled: false,
@@ -168,6 +168,7 @@ class App {
   }
 
   async init() {
+    injectUI();
     this.mujoco = await load_mujoco();
     this.mujoco.FS.mkdir("/working");
     this.mujoco.FS.mount(this.mujoco.MEMFS, { root: "." }, "/working");
@@ -262,10 +263,14 @@ class App {
     this.composer.addPass(new OutputPass());
 
     this.stats = new Stats();
-    this.stats.dom.style.cssText = "position:fixed;top:8px;left:8px;";
+    this.stats.dom.id = "stats";
+    // Top-right, under the controls panel width so it doesn't overlap.
+    // Tiny, low-opacity — FPS badge, not a focal element.
+    this.stats.dom.style.cssText =
+      "position:fixed;top:auto;bottom:22px;left:220px;z-index:6;opacity:0.38;transform:scale(0.78);transform-origin:bottom left;";
     document.body.appendChild(this.stats.dom);
 
-    this._buildGui();
+    this.controlsPanel = new ControlsPanel(this);
 
     // HUD
     const hud = document.createElement("div");
@@ -289,8 +294,6 @@ class App {
     this.grabber = new Grabber(this);
     this.trails = new Trails(this);
     this.trails.setEnabled(this.params.trails);
-    this.audio = new ContactAudio(this);
-    this.audio.setEnabled(this.params.audio);
     this.sparks = new Sparks(this);
     this.sparks.setEnabled(this.params.sparks);
     this.metricsHud = new MetricsHud(this);
@@ -298,7 +301,9 @@ class App {
     this.hoverHighlight = new HoverHighlight(this);
     this.replay = new Replay(this);
     this._installPauseChip();
-    this._installWindCompass();
+
+    this.projectSystem = new ProjectSystem(this);
+    this.projectSystem.onSceneLoaded();
 
     // Portfolio overlay — collapsible, left-anchored.
     this.portfolio = new PortfolioOverlay({
@@ -313,113 +318,6 @@ class App {
     });
 
     this.animate();
-  }
-
-  _buildGui() {
-    const gui = new GUI({ title: "Controls", width: 280 });
-
-    // Scene
-    const fScene = gui.addFolder("Scene");
-    fScene.add(this.params, "reset").name("Reset");
-    fScene.add(this.params, "perturb").name("Random perturb");
-
-    // Physics
-    const fPhys = gui.addFolder("Physics");
-    fPhys.add(this.params, "paused");
-    fPhys.add(this.params, "timescaleLabel", Object.keys(TIMESCALE_PRESETS)).name("Timescale");
-    fPhys.add(this.params, "gravityLabel", Object.keys(GRAVITY_PRESETS))
-      .name("Gravity")
-      .onChange((v) => { if (this.model) this.model.opt.gravity[2] = GRAVITY_PRESETS[v]; });
-    fPhys.add(this.params, "standHold").name("Hold stand pose");
-    fPhys.add(this.params, "windEnabled").name("Wind");
-    fPhys.add(this.params, "wind", 0, 40, 0.1).name("Wind force (N)");
-    this._installWindCompassButtons(fPhys);
-
-    // Camera
-    const fCam = gui.addFolder("Camera");
-    fCam.add(this.params, "orbit").name("Cinematic orbit");
-    fCam.add(this.params, "orbitSpeed", 0.02, 0.6, 0.01).name("Orbit speed");
-
-    // Effects
-    const fFx = gui.addFolder("Effects");
-    fFx.add(this.params, "trails").name("Trajectory trails").onChange((v) => this.trails?.setEnabled(v));
-    fFx.add(this.params, "audio").name("Contact audio").onChange((v) => this.audio?.setEnabled(v));
-    fFx.add(this.params, "sparks").name("Impact sparks").onChange((v) => this.sparks?.setEnabled(v));
-
-    fPhys.open();
-    fFx.open();
-  }
-
-  // Add a custom 8-direction compass picker into a lil-gui folder.
-  // Built as 8 buttons in a 3x3 grid (center empty). Clicking sets windDir
-  // to the corresponding angle and highlights the active button.
-  _installWindCompassButtons(folder) {
-    const host = document.createElement("div");
-    host.style.cssText = `
-      padding: 6px 8px 8px;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 24px);
-      gap: 3px;
-      font: 10px ui-monospace, Menlo, monospace;
-      letter-spacing: 0.05em;
-    `;
-    const order = ["NW", "N", "NE", "W", "", "E", "SW", "S", "SE"];
-    this._windBtns = {};
-    for (const label of order) {
-      const b = document.createElement("button");
-      b.type = "button";
-      if (label) {
-        b.textContent = label;
-        b.style.cssText = `
-          background: rgba(42,53,96,0.6);
-          color: #cfd6e8;
-          border: 1px solid rgba(140,165,220,0.25);
-          border-radius: 4px;
-          cursor: pointer;
-          font: inherit;
-          padding: 0;
-        `;
-        b.addEventListener("click", () => this._setWindDir(label));
-        b.addEventListener("mouseenter", () => { b.style.background = "rgba(60,80,140,0.75)"; });
-        b.addEventListener("mouseleave", () => this._refreshWindBtns());
-        this._windBtns[label] = b;
-      } else {
-        b.style.visibility = "hidden";
-      }
-      host.appendChild(b);
-    }
-    // Append after the folder's children container.
-    const children = folder.$children || folder.domElement.querySelector(".children");
-    if (children) children.appendChild(host);
-    else folder.domElement.appendChild(host);
-    this._refreshWindBtns();
-  }
-
-  _setWindDir(label) {
-    const entry = WIND_DIRS.find((d) => d.label === label);
-    if (!entry) return;
-    this.params.windDir = entry.rad;
-    this._refreshWindBtns();
-  }
-
-  _refreshWindBtns() {
-    if (!this._windBtns) return;
-    // Find the closest cardinal to current windDir (wrapped to [-π, π]).
-    let dir = this.params.windDir;
-    while (dir > Math.PI) dir -= 2 * Math.PI;
-    while (dir < -Math.PI) dir += 2 * Math.PI;
-    let best = "E", bestErr = Infinity;
-    for (const { label, rad } of WIND_DIRS) {
-      const err = Math.abs(((dir - rad + Math.PI * 3) % (2 * Math.PI)) - Math.PI);
-      if (err < bestErr) { bestErr = err; best = label; }
-    }
-    for (const [lab, btn] of Object.entries(this._windBtns)) {
-      const active = lab === best;
-      btn.style.background = active ? "rgba(120,160,230,0.8)" : "rgba(42,53,96,0.6)";
-      btn.style.color = active ? "#0d1220" : "#cfd6e8";
-      btn.style.fontWeight = active ? "600" : "400";
-    }
   }
 
   async switchScene(name) {
@@ -443,6 +341,8 @@ class App {
     this.frameCamera();
     this.trails?.onSceneSwitch();
     this.replay?.onSceneSwitch();
+    this.projectSystem?.onSceneLoaded();
+    this.controlsPanel?.refresh();
   }
 
   // Build name-keyed lookup tables for PD control + find torso body id.
@@ -493,6 +393,9 @@ class App {
     if (!this.model) return;
     this.mujoco.mj_resetData(this.model, this.data);
     this._applyStandPose();
+    // Also ease camera back to the default framing (tracks humanoid torso).
+    this._orbitCenter = null;
+    this.frameCamera();
   }
 
   _rebuildGrabbables() {
@@ -568,14 +471,24 @@ class App {
     if (this.params.paused || !this.model) return;
     const timestep = this.model.opt.timestep;
     const scale = TIMESCALE_PRESETS[this.params.timescaleLabel] ?? 1.0;
-    const wallDt = this.clock.getDelta() * 1000 * scale;
-    if (this.mujocoTime === 0) this.mujocoTime = performance.now() - wallDt;
-    this.mujocoTime += wallDt;
+
+    // Advance a simulated target by (frame wall-dt × scale); step physics until
+    // the accumulator has consumed at least that much simulated time. Cap at
+    // 30 ms wall-clock per frame so heavy substeps don't starve render.
+    const realDtMs = Math.min(50, this.clock.getDelta() * 1000);
+    this._simAccumMs = (this._simAccumMs ?? 0) + realDtMs * scale;
+    const stepMs = timestep * 1000;
     const simStart = performance.now();
-    while (this.mujocoTime < performance.now()) {
+    let steps = 0;
+    while (this._simAccumMs >= stepMs) {
       this.mujoco.mj_step(this.model, this.data);
-      this.mujocoTime += timestep * 1000;
-      if (performance.now() - simStart > 30) break;
+      this._simAccumMs -= stepMs;
+      steps++;
+      if (performance.now() - simStart > 30) {
+        // Drop remaining accumulator debt so we don't spiral next frame.
+        this._simAccumMs = 0;
+        break;
+      }
     }
   }
 
@@ -637,50 +550,6 @@ class App {
     this._hintsEl.textContent = this._HINT_PRESETS[key];
   }
 
-  _installWindCompass() {
-    const size = 54;
-    const wrap = document.createElement("div");
-    wrap.id = "wind-compass";
-    wrap.style.cssText = `
-      position:fixed; left:12px; bottom:52px; z-index:9;
-      width:${size}px; height:${size}px;
-      pointer-events:none; user-select:none;
-      opacity:0; transition: opacity 180ms ease;
-    `;
-    wrap.innerHTML = `
-      <svg width="${size}" height="${size}" viewBox="-27 -27 54 54" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="0" cy="0" r="22" fill="rgba(14,20,32,0.72)" stroke="rgba(120,180,255,0.22)" stroke-width="1"/>
-        <text x="0" y="-14" fill="#7ee8fa" font-size="7" font-family="ui-monospace,Menlo,monospace" text-anchor="middle" opacity="0.7">N</text>
-        <g id="wind-arrow">
-          <path d="M -13 0 L 13 0 M 7 -5 L 13 0 L 7 5" stroke="#ffc04d" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        </g>
-        <text id="wind-mag" x="0" y="25" fill="#ffc04d" font-size="7" font-family="ui-monospace,Menlo,monospace" text-anchor="middle">0 N</text>
-      </svg>
-    `;
-    document.body.appendChild(wrap);
-    this._windCompass = wrap;
-    this._windArrow = wrap.querySelector("#wind-arrow");
-    this._windMag = wrap.querySelector("#wind-mag");
-    this._lastWindRender = { w: -1, dir: NaN };
-  }
-
-  _updateWindCompass() {
-    if (!this._windCompass) return;
-    const effectiveW = this.params.windEnabled ? this.params.wind : 0;
-    const w = effectiveW;
-    const dir = this.params.windDir;
-    const cached = this._lastWindRender;
-    if (Math.abs(w - cached.w) < 0.01 && Math.abs(dir - cached.dir) < 0.005) return;
-    cached.w = w; cached.dir = dir;
-
-    const alpha = Math.min(1, w / 6);
-    this._windCompass.style.opacity = alpha.toFixed(3);
-    const deg = -dir * (180 / Math.PI);
-    this._windArrow.setAttribute("transform", `rotate(${deg.toFixed(1)})`);
-    this._windMag.textContent = `${w.toFixed(1)} N`;
-    this._refreshWindBtns();
-  }
-
   _updatePauseChip() {
     if (!this._pauseChip) return;
     const shouldShow = !!this.params.paused;
@@ -705,13 +574,13 @@ class App {
     this.replay?.update();
     this.syncMeshes();
     this.trails?.update();
-    this.audio?.update();
     this.sparks?.update();
     this.metricsHud?.update();
     this.crosshair?.update();
     this.hoverHighlight?.update();
     this._updateHints();
-    this._updateWindCompass();
+    this.projectSystem?.update();
+    this.controlsPanel?.update();
     this._updatePauseChip();
     this.composer.render();
     this.stats.update();

@@ -181,6 +181,14 @@
         </body>
       </body>
     </body>
+
+    <!-- Portfolio project stubs. Rendered with a custom Three.js mesh group
+         in projects.js; this body is just the physics proxy. Capsule along
+         local z covers the torso volume; a small cap-sphere sits at the top. -->
+    <body name="project_amogus" pos="1.6 -1.0 0.32">
+      <freejoint/>
+      <geom name="amogus_body" type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/>
+    </body>
   </worldbody>
 
   <contact>
