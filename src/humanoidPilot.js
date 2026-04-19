@@ -7,8 +7,15 @@
 // module owns WASD + Space + Ctrl + V + G. When false, it's inert and
 // everything falls through to the existing grab/orbit/replay systems.
 
+import * as THREE from "three";
 import { KeyboardInput } from "./keyboardInput.js";
 import { CameraRig } from "./cameraRig.js";
+
+// Stage 2 tunables
+const MOVE_ACCEL = 28;        // peak horizontal force per kg of (linear) body mass
+const MOVE_DRAG = 4.0;         // damping on pelvis horizontal velocity when no input
+const MAX_MOVE_FORCE = 1600;  // absolute cap, N
+const TARGET_SPEED = 3.2;     // m/s forward walk cap
 
 const STATUS_CHIP_CSS = `
 #fpv-status {
@@ -57,8 +64,26 @@ export class HumanoidPilot {
     this.input = new KeyboardInput();
     this.rig = new CameraRig(app);
 
+    this._pelvisId = -1;      // cached on demand
+    this._pelvisMass = 0;     // pelvis body mass (kg)
+    this._moveDirMJ = [0, 0]; // last non-zero MJ-frame x,y direction (for future stages)
+
     this._installStatusChip();
     this._paintStatus();
+  }
+
+  _resolvePelvis() {
+    if (this._pelvisId > 0) return this._pelvisId;
+    const bodies = this.app.bodies;
+    if (!bodies) return -1;
+    for (const [id, g] of Object.entries(bodies)) {
+      if (g?.name === "pelvis") {
+        this._pelvisId = Number(id);
+        this._pelvisMass = this.app.model?.body_mass?.[this._pelvisId] || 1;
+        return this._pelvisId;
+      }
+    }
+    return -1;
   }
 
   _installStatusChip() {
@@ -123,5 +148,77 @@ export class HumanoidPilot {
   updateCamera() {
     if (!this.enabled) return;
     this.rig.update();
+  }
+
+  // Stage 2 — horizontal drive via xfrc on the pelvis. Called between
+  // applyWind() and grabber.apply() so the wrench isn't zeroed by wind.
+  // Grabber still wins on the grabbed body since it runs after.
+  //
+  // Direction mapping:
+  //   THREE world is y-up. Camera forward XZ is (sin(yaw), 0, cos(yaw)).
+  //   MuJoCo world is z-up. THREE(x,y,z) → MJ(x, -z, y).
+  //   So MJ horizontal plane uses (THREE.x, -THREE.z), which is just
+  //   (sin(yaw), -cos(yaw)) for the camera-forward direction in MJ.
+  applyDrive() {
+    if (!this.enabled) return;
+    if (!this.app.data || !this.app.model) return;
+    const pid = this._resolvePelvis();
+    if (pid < 0) return;
+
+    const ax = this.input.axis();
+    const mag = Math.hypot(ax.x, ax.y);
+    const hasInput = mag > 0.05;
+
+    const xfrc = this.app.data.xfrc_applied;
+    const off = pid * 6;
+
+    if (hasInput) {
+      // Camera-forward in MJ horizontal plane. yaw=0 → MJ(+x=sin0=0, MJy=-cos0=-1)
+      // so pressing W (ax.y=+1) pushes in MJ -y direction by default. That matches
+      // the humanoid facing +y at load (no it doesn't — humanoid root quat is identity
+      // meaning local axes equal world, and it faces local +y which in MJ is +y).
+      // We just need a consistent frame — camera-forward is what matters for UX.
+      const yaw = this.rig.yaw;
+      const fwdMJx = Math.sin(yaw);
+      const fwdMJy = -Math.cos(yaw);
+      // Right = forward rotated -90° around z (MJ up)
+      const rightMJx = fwdMJy;
+      const rightMJy = -fwdMJx;
+
+      // Normalize input, scale by mass, cap.
+      const nx = ax.x / mag;
+      const ny = ax.y / mag;
+
+      // Read current pelvis linear velocity in MJ world (cvel layout: [ω, v]).
+      const pelvisVx = this.app.data.cvel?.[pid * 6 + 3] || 0;
+      const pelvisVy = this.app.data.cvel?.[pid * 6 + 4] || 0;
+
+      // Desired velocity in MJ horizontal plane
+      const dvx = (fwdMJx * ny + rightMJx * nx) * TARGET_SPEED;
+      const dvy = (fwdMJy * ny + rightMJy * nx) * TARGET_SPEED;
+      const errx = dvx - pelvisVx;
+      const erry = dvy - pelvisVy;
+
+      // Force proportional to velocity error × mass. Clamp magnitude.
+      let fx = errx * MOVE_ACCEL * this._pelvisMass;
+      let fy = erry * MOVE_ACCEL * this._pelvisMass;
+      const fmag = Math.hypot(fx, fy);
+      if (fmag > MAX_MOVE_FORCE) {
+        const s = MAX_MOVE_FORCE / fmag;
+        fx *= s; fy *= s;
+      }
+      xfrc[off + 0] = fx;
+      xfrc[off + 1] = fy;
+      this._moveDirMJ[0] = fwdMJx * ny + rightMJx * nx;
+      this._moveDirMJ[1] = fwdMJy * ny + rightMJy * nx;
+    } else {
+      // Horizontal drag so the character slows to a stop rather than sliding.
+      const pelvisVx = this.app.data.cvel?.[pid * 6 + 3] || 0;
+      const pelvisVy = this.app.data.cvel?.[pid * 6 + 4] || 0;
+      xfrc[off + 0] = -pelvisVx * MOVE_DRAG * this._pelvisMass;
+      xfrc[off + 1] = -pelvisVy * MOVE_DRAG * this._pelvisMass;
+    }
+    // Never write fz here — gravity must stay authoritative so the character
+    // can still fall and recover physically.
   }
 }

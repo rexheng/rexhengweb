@@ -573,6 +573,7 @@ class App {
     this.controls.update();
     this.pilot?.update();
     this.applyWind();
+    this.pilot?.applyDrive();   // Stage 2: pelvis wrench — after applyWind zeros xfrc, before grabber may override
     this.grabber?.apply();
     this.applyStandHold();
     this.stepPhysics();
