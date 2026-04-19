@@ -578,6 +578,7 @@ class App {
     this.stepPhysics();
     this.replay?.update();
     this.syncMeshes();
+    this.pilot?.updateCamera();   // after body transforms are current
     this.trails?.update();
     this.sparks?.update();
     this.metricsHud?.update();

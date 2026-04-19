@@ -8,6 +8,7 @@
 // everything falls through to the existing grab/orbit/replay systems.
 
 import { KeyboardInput } from "./keyboardInput.js";
+import { CameraRig } from "./cameraRig.js";
 
 const STATUS_CHIP_CSS = `
 #fpv-status {
@@ -54,6 +55,7 @@ export class HumanoidPilot {
     this.enabled = false;
     this.mode = "tpv";       // "fpv" | "tpv" — active camera mode when enabled
     this.input = new KeyboardInput();
+    this.rig = new CameraRig(app);
 
     this._installStatusChip();
     this._paintStatus();
@@ -89,16 +91,18 @@ export class HumanoidPilot {
   setEnabled(v) {
     this.enabled = !!v;
     this._paintStatus();
-    // Future stages: lock OrbitControls, enter pointer-lock, etc.
     if (this.app.controls) {
       this.app.controls.enabled = !this.enabled;
     }
+    this.rig.setMode(this.mode);
+    this.rig.setActive(this.enabled);
   }
 
   toggleEnabled() { this.setEnabled(!this.enabled); }
 
   toggleMode() {
     this.mode = this.mode === "fpv" ? "tpv" : "fpv";
+    this.rig.setMode(this.mode);
     this._paintStatus();
   }
 
@@ -108,11 +112,16 @@ export class HumanoidPilot {
     if (this.input.justPressed("KeyG")) this.toggleEnabled();
 
     if (this.enabled) {
-      // V toggles FPV ↔ TPV
       if (this.input.justPressed("KeyV")) this.toggleMode();
       // Stages 2+ will consume this.input.axis() / Space / ControlLeft here.
     }
 
     this.input.nextFrame();
+  }
+
+  // Called once per animate frame AFTER syncMeshes (body world transforms up to date).
+  updateCamera() {
+    if (!this.enabled) return;
+    this.rig.update();
   }
 }
