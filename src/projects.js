@@ -26,7 +26,10 @@ const SPAWN_HEIGHT = 0.9;             // drop height above ground so they land n
 export const PROJECTS = [
   {
     id: "amogus",
+    // Display name — short, used on the Add button and floating label.
     label: "Amogus",
+    // Long title — shown on the card. Format: "<Project> — <Context>".
+    title: "Amogus — 2nd Cursor Hackathon",
     subtitle: "2024 · a sus little guy",
     meta: "three.js · procedural",
     abilityLabel: "Stab!",
@@ -474,12 +477,13 @@ export class ProjectSystem {
     const abilityHTML = def.ability
       ? `<button class="rex-ui-card-ability" type="button">${def.abilityLabel || "Activate"}</button>`
       : "";
+    const cardTitle = def.title || def.label;
     this._cardRoot.innerHTML = `
       <header class="rex-ui-card-head">
         <div class="rex-ui-card-index">·</div>
         <div class="rex-ui-card-titles">
           <div class="rex-ui-card-meta">${def.meta || ""}</div>
-          <h2>${def.label}</h2>
+          <h2>${cardTitle}</h2>
           <div class="rex-ui-card-sub">${def.subtitle || ""}</div>
         </div>
         <button class="rex-ui-card-close" type="button" aria-label="Close">×</button>

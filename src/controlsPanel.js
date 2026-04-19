@@ -1,8 +1,7 @@
 // Custom control panel — fully replaces lil-gui with the Rex UI design system.
-// Sections: Scene, Physics, Camera, Effects.
-//
-// Takes an options object { params, onChange } plus accessor callbacks for
-// gravity + wind direction so two-way binding works cleanly.
+// Sections: Scene, Physics, Camera, Effects, Projects.
+
+import { PROJECTS } from "./projects.js";
 
 const GRAVITY_OPTIONS = [
   { label: "Earth", value: -9.81 },
@@ -94,25 +93,18 @@ export class ControlsPanel {
     fx.appendChild(this._row("Impact Sparks", this._toggle("sparks", (v) => { this._set("sparks", v); this.app.sparks?.setEnabled(v); })));
     root.appendChild(fx);
 
-    // Projects — each registered project gets an "Add" button; also a
-    // "Clear All" to park every mounted slot back below the floor.
+    // Projects — each registered project gets an "Add" button; Clear All
+    // parks every mounted slot back below the floor.
     const projSection = this._sectionShell("Projects");
-    // Lazily read the registry (imported dynamically would introduce async; the
-    // ProjectSystem exposes .slots with project defs attached — we read from
-    // that where possible, otherwise a built-in list).
-    import("./projects.js").then(({ PROJECTS }) => {
-      for (const def of PROJECTS) {
-        projSection.appendChild(this._button(`Add ${def.label}`, () => {
-          const slot = this.app.projectSystem?.spawn(def.id);
-          if (!slot) console.warn(`No free project slot for ${def.id}`);
-        }));
-      }
-      projSection.appendChild(this._button("Clear All", () => {
-        this.app.projectSystem?.clearAll();
+    for (const def of PROJECTS) {
+      projSection.appendChild(this._button(`Add ${def.label}`, () => {
+        const slot = this.app.projectSystem?.spawn(def.id);
+        if (!slot) console.warn(`No free project slot for ${def.id}`);
       }));
-    }).catch((e) => {
-      console.error("Failed to load projects registry:", e);
-    });
+    }
+    projSection.appendChild(this._button("Clear All", () => {
+      this.app.projectSystem?.clearAll();
+    }));
     root.appendChild(projSection);
 
     document.body.appendChild(root);
