@@ -1,0 +1,387 @@
+// Click-to-drag perturbation — raycast into MuJoCo bodies, apply a spring force
+// + torque through data.xfrc_applied while the mouse is held, draw a guide line.
+//
+// Coordinate frames:
+//   THREE world is y-up; MuJoCo world is z-up. The loader swizzles positions via
+//   getPosition() as (mj.x, mj.z, -mj.y) → (three.x, three.y, three.z).
+//   To send a THREE world vector BACK to MJ world, the inverse swizzle is:
+//     (three.x, three.y, three.z) → (mj.x=three.x, mj.y=-three.z, mj.z=three.y)
+//
+// xfrc_applied is shaped (nbody, 6) row-major: [fx fy fz tx ty tz] in MJ world frame,
+// applied at the body's CoM. To pull at a specific grab point, we apply F at CoM
+// PLUS torque = r_world × F_world, with r = (grab_world − body_com_world).
+import * as THREE from "three";
+
+export class Grabber {
+  constructor(app) {
+    this.app = app;
+    this.raycaster = new THREE.Raycaster();
+    this.mouseNDC = new THREE.Vector2();
+    this.active = false;
+    this.bodyID = -1;
+    this.pointerId = -1;
+    this.localPoint = new THREE.Vector3();    // grab point in body-local coords
+    this.grabPlane = new THREE.Plane();
+    this.planeIntersect = new THREE.Vector3();
+    this.targetWorld = new THREE.Vector3();
+    // GMod physics-gun feel: distance from camera to grab point. Wheel scroll
+    // during drag multiplies this to push/pull objects along the view ray.
+    this.grabDist = 1.0;
+    this.frozen = false; // right-click during drag: freeze at current pose
+    // Phys-gun rotate: E=clockwise, Q=counter-clockwise around camera-forward axis.
+    // Only active while left-dragging a freejoint body.
+    this.rotateKey = 0; // -1, 0, +1
+
+    // scratch
+    this._grabWorld = new THREE.Vector3();
+    this._comWorld = new THREE.Vector3();
+    this._F = new THREE.Vector3();
+    this._r = new THREE.Vector3();
+    this._tau = new THREE.Vector3();
+
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xffc04d, transparent: true, opacity: 0.95, toneMapped: false });
+    const lineGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+    this.line = new THREE.Line(lineGeom, lineMat);
+    this.line.visible = false;
+    this.line.frustumCulled = false;
+    this.line.renderOrder = 999;
+    app.scene.add(this.line);
+
+    const dotMat = new THREE.MeshBasicMaterial({ color: 0xffc04d, toneMapped: false });
+    this.dot = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 16), dotMat);
+    this.dot.visible = false;
+    this.dot.renderOrder = 999;
+    app.scene.add(this.dot);
+
+    // Grab-point marker on the body itself (slightly larger, separate color) for clarity.
+    this.grabDot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.035, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0xff5533, toneMapped: false }),
+    );
+    this.grabDot.visible = false;
+    this.grabDot.renderOrder = 999;
+    app.scene.add(this.grabDot);
+
+    const el = app.renderer.domElement;
+    // Listen on window for move/up so drag survives leaving the canvas / crossing GUI.
+    el.addEventListener("pointerdown", this.onDown);
+    window.addEventListener("pointermove", this.onMove);
+    window.addEventListener("pointerup", this.onUp);
+    window.addEventListener("pointercancel", this.onUp);
+    // GMod physics-gun: wheel during drag pushes / pulls along view ray.
+    el.addEventListener("wheel", this.onWheel, { passive: false });
+    // Right-click during drag toggles "freeze" — zeros velocity and locks pose.
+    el.addEventListener("contextmenu", this.onContext);
+    // Phys-gun rotate keys: E = +, Q = -, around camera-forward axis.
+    window.addEventListener("keydown", this.onKey);
+    window.addEventListener("keyup", this.onKeyUp);
+    // Block the browser's default image-drag ghost on canvas.
+    el.addEventListener("dragstart", (e) => e.preventDefault());
+  }
+
+  setMouse(ev) {
+    const rect = this.app.renderer.domElement.getBoundingClientRect();
+    this.mouseNDC.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouseNDC.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+  }
+
+  onDown = (ev) => {
+    // Middle-click = GMod gravity-gun punt: instantaneous impulse along camera ray.
+    // Handled standalone (no drag), so we short-circuit before the normal grab path.
+    if (ev.button === 1) {
+      if (!this.app.mujocoRoot || !this.app.data) return;
+      this.setMouse(ev);
+      this.raycaster.setFromCamera(this.mouseNDC, this.app.camera);
+      const hs = this.raycaster.intersectObjects(this.app.getGrabbables(), false);
+      if (!hs.length) return;
+      this.punt(hs[0]);
+      ev.preventDefault();
+      return;
+    }
+    if (ev.button !== 0) return;
+    if (!this.app.mujocoRoot || !this.app.data) return;
+    this.setMouse(ev);
+    this.raycaster.setFromCamera(this.mouseNDC, this.app.camera);
+    const hits = this.raycaster.intersectObjects(this.app.getGrabbables(), false);
+    if (!hits.length) return;
+    const hit = hits[0];
+    this.bodyID = hit.object.bodyID;
+    this.active = true;
+    this.pointerId = ev.pointerId;
+    try { this.app.renderer.domElement.setPointerCapture(ev.pointerId); } catch (_) {}
+    this.app.controls.enabled = false;
+
+    const bodyGroup = this.app.bodies[this.bodyID];
+    bodyGroup.updateWorldMatrix(true, false);
+    const invWorld = new THREE.Matrix4().copy(bodyGroup.matrixWorld).invert();
+    this.localPoint.copy(hit.point).applyMatrix4(invWorld);
+
+    // Grab plane: parallel to camera image plane, through the hit point.
+    // (Still used as a fallback / for reference; main target is ray-distance based.)
+    const camDir = new THREE.Vector3();
+    this.app.camera.getWorldDirection(camDir);
+    this.grabPlane.setFromNormalAndCoplanarPoint(camDir, hit.point);
+    this.targetWorld.copy(hit.point);
+    // Record initial camera→hit distance so wheel scroll can scale it.
+    this.grabDist = this.app.camera.position.distanceTo(hit.point);
+    this.frozen = false;
+
+    this.line.visible = true;
+    this.dot.visible = true;
+    this.grabDot.visible = true;
+    this.updateLine(hit.point, hit.point);
+    this.grabDot.position.copy(hit.point);
+
+    // Prevent focus stealing / text selection during drag.
+    ev.preventDefault();
+  };
+
+  onMove = (ev) => {
+    if (!this.active) return;
+    this.setMouse(ev);
+    this.raycaster.setFromCamera(this.mouseNDC, this.app.camera);
+    // GMod-style: target point = camera_origin + ray_dir * grabDist.
+    // grabDist is adjusted by mouse wheel, so scrolling pushes / pulls the body
+    // along the view ray instead of locking it to the initial image plane.
+    this.targetWorld.copy(this.raycaster.ray.origin)
+      .addScaledVector(this.raycaster.ray.direction, this.grabDist);
+  };
+
+  onWheel = (ev) => {
+    if (!this.active) return;
+    ev.preventDefault();
+    // Multiplicative zoom so feel stays consistent at any distance.
+    // Wheel "up" (negative deltaY) pulls object toward camera.
+    const scale = Math.exp(-ev.deltaY * 0.0015);
+    this.grabDist = Math.max(0.3, Math.min(30, this.grabDist * scale));
+  };
+
+  // GMod gravity-gun punt: instantaneous velocity injection along camera ray.
+  // Writes directly into qvel at the body's freejoint (only freejoint bodies can
+  // be punted — articulated limbs aren't standalone enough). Force is scaled by
+  // body mass so every prop gets the same launch speed feel (~8 m/s default).
+  punt(hit) {
+    const bodyID = hit.object.bodyID;
+    const model = this.app.model;
+    const data = this.app.data;
+    if (!model || !data) return;
+    const jntAdr = model.body_jntadr?.[bodyID];
+    if (jntAdr === undefined || jntAdr < 0) return;
+    const jntType = model.jnt_type?.[jntAdr];
+    // MuJoCo joint types: 0=free, 1=ball, 2=slide, 3=hinge. Only freejoints have qvel[0..5] layout we need.
+    if (jntType !== 0) return;
+    const dofAdr = model.jnt_dofadr[jntAdr];
+    if (dofAdr < 0 || !data.qvel || data.qvel.length < dofAdr + 6) return;
+
+    // Camera ray direction in THREE world, swizzled to MJ world.
+    const camDir = new THREE.Vector3();
+    this.app.camera.getWorldDirection(camDir);
+    const mjDx = camDir.x;
+    const mjDy = -camDir.z;
+    const mjDz = camDir.y;
+
+    // Punt speed. GMod's gravgun punch is iconic — feels BIG. 10 m/s + a little
+    // upward bias so heavy boxes still catch air.
+    const SPEED = 10.0;
+    data.qvel[dofAdr + 0] = mjDx * SPEED;
+    data.qvel[dofAdr + 1] = mjDy * SPEED;
+    data.qvel[dofAdr + 2] = mjDz * SPEED + 2.0;
+    // Add a mild spin around up-axis for flair.
+    data.qvel[dofAdr + 3] = (Math.random() - 0.5) * 4;
+    data.qvel[dofAdr + 4] = (Math.random() - 0.5) * 4;
+    data.qvel[dofAdr + 5] = (Math.random() - 0.5) * 4;
+
+    // Flash the grabDot briefly at hit point as visual feedback.
+    this.grabDot.position.copy(hit.point);
+    this.grabDot.visible = true;
+    this.grabDot.material.color.setHex(0xffffff);
+    clearTimeout(this._puntFlashTimer);
+    this._puntFlashTimer = setTimeout(() => {
+      if (!this.active) {
+        this.grabDot.visible = false;
+        this.grabDot.material.color.setHex(0xff5533);
+      }
+    }, 120);
+  }
+
+  // Track E/Q for phys-gun rotate. Ignored unless actively grabbing.
+  onKey = (ev) => {
+    const tag = (ev.target?.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea") return;
+    if (ev.key === "e" || ev.key === "E") this.rotateKey = 1;
+    else if (ev.key === "q" || ev.key === "Q") this.rotateKey = -1;
+  };
+  onKeyUp = (ev) => {
+    if (ev.key === "e" || ev.key === "E" || ev.key === "q" || ev.key === "Q") {
+      this.rotateKey = 0;
+    }
+  };
+
+  onContext = (ev) => {
+    // Suppress the OS context menu whenever the canvas is interactive.
+    ev.preventDefault();
+    if (!this.active) return;
+    // Toggle freeze: while frozen, we zero linear+angular velocity every tick
+    // and peg the spring target onto the grab point (no pull), so the body hovers
+    // in place like GMod's physics gun freeze.
+    this.frozen = !this.frozen;
+    this.dot.material.color.setHex(this.frozen ? 0x66ccff : 0xffc04d);
+    this.grabDot.material.color.setHex(this.frozen ? 0x66ccff : 0xff5533);
+  };
+
+  onUp = (ev) => {
+    if (!this.active) return;
+    this.active = false;
+    try {
+      if (this.pointerId >= 0) this.app.renderer.domElement.releasePointerCapture(this.pointerId);
+    } catch (_) {}
+    this.pointerId = -1;
+    this.bodyID = -1;
+    this.app.controls.enabled = true;
+    this.line.visible = false;
+    this.dot.visible = false;
+    this.grabDot.visible = false;
+    // Reset freeze colors for next grab.
+    this.frozen = false;
+    this.dot.material.color.setHex(0xffc04d);
+    this.grabDot.material.color.setHex(0xff5533);
+    const data = this.app.data;
+    if (data) for (let i = 0; i < data.xfrc_applied.length; i++) data.xfrc_applied[i] = 0;
+  };
+
+  updateLine(a, b) {
+    const pos = this.line.geometry.attributes.position;
+    pos.array[0] = a.x; pos.array[1] = a.y; pos.array[2] = a.z;
+    pos.array[3] = b.x; pos.array[4] = b.y; pos.array[5] = b.z;
+    pos.needsUpdate = true;
+    this.dot.position.copy(b);
+  }
+
+  apply() {
+    if (!this.active || this.bodyID < 0) return;
+    const data = this.app.data;
+    const bodyGroup = this.app.bodies[this.bodyID];
+    if (!data || !bodyGroup) return;
+
+    // Make sure the body's world matrix reflects the latest physics step.
+    bodyGroup.updateWorldMatrix(true, false);
+
+    // Current grab-point in THREE world space.
+    this._grabWorld.copy(this.localPoint).applyMatrix4(bodyGroup.matrixWorld);
+    this.updateLine(this._grabWorld, this.targetWorld);
+    this.grabDot.position.copy(this._grabWorld);
+
+    // Body CoM in THREE world space. bodyGroup's own transform IS the body CoM frame
+    // for MuJoCo bodies (xpos/xquat drive it). Position of the group = CoM.
+    this._comWorld.setFromMatrixPosition(bodyGroup.matrixWorld);
+
+    // Mass-scaled spring with critical-ish damping so every body pulls with the same FEEL
+    // regardless of weight. The old constant k/c worked great on 4 kg humanoid limbs but
+    // gave 45,000 m/s² accelerations on 20 g balloons — instant sim explosion.
+    //
+    // Dynamics we want: the grab point should reach target with a natural frequency
+    // ω = sqrt(k/m). Fixing ω ≈ 11 rad/s (≈0.57s period) and damping ratio ζ ≈ 0.7
+    // gives k = ω²·m, c = 2·ζ·ω·m.
+    const mass = Math.max(0.01, this.app.model?.body_mass?.[this.bodyID] ?? 1.0);
+    const omega = 14.0;        // natural frequency, rad/s — sets "snappiness"
+    const zeta = 0.7;          // damping ratio (1 = critical)
+    const k = omega * omega * mass;
+    const c = 2 * zeta * omega * mass;
+    // Force cap: high enough to lift multi-body articulated systems (humanoid ≈ 41 kg
+    // total, individual torso only 5.85 kg — gravity on full system at a grabbed limb
+    // is ~400 N and the old 263 N cap could only drag, not lift). 120·mass gives the
+    // grabbed limb enough authority to yank the whole ragdoll airborne.
+    const cap = 120 * mass;
+
+    // Read linear vel from data.cvel. MJ layout: cvel[body*6 + 0..2]=angular, +3..5=linear,
+    // both in MJ world frame. Swizzle linear MJ→THREE: (vx, vz, -vy).
+    const off6 = this.bodyID * 6;
+    let vLinX = 0, vLinY = 0, vLinZ = 0;
+    if (data.cvel && data.cvel.length >= off6 + 6) {
+      const mjVx = data.cvel[off6 + 3];
+      const mjVy = data.cvel[off6 + 4];
+      const mjVz = data.cvel[off6 + 5];
+      vLinX = mjVx;
+      vLinY = mjVz;
+      vLinZ = -mjVy;
+    }
+
+    // Freeze mode: zero velocities directly each tick via qvel at the body's free joint
+    // (if it has one). Much stabler than trying to counteract via xfrc alone.
+    if (this.frozen) {
+      const jntAdr = this.app.model?.body_jntadr?.[this.bodyID];
+      if (jntAdr !== undefined && jntAdr >= 0) {
+        const dofAdr = this.app.model.jnt_dofadr[jntAdr];
+        // Free joint has 6 qvel dofs: 3 linear + 3 angular.
+        if (dofAdr >= 0 && data.qvel && data.qvel.length >= dofAdr + 6) {
+          for (let k = 0; k < 6; k++) data.qvel[dofAdr + k] = 0;
+        }
+      }
+      // Peg the target to the current grab point — no pull force, just hover.
+      this.targetWorld.copy(this._grabWorld);
+    }
+
+    // Delta in THREE world.
+    const dx = this.targetWorld.x - this._grabWorld.x;
+    const dy = this.targetWorld.y - this._grabWorld.y;
+    const dz = this.targetWorld.z - this._grabWorld.z;
+
+    let fx = k * dx - c * vLinX;
+    let fy = k * dy - c * vLinY;
+    let fz = k * dz - c * vLinZ;
+    const mag = Math.hypot(fx, fy, fz);
+    if (mag > cap) {
+      const s = cap / mag;
+      fx *= s; fy *= s; fz *= s;
+    }
+    this._F.set(fx, fy, fz);
+
+    // Swizzle THREE world force -> MJ world force: (x, y, z)_three -> (x, -z, y)_mj
+    const mjFx = fx;
+    const mjFy = -fz;
+    const mjFz = fy;
+
+    // Lever arm from CoM to grab point, in THREE world, then swizzle to MJ world.
+    const rx_t = this._grabWorld.x - this._comWorld.x;
+    const ry_t = this._grabWorld.y - this._comWorld.y;
+    const rz_t = this._grabWorld.z - this._comWorld.z;
+    const mjRx = rx_t;
+    const mjRy = -rz_t;
+    const mjRz = ry_t;
+
+    // Torque = r × F (MJ world frame).
+    const mjTx = mjRy * mjFz - mjRz * mjFy;
+    const mjTy = mjRz * mjFx - mjRx * mjFz;
+    const mjTz = mjRx * mjFy - mjRy * mjFx;
+
+    data.xfrc_applied[off6 + 0] = mjFx;
+    data.xfrc_applied[off6 + 1] = mjFy;
+    data.xfrc_applied[off6 + 2] = mjFz;
+    data.xfrc_applied[off6 + 3] = mjTx;
+    data.xfrc_applied[off6 + 4] = mjTy;
+    data.xfrc_applied[off6 + 5] = mjTz;
+
+    // Phys-gun rotate: E/Q while grabbing spins the held body around camera-forward axis.
+    // Direct qvel write (angular, qvel[dofAdr+3..5]) for freejoint bodies only.
+    // 2.5 rad/s ≈ 24° per frame at 60 Hz — crisp but not dizzying.
+    if (this.rotateKey !== 0) {
+      const jntAdr = this.app.model?.body_jntadr?.[this.bodyID];
+      if (jntAdr !== undefined && jntAdr >= 0 && this.app.model.jnt_type?.[jntAdr] === 0) {
+        const dofAdr = this.app.model.jnt_dofadr[jntAdr];
+        if (dofAdr >= 0 && data.qvel && data.qvel.length >= dofAdr + 6) {
+          const camDir = new THREE.Vector3();
+          this.app.camera.getWorldDirection(camDir);
+          // Swizzle camera forward THREE→MJ. Sign flip so E rotates clockwise
+          // from the user's perspective (matches GMod's physgun rotate feel).
+          const axMx = camDir.x;
+          const axMy = -camDir.z;
+          const axMz = camDir.y;
+          const w = 2.5 * this.rotateKey;
+          data.qvel[dofAdr + 3] = axMx * w;
+          data.qvel[dofAdr + 4] = axMy * w;
+          data.qvel[dofAdr + 5] = axMz * w;
+        }
+      }
+    }
+  }
+}
