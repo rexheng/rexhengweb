@@ -5,8 +5,8 @@
 
 const NOISE_SECONDS = 0.2;
 const VOICE_LIMIT = 8;             // concurrent hits
-const MIN_GAP_MS = 45;              // per-contact re-trigger cooldown
-const SPIKE_THRESHOLD = 0.0008;     // penetration delta that counts as "impact"
+const MIN_GAP_MS = 150;             // per-contact re-trigger cooldown — spaced so resting chatter is quiet
+const SPIKE_THRESHOLD = 0.0012;     // penetration delta that counts as "impact"; bumped so soft contacts don't trigger
 
 export class ContactAudio {
   constructor(app) {
@@ -58,9 +58,12 @@ export class ContactAudio {
     filt.frequency.value = 180 + t * 2200; // low thud → bright crack
     filt.Q.value = 6;
 
+    // Scale peak gain by impact strength so resting contacts are nearly silent
+    // and only genuine impacts punch through. t ∈ [0, 1] from depth.
+    const peak = (0.18 + 1.1 * t) * (0.3 + 0.7 * t); // gentle on small taps, loud on big hits
     const env = this.ctx.createGain();
     env.gain.setValueAtTime(0.0, now);
-    env.gain.linearRampToValueAtTime(0.8 + 0.6 * t, now + 0.004); // attack
+    env.gain.linearRampToValueAtTime(peak, now + 0.004); // attack
     env.gain.exponentialRampToValueAtTime(0.001, now + 0.12 + t * 0.1); // decay
 
     src.connect(filt).connect(env).connect(this.master);

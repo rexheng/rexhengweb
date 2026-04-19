@@ -1,6 +1,6 @@
-# MuJoCo × Three.js Playground
+# rexheng.com — portfolio
 
-A browser physics demo. MuJoCo compiled to WebAssembly drives the sim; Three.js renders it.
+Single-page interactive portfolio. An articulated MuJoCo humanoid (Three.js render, WebAssembly physics) stands in a dark navy environment. Drag to grab, punt, or topple it. The settings panel lives to the right; a small collapsible info card lives on the left.
 
 ## Run
 
@@ -8,27 +8,27 @@ A browser physics demo. MuJoCo compiled to WebAssembly drives the sim; Three.js 
 python -m http.server 8765
 ```
 
-Then open http://localhost:8765/ in a modern browser (Chrome/Edge/Firefox recent).
+Then open http://localhost:8765/.
 
-That's the whole build step. No npm, no bundler.
-
-## Controls
-
-- Drag: orbit camera
-- Scroll: zoom
-- Right-drag: pan
-- GUI (top right): switch scene, pause, change gravity, random perturb, reset
+No build step, no bundler.
 
 ## Structure
 
 ```
-index.html            # entry, import map
-src/main.js           # App class, render loop, physics loop, UI
-src/mujocoLoader.js   # MuJoCo -> Three.js scene builder (ported from zalo/mujoco_wasm)
-vendor/mujoco/        # mujoco-js@0.0.7 vendored locally
-assets/scenes/        # MJCF XML files
-PROGRESS.md           # iteration log
-IDEAS.md              # next-feature queue
+index.html                # entry
+src/main.js               # App class, physics + render loop, GUI
+src/portfolioOverlay.js   # collapsible left-anchored info card
+src/grabber.js            # click-drag spring-force interaction
+src/audio.js              # WebAudio contact ticks
+src/replay.js             # R-key slo-mo replay buffer
+src/trails.js             # trajectory trails
+src/sparks.js             # impact spark particles
+src/crosshair.js          # HUD reticle
+src/hoverHighlight.js     # body highlight on hover
+src/metricsHud.js         # live stats corner
+src/mujocoLoader.js       # MuJoCo → Three.js scene builder
+vendor/mujoco/            # mujoco-js vendored locally
+assets/scenes/            # MJCF XML
 ```
 
-Credits: MuJoCo (Google DeepMind, Apache-2.0), `mujoco-js` npm package, `zalo/mujoco_wasm` (Apache-2.0) whose loader we ported.
+Credits: MuJoCo (Google DeepMind, Apache-2.0), `mujoco-js`, `zalo/mujoco_wasm` (Apache-2.0) whose loader was ported.

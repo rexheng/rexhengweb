@@ -10,25 +10,71 @@ import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { loadSceneFromURL, getPosition, getQuaternion } from "./mujocoLoader.js";
 import { Grabber } from "./grabber.js";
 import { Trails } from "./trails.js";
-import { ContactViz } from "./contacts.js";
 import { ContactAudio } from "./audio.js";
 import { Sparks } from "./sparks.js";
 import { MetricsHud } from "./metricsHud.js";
 import { Crosshair } from "./crosshair.js";
 import { HoverHighlight } from "./hoverHighlight.js";
 import { Replay } from "./replay.js";
-import { HumanoidController, GetUpFSM } from "./humanoidController.js";
+import { PortfolioOverlay } from "./portfolioOverlay.js";
 import load_mujoco from "../vendor/mujoco/mujoco_wasm.js";
 
-const SCENE_FILES = [
-  "humanoid.xml",
-  "humanoid_getup.xml",
+const SCENE_FILE = "humanoid.xml";
+const FRAMING = { camPos: [3.2, 1.8, 3.2], target: [0, 0.9, 0] };
+
+const GRAVITY_PRESETS = { Earth: -9.81, Moon: -1.62, Space: 0.0 };
+const TIMESCALE_PRESETS = { "0.25×": 0.25, "0.5×": 0.5, "1×": 1.0, "2×": 2.0 };
+
+const WIND_DIRS = [
+  { label: "N",  rad: Math.PI * 0.5 },
+  { label: "NE", rad: Math.PI * 0.25 },
+  { label: "E",  rad: 0 },
+  { label: "SE", rad: -Math.PI * 0.25 },
+  { label: "S",  rad: -Math.PI * 0.5 },
+  { label: "SW", rad: -Math.PI * 0.75 },
+  { label: "W",  rad: Math.PI },
+  { label: "NW", rad: Math.PI * 0.75 },
 ];
 
-// Per-scene camera framing — [camPos, lookTarget]
-const SCENE_FRAMING = {
-  "humanoid.xml": [[3.2, 1.8, 3.2], [0, 0.6, 0]],
-  "humanoid_getup.xml": [[3.2, 1.8, 3.2], [0, 0.6, 0]],
+// Neutral stand pose for humanoid — all joints at 0, arms relaxed at sides.
+// Applied to qpos on load/reset so the humanoid starts upright and stable.
+// qpos layout: [root_xyz(3), root_quat(4), spine(3), R-leg(6), L-leg(6), R-arm(3), L-arm(3)]
+const HUMANOID_STAND_QPOS = [
+  0, 0, 1.282,                    // root xyz — matches body pos in XML
+  1, 0, 0, 0,                     // root quat (identity)
+  0, 0, 0,                        // abdomen_z, abdomen_y, abdomen_x
+  0, 0, 0, 0, 0, 0,               // R hip_x, hip_z, hip_y, knee, ankle_y, ankle_x
+  0, 0, 0, 0, 0, 0,               // L hip_x, hip_z, hip_y, knee, ankle_y, ankle_x
+  -0.6, 0.8, 0,                   // R shoulder1, shoulder2, elbow — arms down at sides
+  -0.6, 0.8, 0,                   // L shoulder1, shoulder2, elbow
+];
+
+// Joint names for PD stand-hold (match XML actuators in order).
+const ACT_NAMES = [
+  "abdomen_z", "abdomen_y", "abdomen_x",
+  "hip_x_right", "hip_z_right", "hip_y_right", "knee_right", "ankle_y_right", "ankle_x_right",
+  "hip_x_left", "hip_z_left", "hip_y_left", "knee_left", "ankle_y_left", "ankle_x_left",
+  "shoulder1_right", "shoulder2_right", "elbow_right",
+  "shoulder1_left", "shoulder2_left", "elbow_left",
+];
+// PD targets matching the stand pose above.
+const ACT_TARGETS = {
+  abdomen_z: 0, abdomen_y: 0, abdomen_x: 0,
+  hip_x_right: 0, hip_z_right: 0, hip_y_right: 0, knee_right: 0, ankle_y_right: 0, ankle_x_right: 0,
+  hip_x_left: 0, hip_z_left: 0, hip_y_left: 0, knee_left: 0, ankle_y_left: 0, ankle_x_left: 0,
+  shoulder1_right: -0.6, shoulder2_right: 0.8, elbow_right: 0,
+  shoulder1_left: -0.6, shoulder2_left: 0.8, elbow_left: 0,
+};
+// PD gains per joint — tuned so the humanoid holds upright but remains responsive
+// to grabbing. Ankle & leg gains high (balance), arm gains lower (feels ragdolly).
+const PD_GAINS = {
+  abdomen_z: [200, 20], abdomen_y: [200, 20], abdomen_x: [200, 20],
+  hip_x_right: [200, 20], hip_z_right: [200, 20], hip_y_right: [300, 30],
+  knee_right: [300, 30], ankle_y_right: [150, 15], ankle_x_right: [150, 15],
+  hip_x_left: [200, 20], hip_z_left: [200, 20], hip_y_left: [300, 30],
+  knee_left: [300, 30], ankle_y_left: [150, 15], ankle_x_left: [150, 15],
+  shoulder1_right: [60, 6], shoulder2_right: [60, 6], elbow_right: [60, 6],
+  shoulder1_left: [60, 6], shoulder2_left: [60, 6], elbow_left: [60, 6],
 };
 
 class App {
@@ -39,98 +85,77 @@ class App {
     this.bodies = {};
     this.mujocoRoot = null;
     this.mujoco = null;
-    this.currentScene = "humanoid.xml";
+    this.currentScene = SCENE_FILE;
     this.params = {
-      scene: this.currentScene,
       paused: false,
-      timescale: 1.0,
-      gravityZ: -9.81,
+      timescaleLabel: "1×",
+      gravityLabel: "Earth",
       reset: () => this.resetSim(),
       perturb: () => this.randomPerturb(),
       trails: false,
-      contacts: false,
-      audio: false,
+      audio: true,    // default ON per spec
       sparks: false,
-      screenShake: false,
-      autoReplay: false,   // auto-trigger slo-mo replay on big contact spikes
-      autoGetUp: true,     // auto-engage get-up FSM when humanoid is settled on the ground
-      windEnabled: false,  // master toggle — when false, wind sliders are ignored
-      wind: 0.0,           // magnitude, N (applied to every freejoint body)
-      windDir: 0,          // heading in radians (0 = +x in MJ)
+      standHold: true, // PD keeps humanoid upright until grabbed
+      windEnabled: false,
+      wind: 0.0,
+      windDir: 0,
       orbit: false,
-      orbitSpeed: 0.15, // radians/second
-      bulletTime: false, // target state; actual blend lives in this.bulletBlend
-      toggleBulletTime: () => this.setBulletTime(!this.params.bulletTime),
-      fireCannon: () => this.fireCannon(),
-      spawn: () => this.spawnNext(),
-      freezeAll: () => this.freezeAll(),
-      launch: () => this.launchProjectile(),
-      launchAngle: 38,   // degrees above horizontal
-      launchSpeed: 9.0,  // m/s initial speed
-      holdQuadruped: () => this.humanoidCtrl?.seedToQuadruped(),
-      releaseHumanoidPD: () => this.humanoidCtrl?.setEnabled(false),
-      engageGetUpSupine: () => {
-        const fire = () => {
-          this.humanoidCtrl?.seedToSupine();
-          this.getUpFSM?.start("supine");
-        };
-        if (this.currentScene !== "humanoid_getup.xml") {
-          this.params.scene = "humanoid_getup.xml";
-          this.switchScene("humanoid_getup.xml").then(fire);
-        } else fire();
-      },
-      engageGetUpProne: () => {
-        const fire = () => {
-          this.humanoidCtrl?.seedToProne();
-          this.getUpFSM?.start("prone");
-        };
-        if (this.currentScene !== "humanoid_getup.xml") {
-          this.params.scene = "humanoid_getup.xml";
-          this.switchScene("humanoid_getup.xml").then(fire);
-        } else fire();
-      },
+      orbitSpeed: 0.15,
     };
     this.clock = new THREE.Clock();
     this.mujocoTime = 0;
-    this.camTween = null; // { t0, dur, fromPos, toPos, fromTarget, toTarget }
-    this.bulletBlend = 0; // 0 = normal, 1 = full bullet time
-    this.shakeEnergy = 0; // decays each frame; bumped on contact spikes
-    this._shakeOffset = new THREE.Vector3();
-    this._prevShakeSpikes = new Map(); // geom-pair → depth (for edge-triggering)
+    this.camTween = null;
+    this._lastFrameMs = 0;
+    this._suspendPD = false; // temporarily disable stand-hold while grabber is active
+
+    // PD index cache — filled on scene load.
+    this._pdActIdx = {};
+    this._pdQposAdr = {};
+    this._pdDofAdr = {};
+    this._pdGear = {};
+    this._torsoId = -1;
   }
 
-  setBulletTime(on) {
-    this.params.bulletTime = on;
-    // flash-tint the HUD when going into bullet time
-    document.body.classList.toggle("bullet-time", on);
-  }
-
-  frameCamera(scene) {
-    const [p, t] = SCENE_FRAMING[scene] || [[3.4, 2.2, 3.4], [0, 0.9, 0]];
+  frameCamera() {
     this.camTween = {
       t0: performance.now(),
       dur: 900,
       fromPos: this.camera.position.clone(),
-      toPos: new THREE.Vector3(...p),
+      toPos: new THREE.Vector3(...FRAMING.camPos),
       fromTarget: this.controls.target.clone(),
-      toTarget: new THREE.Vector3(...t),
+      toTarget: new THREE.Vector3(...FRAMING.target),
     };
   }
 
   updateCamTween() {
     if (!this.camTween) return;
     const k = Math.min(1, (performance.now() - this.camTween.t0) / this.camTween.dur);
-    const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; // easeInOutQuad
+    const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
     this.camera.position.lerpVectors(this.camTween.fromPos, this.camTween.toPos, e);
     this.controls.target.lerpVectors(this.camTween.fromTarget, this.camTween.toTarget, e);
     if (k >= 1) this.camTween = null;
   }
 
-  // Rotates camera.position around controls.target on the world-Y axis.
-  // Runs only when params.orbit is on AND no scene-switch tween is currently playing
-  // (so we don't fight the tween for control of the camera).
+  // Cinematic orbit — rotates camera around the humanoid torso's world position.
+  // Uses low-pass smoothing on the tracked position so torso jitter doesn't wobble
+  // the camera target. Also updates controls.target so OrbitControls stays consistent.
   updateCinematicOrbit(dtSec) {
     if (!this.params.orbit || this.camTween) return;
+    if (!this.data || this._torsoId < 0) return;
+
+    // Fetch torso world position in THREE frame (y-up).
+    const torsoGroup = this.bodies?.[this._torsoId];
+    if (!torsoGroup) return;
+    torsoGroup.updateWorldMatrix(true, false);
+    const torsoWorld = new THREE.Vector3();
+    torsoWorld.setFromMatrixPosition(torsoGroup.matrixWorld);
+
+    // Exponential smooth the orbit center so physics jitter doesn't shake the camera.
+    if (!this._orbitCenter) this._orbitCenter = torsoWorld.clone();
+    const alpha = 0.12;
+    this._orbitCenter.lerp(torsoWorld, alpha);
+    this.controls.target.copy(this._orbitCenter);
+
     const t = this.controls.target;
     const p = this.camera.position;
     const dx = p.x - t.x;
@@ -143,23 +168,17 @@ class App {
   }
 
   async init() {
-    // --- MuJoCo boot ---
     this.mujoco = await load_mujoco();
     this.mujoco.FS.mkdir("/working");
     this.mujoco.FS.mount(this.mujoco.MEMFS, { root: "." }, "/working");
-    for (const f of SCENE_FILES) {
-      if (f.startsWith("__")) continue; // generated at runtime
-      const txt = await (await fetch("./assets/scenes/" + f)).text();
-      this.mujoco.FS.writeFile("/working/" + f, txt);
-    }
-    this._spawnCursor = 0;
+    const txt = await (await fetch("./assets/scenes/" + SCENE_FILE)).text();
+    this.mujoco.FS.writeFile("/working/" + SCENE_FILE, txt);
 
-    // --- Three.js scene setup ---
+    // Three.js scene setup
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x121a2a);
     this.scene.fog = new THREE.FogExp2(0x0e1524, 0.008);
 
-    // Sky dome — vertical gradient (deep navy zenith → warm slate horizon)
     const skyGeo = new THREE.SphereGeometry(120, 48, 24);
     const skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide,
@@ -195,7 +214,6 @@ class App {
     this.renderer.toneMappingExposure = 0.9;
     document.body.appendChild(this.renderer.domElement);
 
-    // PMREM procedural environment for PBR reflections (env only, not background)
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     pmrem.compileEquirectangularShader();
     const envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -209,12 +227,9 @@ class App {
     this.controls.dampingFactor = 0.08;
     this.controls.minDistance = 1.2;
     this.controls.maxDistance = 30;
-    // Remap so left mouse is free for body grab; right = rotate, middle = dolly, shift+right = pan.
-    // Middle button reserved for gravity-gun punt (grabber.js). Right = orbit.
-    // Scroll wheel still dollies. Left = grabber / tool gun dispatch.
     this.controls.mouseButtons = { LEFT: null, MIDDLE: null, RIGHT: THREE.MOUSE.ROTATE };
 
-    // Lighting — key + fill + rim
+    // Lighting
     const key = new THREE.DirectionalLight(0xfff1d8, 1.3);
     key.position.set(4, 8, 3);
     key.castShadow = true;
@@ -239,85 +254,34 @@ class App {
 
     this.scene.add(new THREE.HemisphereLight(0x6688aa, 0x1a1a2a, 0.25));
 
-    // Post-processing — stronger bloom threshold tuned lower so lit surfaces glow
+    // Post-processing
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-    // Half-res bloom: UnrealBloom builds a 5-level mip chain, each pass fullscreen.
-    // Running the input buffer at 0.5× halves the pixel work with no visible quality loss.
     this.bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth * 0.5, innerHeight * 0.5), 0.28, 0.65, 0.92);
-    this._bloomBase = 0.28; // remembered so bullet-time can ramp against it
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
 
-    // Stats + GUI
     this.stats = new Stats();
     this.stats.dom.style.cssText = "position:fixed;top:8px;left:8px;";
     document.body.appendChild(this.stats.dom);
 
-    const gui = new GUI({ title: "MuJoCo Playground", width: 280 });
-    gui.add(this.params, "scene", SCENE_FILES).onChange((v) => this.switchScene(v));
-    gui.add(this.params, "paused");
-    gui.add(this.params, "timescale", 0.0, 3.0, 0.01);
-    gui.add(this.params, "gravityZ", -20, 0, 0.01).onChange((v) => { if (this.model) this.model.opt.gravity[2] = v; });
-    gui.add(this.params, "reset");
-    gui.add(this.params, "perturb").name("Random perturb");
-    gui.add(this.params, "trails").name("Trajectory trails").onChange((v) => this.trails?.setEnabled(v));
-    gui.add(this.params, "contacts").name("Contact vectors").onChange((v) => this.contactViz?.setEnabled(v));
-    gui.add(this.params, "audio").name("Contact audio").onChange((v) => this.audio?.setEnabled(v));
-    gui.add(this.params, "sparks").name("Impact sparks").onChange((v) => this.sparks?.setEnabled(v));
-    gui.add(this.params, "screenShake").name("Screen shake");
-    gui.add(this.params, "autoReplay").name("Auto slo-mo").onChange((v) => this.replay?.setAutoEnabled(v));
-    gui.add(this.params, "autoGetUp").name("Auto get-up");
-    gui.add(this.params, "windEnabled").name("Wind");
-    gui.add(this.params, "wind", 0, 40, 0.1).name("Wind force (N)");
-    gui.add(this.params, "windDir", -Math.PI, Math.PI, 0.01).name("Wind heading");
-    gui.add(this.params, "orbit").name("Cinematic orbit");
-    gui.add(this.params, "orbitSpeed", 0.02, 0.6, 0.01).name("Orbit speed");
-    gui.add(this.params, "toggleBulletTime").name("⏱ Bullet time (Space)");
-    gui.add(this.params, "fireCannon").name("🎯 Fire cannonball");
-    gui.add(this.params, "spawn").name("➕ Spawn body (sandbox)");
-    gui.add(this.params, "freezeAll").name("❄ Freeze all bodies");
-    gui.add(this.params, "launch").name("🏹 Launch (catapult)");
-    gui.add(this.params, "launchAngle", 5, 75, 1).name("Launch angle (°)").onChange(() => this._updateTrajectoryPreview());
-    gui.add(this.params, "launchSpeed", 2, 15, 0.1).name("Launch speed (m/s)").onChange(() => this._updateTrajectoryPreview());
-    gui.add(this.params, "holdQuadruped").name("🐾 Hold quadruped");
-    gui.add(this.params, "engageGetUpSupine").name("🤸 Get up from supine");
-    gui.add(this.params, "engageGetUpProne").name("🧎 Get up from prone");
-    gui.add(this.params, "releaseHumanoidPD").name("Release PD");
+    this._buildGui();
 
-    // Spacebar = bullet time; B = spawn body at crosshair aim; F = punch crosshair target.
-    // Skip when typing in an input field.
-    addEventListener("keydown", (e) => {
-      const tag = (e.target?.tagName || "").toLowerCase();
-      if (tag === "input" || tag === "textarea") return;
-      if (e.code === "Space") {
-        e.preventDefault();
-        this.setBulletTime(!this.params.bulletTime);
-      } else if (e.code === "KeyB") {
-        e.preventDefault();
-        this.spawnAtAim();
-      } else if (e.code === "KeyF") {
-        e.preventDefault();
-        this.punchAtAim();
-      }
-    });
-
-    // HUD overlay — context-aware hints. The <p> updates based on grabber state so
-    // the user sees exactly the bindings that matter right now.
+    // HUD
     const hud = document.createElement("div");
     hud.id = "hud";
-    hud.innerHTML = `<h1>MuJoCo × Three.js</h1><p id="hud-hints"></p>`;
+    hud.innerHTML = `<h1>Rex Heng</h1><p id="hud-hints"></p>`;
     document.body.appendChild(hud);
     this._hintsEl = hud.querySelector("#hud-hints");
     this._currentHintKey = "";
     this._HINT_PRESETS = {
-      idle:    `Left-drag grab · Middle-click punt · F punch · R replay · Space bullet time · B spawn`,
-      hover:   `Left-drag to grab · Middle-click punt · F punch this body · R replay · B aim-spawn`,
-      grab:    `Wheel: push/pull · E/Q: rotate · Right-click: freeze in place · Release to let go`,
-      frozen:  `Body frozen mid-air · Release mouse to keep it floating · Right-click to unfreeze`,
+      idle:    `Left-drag grab · Middle-click punt · R replay`,
+      hover:   `Left-drag to grab · Middle-click punt · R replay`,
+      grab:    `Wheel: push/pull · E/Q: rotate · Right-click: freeze · Release to let go`,
+      frozen:  `Body frozen mid-air · Release mouse to keep floating · Right-click to unfreeze`,
       replay:  `◉ Slo-mo replay — press R again to return to live`,
     };
-    this._updateHints(); // initial paint
+    this._updateHints();
 
     addEventListener("resize", () => this.onResize());
 
@@ -325,8 +289,6 @@ class App {
     this.grabber = new Grabber(this);
     this.trails = new Trails(this);
     this.trails.setEnabled(this.params.trails);
-    this.contactViz = new ContactViz(this);
-    this.contactViz.setEnabled(this.params.contacts);
     this.audio = new ContactAudio(this);
     this.audio.setEnabled(this.params.audio);
     this.sparks = new Sparks(this);
@@ -335,11 +297,129 @@ class App {
     this.crosshair = new Crosshair(this);
     this.hoverHighlight = new HoverHighlight(this);
     this.replay = new Replay(this);
-    this.humanoidCtrl = new HumanoidController(this);
-    this.getUpFSM = new GetUpFSM(this.humanoidCtrl);
     this._installPauseChip();
     this._installWindCompass();
+
+    // Portfolio overlay — collapsible, left-anchored.
+    this.portfolio = new PortfolioOverlay({
+      name: "Rex Heng",
+      tagline: "PPE at LSE · building at the intersection of finance, policy, and code.",
+      initials: "RH",
+      links: [
+        { label: "Email", href: "mailto:rexheng@gmail.com" },
+        { label: "LinkedIn", href: "https://www.linkedin.com/in/rexheng/" },
+        { label: "GitHub", href: "https://github.com/rexheng" },
+      ],
+    });
+
     this.animate();
+  }
+
+  _buildGui() {
+    const gui = new GUI({ title: "Controls", width: 280 });
+
+    // Scene
+    const fScene = gui.addFolder("Scene");
+    fScene.add(this.params, "reset").name("Reset");
+    fScene.add(this.params, "perturb").name("Random perturb");
+
+    // Physics
+    const fPhys = gui.addFolder("Physics");
+    fPhys.add(this.params, "paused");
+    fPhys.add(this.params, "timescaleLabel", Object.keys(TIMESCALE_PRESETS)).name("Timescale");
+    fPhys.add(this.params, "gravityLabel", Object.keys(GRAVITY_PRESETS))
+      .name("Gravity")
+      .onChange((v) => { if (this.model) this.model.opt.gravity[2] = GRAVITY_PRESETS[v]; });
+    fPhys.add(this.params, "standHold").name("Hold stand pose");
+    fPhys.add(this.params, "windEnabled").name("Wind");
+    fPhys.add(this.params, "wind", 0, 40, 0.1).name("Wind force (N)");
+    this._installWindCompassButtons(fPhys);
+
+    // Camera
+    const fCam = gui.addFolder("Camera");
+    fCam.add(this.params, "orbit").name("Cinematic orbit");
+    fCam.add(this.params, "orbitSpeed", 0.02, 0.6, 0.01).name("Orbit speed");
+
+    // Effects
+    const fFx = gui.addFolder("Effects");
+    fFx.add(this.params, "trails").name("Trajectory trails").onChange((v) => this.trails?.setEnabled(v));
+    fFx.add(this.params, "audio").name("Contact audio").onChange((v) => this.audio?.setEnabled(v));
+    fFx.add(this.params, "sparks").name("Impact sparks").onChange((v) => this.sparks?.setEnabled(v));
+
+    fPhys.open();
+    fFx.open();
+  }
+
+  // Add a custom 8-direction compass picker into a lil-gui folder.
+  // Built as 8 buttons in a 3x3 grid (center empty). Clicking sets windDir
+  // to the corresponding angle and highlights the active button.
+  _installWindCompassButtons(folder) {
+    const host = document.createElement("div");
+    host.style.cssText = `
+      padding: 6px 8px 8px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 24px);
+      gap: 3px;
+      font: 10px ui-monospace, Menlo, monospace;
+      letter-spacing: 0.05em;
+    `;
+    const order = ["NW", "N", "NE", "W", "", "E", "SW", "S", "SE"];
+    this._windBtns = {};
+    for (const label of order) {
+      const b = document.createElement("button");
+      b.type = "button";
+      if (label) {
+        b.textContent = label;
+        b.style.cssText = `
+          background: rgba(42,53,96,0.6);
+          color: #cfd6e8;
+          border: 1px solid rgba(140,165,220,0.25);
+          border-radius: 4px;
+          cursor: pointer;
+          font: inherit;
+          padding: 0;
+        `;
+        b.addEventListener("click", () => this._setWindDir(label));
+        b.addEventListener("mouseenter", () => { b.style.background = "rgba(60,80,140,0.75)"; });
+        b.addEventListener("mouseleave", () => this._refreshWindBtns());
+        this._windBtns[label] = b;
+      } else {
+        b.style.visibility = "hidden";
+      }
+      host.appendChild(b);
+    }
+    // Append after the folder's children container.
+    const children = folder.$children || folder.domElement.querySelector(".children");
+    if (children) children.appendChild(host);
+    else folder.domElement.appendChild(host);
+    this._refreshWindBtns();
+  }
+
+  _setWindDir(label) {
+    const entry = WIND_DIRS.find((d) => d.label === label);
+    if (!entry) return;
+    this.params.windDir = entry.rad;
+    this._refreshWindBtns();
+  }
+
+  _refreshWindBtns() {
+    if (!this._windBtns) return;
+    // Find the closest cardinal to current windDir (wrapped to [-π, π]).
+    let dir = this.params.windDir;
+    while (dir > Math.PI) dir -= 2 * Math.PI;
+    while (dir < -Math.PI) dir += 2 * Math.PI;
+    let best = "E", bestErr = Infinity;
+    for (const { label, rad } of WIND_DIRS) {
+      const err = Math.abs(((dir - rad + Math.PI * 3) % (2 * Math.PI)) - Math.PI);
+      if (err < bestErr) { bestErr = err; best = label; }
+    }
+    for (const [lab, btn] of Object.entries(this._windBtns)) {
+      const active = lab === best;
+      btn.style.background = active ? "rgba(120,160,230,0.8)" : "rgba(42,53,96,0.6)";
+      btn.style.color = active ? "#0d1220" : "#cfd6e8";
+      btn.style.fontWeight = active ? "600" : "400";
+    }
   }
 
   async switchScene(name) {
@@ -357,21 +437,64 @@ class App {
     this.bodies = bodies;
     this.mujocoTime = 0;
     this._rebuildGrabbables();
-    this.frameCamera(name);
+    this._indexHumanoid();
+    this._applyStandPose();
+    this._orbitCenter = null;
+    this.frameCamera();
     this.trails?.onSceneSwitch();
     this.replay?.onSceneSwitch();
-    this.humanoidCtrl?.onSceneSwitch();
-    this._updateTrajectoryPreview();
+  }
+
+  // Build name-keyed lookup tables for PD control + find torso body id.
+  _indexHumanoid() {
+    if (!this.model) return;
+    this._pdActIdx = {};
+    this._pdQposAdr = {};
+    this._pdDofAdr = {};
+    this._pdGear = {};
+    this._torsoId = -1;
+    const dec = new TextDecoder();
+    const names = dec.decode(this.model.names);
+    const read = (adr) => names.slice(adr).split("\0")[0];
+    for (let i = 0; i < this.model.nu; i++) {
+      const n = read(this.model.name_actuatoradr[i]);
+      this._pdActIdx[n] = i;
+      this._pdGear[n] = this.model.actuator_gear[i * 6] || 1;
+    }
+    for (let j = 0; j < this.model.njnt; j++) {
+      const n = read(this.model.name_jntadr[j]);
+      this._pdQposAdr[n] = this.model.jnt_qposadr[j];
+      this._pdDofAdr[n] = this.model.jnt_dofadr[j];
+    }
+    for (let b = 0; b < this.model.nbody; b++) {
+      if (read(this.model.name_bodyadr[b]) === "torso") this._torsoId = b;
+    }
+  }
+
+  // Write the neutral stand qpos to data.qpos, zero qvel + residual forces,
+  // then mj_forward so mesh transforms refresh before the next render.
+  _applyStandPose() {
+    if (!this.data || !this.model) return;
+    const nq = this.model.nq;
+    for (let i = 0; i < Math.min(nq, HUMANOID_STAND_QPOS.length); i++) {
+      this.data.qpos[i] = HUMANOID_STAND_QPOS[i];
+    }
+    for (let i = 0; i < this.model.nv; i++) this.data.qvel[i] = 0;
+    if (this.data.xfrc_applied) {
+      for (let i = 0; i < this.data.xfrc_applied.length; i++) this.data.xfrc_applied[i] = 0;
+    }
+    if (this.data.ctrl) {
+      for (let i = 0; i < this.data.ctrl.length; i++) this.data.ctrl[i] = 0;
+    }
+    this.mujoco.mj_forward(this.model, this.data);
   }
 
   resetSim() {
     if (!this.model) return;
     this.mujoco.mj_resetData(this.model, this.data);
-    this.mujoco.mj_forward(this.model, this.data);
+    this._applyStandPose();
   }
 
-  // Cached list of grabbable meshes (bodyID > 0). Rebuilt on scene switch.
-  // Avoids per-frame scene.traverse() from crosshair + grabber raycasts.
   _rebuildGrabbables() {
     this._grabbables = [];
     if (!this.mujocoRoot) return;
@@ -391,439 +514,79 @@ class App {
     setTimeout(() => { for (let i = 0; i < n; i++) this.data.qfrc_applied[i] = 0; }, 80);
   }
 
-  // Teleports the next dormant spawn_N body in the sandbox scene to just in front of
-  // the camera at a drop height. Uses direct qpos write on its freejoint.
-  spawnNext() {
-    if (this.currentScene !== "__sandbox.xml") {
-      console.info("Spawn only works in sandbox scene — switching.");
-      this.params.scene = "__sandbox.xml";
-      this.switchScene("__sandbox.xml");
-      return;
-    }
-    if (!this.data || !this.model) return;
-    const name = `spawn_${this._spawnCursor % 24}`;
-    this._spawnCursor++;
-    // find body by name
-    let ballID = -1;
-    for (const [id, g] of Object.entries(this.bodies)) {
-      if (g?.name === name) { ballID = Number(id); break; }
-    }
-    if (ballID < 0) { console.warn("no body", name); return; }
-
-    // Drop position: camera forward projected onto the ground + height
-    const fwd = new THREE.Vector3();
-    this.camera.getWorldDirection(fwd);
-    // Project forward onto xz-plane (ignore y so it hits the floor area, not the sky)
-    fwd.y = 0; fwd.normalize();
-    const dropTHREE = new THREE.Vector3().copy(this.controls.target).addScaledVector(fwd, 0.8);
-    dropTHREE.y = 2.2; // drop height in THREE world
-
-    // THREE -> MJ: (x, y, z)_three -> (x, -z, y)_mj
-    const mjX = dropTHREE.x;
-    const mjY = -dropTHREE.z;
-    const mjZ = dropTHREE.y;
-
-    const jntadr = this.model.body_jntadr[ballID];
-    const qposadr = this.model.jnt_qposadr[jntadr];
-    const dofadr = this.model.jnt_dofadr[jntadr];
-
-    // freejoint: qpos layout [x y z qw qx qy qz]
-    this.data.qpos[qposadr + 0] = mjX;
-    this.data.qpos[qposadr + 1] = mjY;
-    this.data.qpos[qposadr + 2] = mjZ;
-    this.data.qpos[qposadr + 3] = 1; // identity quat
-    this.data.qpos[qposadr + 4] = 0;
-    this.data.qpos[qposadr + 5] = 0;
-    this.data.qpos[qposadr + 6] = 0;
-    // zero velocity so it starts from rest (gravity pulls it down)
-    for (let k = 0; k < 6; k++) this.data.qvel[dofadr + k] = 0;
-    this.mujoco.mj_forward(this.model, this.data);
-  }
-
-  // Crosshair-aimed spawn: fires a ray from the crosshair's current NDC, finds the
-  // world-space aim point (hovered body if any, else intersection with the ground
-  // plane y=0), and teleports the next dormant sandbox body to just above it.
-  // Reuses spawnNext's body-cycling + drop logic — only the landing XY differs.
-  spawnAtAim() {
-    if (this.currentScene !== "__sandbox.xml") {
-      console.info("Aim-spawn only in sandbox — switching.");
-      this.params.scene = "__sandbox.xml";
-      this.switchScene("__sandbox.xml");
-      return;
-    }
-    if (!this.data || !this.model) return;
-
-    const ndc = this.crosshair?._ndc ?? new THREE.Vector2(0, 0);
-    const ray = new THREE.Raycaster();
-    ray.setFromCamera(ndc, this.camera);
-
-    // Priority: hit a grabbable body (drop ON it) → else hit ground plane y=0.
-    let aim = null;
-    const bodyHit = ray.intersectObjects(this.getGrabbables(), false)[0];
-    if (bodyHit) {
-      aim = bodyHit.point.clone();
-    } else {
-      // Manual ray/plane: y = 0. p = o + t*d where o.y + t*d.y = 0 → t = -o.y/d.y
-      const o = ray.ray.origin, d = ray.ray.direction;
-      if (Math.abs(d.y) > 1e-5) {
-        const t = -o.y / d.y;
-        if (t > 0) aim = new THREE.Vector3().copy(o).addScaledVector(d, t);
+  // PD stand-hold — writes data.ctrl to track ACT_TARGETS on every listed actuator.
+  // Runs only when standHold toggle is on AND grabber isn't actively manipulating the humanoid.
+  applyStandHold() {
+    if (!this.params.standHold || !this.data || !this.model) return;
+    if (this.grabber?.active) {
+      // While grabbing, zero ctrl so the body goes ragdoll for the user.
+      if (!this._ctrlZeroed) {
+        for (const name of ACT_NAMES) {
+          const ai = this._pdActIdx[name];
+          if (ai != null) this.data.ctrl[ai] = 0;
+        }
+        this._ctrlZeroed = true;
       }
+      return;
     }
-    if (!aim) return;
-
-    const name = `spawn_${this._spawnCursor % 24}`;
-    this._spawnCursor++;
-    let ballID = -1;
-    for (const [id, g] of Object.entries(this.bodies)) {
-      if (g?.name === name) { ballID = Number(id); break; }
-    }
-    if (ballID < 0) return;
-
-    // Aim.y is the surface y; drop from 1.4m above it to give gravity some work.
-    const mjX = aim.x;
-    const mjY = -aim.z;
-    const mjZ = aim.y + 1.4;
-
-    const jntadr = this.model.body_jntadr[ballID];
-    const qposadr = this.model.jnt_qposadr[jntadr];
-    const dofadr = this.model.jnt_dofadr[jntadr];
-    this.data.qpos[qposadr + 0] = mjX;
-    this.data.qpos[qposadr + 1] = mjY;
-    this.data.qpos[qposadr + 2] = mjZ;
-    this.data.qpos[qposadr + 3] = 1;
-    this.data.qpos[qposadr + 4] = 0;
-    this.data.qpos[qposadr + 5] = 0;
-    this.data.qpos[qposadr + 6] = 0;
-    for (let k = 0; k < 6; k++) this.data.qvel[dofadr + k] = 0;
-    this.mujoco.mj_forward(this.model, this.data);
-  }
-
-  // Punch-at-crosshair (F key). Raycasts the crosshair; if it hits a grabbable
-  // body, fires a short impulse along the camera-forward direction. Two paths:
-  //  - freejoint body (sandbox prop, cannonball): instantaneous qvel kick +
-  //    spawn-cursor-worth of angular spin, same recipe as middle-click punt.
-  //  - articulated body (humanoid limb): queue a 3-frame xfrc_applied burst;
-  //    the force layer runs AFTER applyWind + grabber.apply so our punch slot
-  //    isn't clobbered. Mass-scaled so every body gets the same δv feel.
-  punchAtAim() {
-    if (!this.data || !this.model || this.params.paused) return;
-    // Block punching while grabbing — the grabber owns xfrc for the grabbed
-    // body; stacking a punch on top makes the spring explode.
-    if (this.grabber?.active) return;
-
-    const ndc = this.crosshair?._ndc ?? new THREE.Vector2(0, 0);
-    const ray = new THREE.Raycaster();
-    ray.setFromCamera(ndc, this.camera);
-    const hit = ray.intersectObjects(this.getGrabbables(), false)[0];
-    if (!hit) return;
-
-    const bodyID = hit.object.bodyID;
-    if (bodyID == null || bodyID <= 0) return;
-
-    // Camera-forward in MJ world frame.
-    const camDir = new THREE.Vector3();
-    this.camera.getWorldDirection(camDir);
-    const mjDx = camDir.x;
-    const mjDy = -camDir.z;
-    const mjDz = camDir.y;
-
-    const mass = Math.max(0.05, this.model.body_mass?.[bodyID] ?? 1.0);
-    const jntAdr = this.model.body_jntadr?.[bodyID];
-    const jntType = jntAdr >= 0 ? this.model.jnt_type?.[jntAdr] : -1;
-
-    if (jntType === 0) {
-      // Freejoint — instant qvel kick, like punt but aimed via crosshair.
-      const dofAdr = this.model.jnt_dofadr[jntAdr];
-      const SPEED = 12.0;
-      this.data.qvel[dofAdr + 0] = mjDx * SPEED;
-      this.data.qvel[dofAdr + 1] = mjDy * SPEED;
-      this.data.qvel[dofAdr + 2] = mjDz * SPEED + 1.5; // slight upward bias
-      this.data.qvel[dofAdr + 3] = (Math.random() - 0.5) * 5;
-      this.data.qvel[dofAdr + 4] = (Math.random() - 0.5) * 5;
-      this.data.qvel[dofAdr + 5] = (Math.random() - 0.5) * 5;
-    } else {
-      // Articulated — enqueue a short xfrc burst. Targets δv ≈ 9 m/s at hit body
-      // over ~3 frames @ 60 Hz. F·Δt = m·Δv → F = m·Δv / Δt = m·9 / 0.05 = 180·m.
-      if (!this._punches) this._punches = [];
-      this._punches.push({
-        bodyID,
-        fx: mjDx * 180 * mass,
-        fy: mjDy * 180 * mass,
-        fz: mjDz * 180 * mass,
-        framesLeft: 3,
-      });
-    }
-
-    // Visual ping: reuse the grabber's grabDot for a brief hit-point flash.
-    if (this.grabber?.grabDot) {
-      this.grabber.grabDot.position.copy(hit.point);
-      this.grabber.grabDot.visible = true;
-      this.grabber.grabDot.material.color.setHex(0xff6040);
-      clearTimeout(this._punchFlashTimer);
-      this._punchFlashTimer = setTimeout(() => {
-        if (!this.grabber?.active) this.grabber.grabDot.visible = false;
-      }, 110);
+    this._ctrlZeroed = false;
+    for (const name of ACT_NAMES) {
+      const ai = this._pdActIdx[name];
+      if (ai == null) continue;
+      const qposAdr = this._pdQposAdr[name];
+      const dofAdr = this._pdDofAdr[name];
+      const gear = this._pdGear[name];
+      const target = ACT_TARGETS[name] ?? 0;
+      const [Kp, Kd] = PD_GAINS[name] ?? [100, 10];
+      const q = this.data.qpos[qposAdr];
+      const qd = this.data.qvel[dofAdr];
+      const tau = Kp * (target - q) - Kd * qd;
+      const ctrl = tau / gear;
+      this.data.ctrl[ai] = ctrl < -1 ? -1 : ctrl > 1 ? 1 : ctrl;
     }
   }
 
-  // Apply queued punch bursts. Called per animate frame, AFTER applyWind +
-  // grabber.apply, so the xfrc we write survives until stepPhysics consumes it.
-  // Budget: ≤1 entry typical (keypress-driven), O(entries). No allocations.
-  applyPunches() {
-    const q = this._punches;
-    if (!q || q.length === 0 || !this.data) return;
+  applyWind() {
+    if (!this.data || !this.model) return;
+    const active = this.params.windEnabled && this.params.wind > 0;
+    const w = active ? this.params.wind : 0;
+    const fx = active ? w * Math.cos(this.params.windDir) : 0;
+    const fy = active ? w * Math.sin(this.params.windDir) : 0;
     const xfrc = this.data.xfrc_applied;
-    for (let i = 0; i < q.length; i++) {
-      const p = q[i];
-      const off = p.bodyID * 6;
-      // ADD — wind already wrote this slot; grabber wrote for its body (not ours).
-      xfrc[off + 0] += p.fx;
-      xfrc[off + 1] += p.fy;
-      xfrc[off + 2] += p.fz;
-      p.framesLeft--;
-    }
-    // Keep only still-live entries.
-    this._punches = q.filter(p => p.framesLeft > 0);
-  }
-
-  // Catapult minigame — only meaningful in __catapult.xml. Resets the projectile
-  // and kicks it with a ballistic arc aimed at the target ring (x=8, y=0). The
-  // arc angle is 38° — close to the optimum for a point-launch at ground height
-  // but slightly steeper so the projectile clears ground friction on landing.
-  //  v_initial = sqrt(g · d / sin(2θ))   with d=8, g=9.81, θ=38° → ≈9.0 m/s
-  launchProjectile() {
-    if (this.currentScene !== "__catapult.xml") {
-      console.info("Launch only works in __catapult.xml — switching.");
-      this.params.scene = "__catapult.xml";
-      this.switchScene("__catapult.xml");
-      return;
-    }
-    if (!this.data || !this.model) return;
-
-    let projID = -1;
-    for (const [id, g] of Object.entries(this.bodies)) {
-      if (g?.name === "catapult_projectile") { projID = Number(id); break; }
-    }
-    if (projID < 0) return;
-
-    // Reset projectile qpos to home (0, 0, 1.2) and zero any prior qvel.
-    const jntadr = this.model.body_jntadr[projID];
-    const qposadr = this.model.jnt_qposadr[jntadr];
-    const dofadr = this.model.jnt_dofadr[jntadr];
-    this.data.qpos[qposadr + 0] = 0;
-    this.data.qpos[qposadr + 1] = 0;
-    this.data.qpos[qposadr + 2] = 1.2;
-    this.data.qpos[qposadr + 3] = 1; // identity quat (w, x, y, z)
-    this.data.qpos[qposadr + 4] = 0;
-    this.data.qpos[qposadr + 5] = 0;
-    this.data.qpos[qposadr + 6] = 0;
-    for (let k = 0; k < 6; k++) this.data.qvel[dofadr + k] = 0;
-
-    // Apply launch velocity: player-controlled angle + speed, +x direction.
-    // Slight tumble for flair.
-    const theta = (this.params.launchAngle ?? 38) * Math.PI / 180;
-    const baseSpeed = this.params.launchSpeed ?? 9.0;
-    const speed = baseSpeed + (Math.random() - 0.5) * 0.4; // tiny jitter so repeats aren't identical
-    this.data.qvel[dofadr + 0] = speed * Math.cos(theta);
-    this.data.qvel[dofadr + 1] = 0;
-    this.data.qvel[dofadr + 2] = speed * Math.sin(theta);
-    this.data.qvel[dofadr + 3] = (Math.random() - 0.5) * 4;
-    this.data.qvel[dofadr + 4] = (Math.random() - 0.5) * 4;
-    this.data.qvel[dofadr + 5] = (Math.random() - 0.5) * 4;
-    this.mujoco.mj_forward(this.model, this.data);
-
-    // Reset stored distance so the HUD drops while in flight.
-    this._catapultLastDistance = null;
-    this._catapultProjID = projID;
-    this._catapultInFlight = true;
-    this._catapultLaunchMs = performance.now();
-  }
-
-  // Once per frame in catapult scene: detects landing (low speed + low height)
-  // after a minimum in-flight time, computes distance-to-target-center, stashes
-  // it for the HUD. Zero cost outside catapult scene (early return).
-  _updateCatapultScore() {
-    if (this.currentScene !== "__catapult.xml" || !this._catapultInFlight) return;
-    if (performance.now() - this._catapultLaunchMs < 400) return; // give it time to leave home
-    const id = this._catapultProjID;
-    if (id == null || id < 0) return;
-    const x = this.data.xpos[id * 3 + 0];
-    const y = this.data.xpos[id * 3 + 1];
-    const z = this.data.xpos[id * 3 + 2];
-    const jntadr = this.model.body_jntadr[id];
-    const dofadr = this.model.jnt_dofadr[jntadr];
-    const vx = this.data.qvel[dofadr + 0];
-    const vy = this.data.qvel[dofadr + 1];
-    const vz = this.data.qvel[dofadr + 2];
-    const speed = Math.hypot(vx, vy, vz);
-    // Landed when moving slowly and low to the ground.
-    if (speed < 0.15 && z < 0.35) {
-      this._catapultInFlight = false;
-      const dx = x - 8, dy = y;
-      const dist = Math.hypot(dx, dy);
-      this._catapultLastDistance = dist;
-      this._updateCatapultHud();
+    for (let b = 1; b < this.model.nbody; b++) {
+      const off = b * 6;
+      xfrc[off + 0] = fx;
+      xfrc[off + 1] = fy;
+      xfrc[off + 2] = 0;
+      xfrc[off + 3] = 0;
+      xfrc[off + 4] = 0;
+      xfrc[off + 5] = 0;
     }
   }
 
-  // Small HUD chip, top-right, shows current status + last shot's distance.
-  // DOM is created lazily on first use; updates only when the text changes.
-  _updateCatapultHud() {
-    const visible = this.currentScene === "__catapult.xml";
-    let el = this._catapultHud;
-    if (!el) {
-      el = document.createElement("div");
-      el.id = "catapult-hud";
-      el.style.cssText = [
-        "position:fixed", "top:14px", "right:320px", "z-index:10",
-        "font:600 12px/1.2 system-ui,sans-serif", "letter-spacing:0.06em",
-        "color:#e8f0ff", "text-shadow:0 1px 3px rgba(0,0,0,.6)",
-        "background:rgba(20,30,55,.55)", "padding:8px 12px", "border-radius:8px",
-        "border:1px solid rgba(180,210,255,.2)", "pointer-events:none",
-        "display:none", "min-width:150px", "text-align:center",
-      ].join(";");
-      document.body.appendChild(el);
-      this._catapultHud = el;
+  stepPhysics() {
+    if (this.params.paused || !this.model) return;
+    const timestep = this.model.opt.timestep;
+    const scale = TIMESCALE_PRESETS[this.params.timescaleLabel] ?? 1.0;
+    const wallDt = this.clock.getDelta() * 1000 * scale;
+    if (this.mujocoTime === 0) this.mujocoTime = performance.now() - wallDt;
+    this.mujocoTime += wallDt;
+    const simStart = performance.now();
+    while (this.mujocoTime < performance.now()) {
+      this.mujoco.mj_step(this.model, this.data);
+      this.mujocoTime += timestep * 1000;
+      if (performance.now() - simStart > 30) break;
     }
-    if (!visible) {
-      if (el.style.display !== "none") el.style.display = "none";
-      return;
-    }
-
-    let txt;
-    if (this._catapultInFlight) txt = "🎯 In flight…";
-    else if (this._catapultLastDistance == null) txt = "🎯 Press Launch";
-    else {
-      const d = this._catapultLastDistance;
-      let medal = "";
-      if (d < 0.35) medal = "🥇 BULLSEYE";
-      else if (d < 0.75) medal = "🥈 AMBER";
-      else if (d < 1.25) medal = "🥉 GREEN";
-      else if (d < 1.9) medal = "🔵 BLUE";
-      else medal = "📏 OUTSIDE";
-      txt = `${medal}\n${d.toFixed(2)} m`;
-    }
-    if (el._lastTxt !== txt) {
-      el._lastTxt = txt;
-      el.innerHTML = txt.replace("\n", "<br>");
-    }
-    if (el.style.display !== "block") el.style.display = "block";
   }
 
-  // Trajectory preview — dashed parabola from the projectile's home (0, 0, 1.2)
-  // to the ideal ballistic landing point, based on the current launchAngle +
-  // launchSpeed. Only visible in the catapult scene. Updates when either slider
-  // changes OR when the scene becomes active (via _setupTrajectoryPreview).
-  //
-  // Math: 2-D ballistic in the xz plane.
-  //   x(t) = v·cosθ·t
-  //   z(t) = z0 + v·sinθ·t - 0.5·g·t²
-  // Landing at z=0 → solve quadratic in t, pick positive root.
-  // We sample N points along the flight and draw a dashed line through them.
-  _updateTrajectoryPreview() {
-    if (!this.scene) return;
-    const visible = this.currentScene === "__catapult.xml";
-    let line = this._trajLine;
-    if (!line) {
-      const geom = new THREE.BufferGeometry();
-      const mat = new THREE.LineDashedMaterial({
-        color: 0xffd878,
-        dashSize: 0.25,
-        gapSize: 0.14,
-        transparent: true,
-        opacity: 0.75,
-        depthWrite: false,
-      });
-      line = new THREE.Line(geom, mat);
-      line.frustumCulled = false;
-      this.scene.add(line);
-      this._trajLine = line;
+  syncMeshes() {
+    if (!this.model || !this.data) return;
+    for (let b = 1; b < this.model.nbody; b++) {
+      const group = this.bodies[b];
+      if (!group) continue;
+      getPosition(this.data.xpos, b, group.position);
+      getQuaternion(this.data.xquat, b, group.quaternion);
     }
-    if (!visible) { line.visible = false; return; }
-
-    const thetaDeg = this.params.launchAngle ?? 38;
-    const speed = this.params.launchSpeed ?? 9.0;
-    const theta = thetaDeg * Math.PI / 180;
-    const vx = speed * Math.cos(theta);
-    const vz = speed * Math.sin(theta);
-    const g = -(this.model?.opt?.gravity?.[2] ?? 9.81);
-    const z0 = 1.2;
-
-    // Positive root of  -0.5·g·t² + vz·t + z0 = 0
-    //   t = (vz + √(vz² + 2·g·z0)) / g
-    const disc = vz * vz + 2 * g * z0;
-    const tLand = disc > 0 ? (vz + Math.sqrt(disc)) / g : 0;
-    const N = 48;
-    const pts = new Float32Array(N * 3);
-    for (let i = 0; i < N; i++) {
-      const t = (i / (N - 1)) * tLand;
-      const xMj = vx * t;
-      const zMj = z0 + vz * t - 0.5 * g * t * t;
-      // MJ → THREE: (x, y, z)_mj → (x, z, -y)_three. y_mj = 0 here.
-      pts[i * 3 + 0] = xMj;
-      pts[i * 3 + 1] = Math.max(0, zMj); // clamp at ground so line doesn't dive below
-      pts[i * 3 + 2] = 0;
-    }
-    line.geometry.setAttribute("position", new THREE.BufferAttribute(pts, 3));
-    line.geometry.computeBoundingSphere();
-    line.computeLineDistances(); // required for dashed materials
-    line.visible = true;
-  }
-
-  // Auto-engage the GetUpFSM when the humanoid is on the ground, settled,
-  // and not being interacted with. Fires once per settle event; suppressed
-  // while FSM is already active. Only runs in humanoid_getup.xml.
-  //
-  // Gating logic:
-  //   - Scene must be humanoid_getup.xml (the forked XML with higher gears)
-  //   - Param autoGetUp must be true
-  //   - FSM must be idle (not already running)
-  //   - Humanoid must NOT be upright (no point getting up if standing)
-  //   - Humanoid must be settled (joint velocities quiet)
-  //   - Grabber must not be active (user is currently manipulating)
-  //   - No pending punches (recent impulse)
-  _autoEngageGetUp(dt) {
-    if (!this.params.autoGetUp) return;
-    if (this.currentScene !== "humanoid_getup.xml") return;
-    if (!this.humanoidCtrl || !this.getUpFSM) return;
-    if (this.getUpFSM.state !== "idle") return;
-    if (this.grabber?.active) return;
-    if (this._punches && this._punches.length > 0) return;
-
-    const settled = this.humanoidCtrl.isSettled(dt);
-    if (!settled) return;
-
-    const orient = this.humanoidCtrl.detectOrientation();
-    if (orient === "upright") return;  // no need to get up
-
-    // Fire.
-    this.getUpFSM.start(orient);
-  }
-
-  fireCannon() {
-    if (!this.data || !this.model) return;
-    // Find a body named "cannonball" by scanning this.bodies; fall back to searching MuJoCo names.
-    let ballID = -1;
-    for (const [id, g] of Object.entries(this.bodies)) {
-      if (g?.name === "cannonball") { ballID = Number(id); break; }
-    }
-    if (ballID < 0) {
-      console.warn("No cannonball body in current scene — switch to __pyramid.xml");
-      return;
-    }
-    // Reset ball's qvel/qpos to a firing position if this is a repeat shot.
-    // Simpler: just apply a one-shot impulse along +x toward origin.
-    // Reset first so repeated shots start from a fresh pyramid + ball position.
-    this.mujoco.mj_resetData(this.model, this.data);
-    this.mujoco.mj_forward(this.model, this.data);
-    // Directly set the ball's linear velocity on its freejoint. qvel is in MuJoCo world frame (z-up).
-    const jntadr = this.model.body_jntadr[ballID];
-    const dofadr = this.model.jnt_dofadr[jntadr];
-    this.data.qvel[dofadr + 0] = 11;  // +x velocity (toward pyramid at origin)
-    this.data.qvel[dofadr + 1] = 0;
-    this.data.qvel[dofadr + 2] = 3;   // small upward loft so it arcs into upper bricks
-    this.mujoco.mj_forward(this.model, this.data);
   }
 
   onResize() {
@@ -834,9 +597,6 @@ class App {
     this.bloom?.setSize(innerWidth * 0.5, innerHeight * 0.5);
   }
 
-  // "PAUSED" chip — small pill in the bottom-right that appears while sim is paused.
-  // Pure DOM; cheap. Visibility driven each frame from the animate() loop based on
-  // the current params.paused state. Also pulses the chip gently so it's obvious.
   _installPauseChip() {
     const chip = document.createElement("div");
     chip.id = "pause-chip";
@@ -865,8 +625,6 @@ class App {
     this._pauseChip = chip;
   }
 
-  // Pick the hint preset based on interaction state. Writes innerHTML only on
-  // change — cheap even called every frame.
   _updateHints() {
     if (!this._hintsEl) return;
     const g = this.grabber;
@@ -879,10 +637,6 @@ class App {
     this._hintsEl.textContent = this._HINT_PRESETS[key];
   }
 
-  // Wind compass — small SVG rose in the lower-left that rotates with windDir
-  // and fades in with magnitude. Invisible when wind=0, so it doesn't clutter
-  // the default view. MJ heading: 0 = +x (east); rendered as a screen-space
-  // compass with 0 radians pointing right, standard math convention.
   _installWindCompass() {
     const size = 54;
     const wrap = document.createElement("div");
@@ -912,24 +666,19 @@ class App {
 
   _updateWindCompass() {
     if (!this._windCompass) return;
-    // Only show compass when the master toggle is on AND there's actual wind force;
-    // otherwise the slider value is meaningless and the compass shouldn't mislead.
     const effectiveW = this.params.windEnabled ? this.params.wind : 0;
     const w = effectiveW;
     const dir = this.params.windDir;
     const cached = this._lastWindRender;
-    // Skip write if nothing changed (common case, since wind sliders are idle).
     if (Math.abs(w - cached.w) < 0.01 && Math.abs(dir - cached.dir) < 0.005) return;
     cached.w = w; cached.dir = dir;
 
-    // Fade in as wind ramps up; clamp fade curve.
-    const alpha = Math.min(1, w / 6); // full opacity at ≥ 6 N
+    const alpha = Math.min(1, w / 6);
     this._windCompass.style.opacity = alpha.toFixed(3);
-    // Arrow rotation: MJ heading → screen-space rotation. In SVG, y grows down,
-    // so a +heading (CCW in MJ world) becomes -deg in SVG to look correct.
     const deg = -dir * (180 / Math.PI);
     this._windArrow.setAttribute("transform", `rotate(${deg.toFixed(1)})`);
     this._windMag.textContent = `${w.toFixed(1)} N`;
+    this._refreshWindBtns();
   }
 
   _updatePauseChip() {
@@ -941,170 +690,29 @@ class App {
     }
   }
 
-  // GMod-style "freeze everything" — walks every body, zeros qvel on any freejoint.
-  // Articulated joints (hinge/ball) are also zeroed for thoroughness. One-shot action
-  // via GUI button; physics resumes immediately so gravity will re-accumulate speed.
-  freezeAll() {
-    if (!this.model || !this.data) return;
-    let frozen = 0;
-    for (let b = 1; b < this.model.nbody; b++) {
-      const jntAdr = this.model.body_jntadr[b];
-      const numJnt = this.model.body_jntnum[b];
-      if (jntAdr < 0 || numJnt <= 0) continue;
-      for (let j = 0; j < numJnt; j++) {
-        const ji = jntAdr + j;
-        const dof = this.model.jnt_dofadr[ji];
-        const type = this.model.jnt_type[ji];
-        // dof widths: free=6, ball=3, hinge=1, slide=1
-        const dofW = type === 0 ? 6 : type === 1 ? 3 : 1;
-        for (let k = 0; k < dofW; k++) this.data.qvel[dof + k] = 0;
-      }
-      frozen++;
-    }
-    // Recompute derived state (forces, contact) with zeroed velocities.
-    this.mujoco.mj_forward(this.model, this.data);
-    return frozen;
-  }
-
-  // Applies a uniform horizontal wind force to every dynamic body via xfrc_applied.
-  // Must run BEFORE the grabber so the grabber's per-body write overrides wind for
-  // the currently-dragged body.
-  // Scans contacts, bumps shakeEnergy on spikes, decays it each frame, and applies
-  // a small noisy offset to the camera position. Called AFTER controls.update() and
-  // cinematic orbit so the offset is a pure visual perturbation that gets undone next frame.
-  updateScreenShake(dtSec) {
-    // remove previous frame's offset so it doesn't accumulate
-    this.camera.position.sub(this._shakeOffset);
-    this._shakeOffset.set(0, 0, 0);
-
-    if (!this.params.screenShake) { this.shakeEnergy = 0; return; }
-
-    // Sample contacts for fresh spikes (cheap — we already do this elsewhere but
-    // keeping shake independent so it works even if audio/sparks are off).
-    if (this.data) {
-      const d = this.data;
-      const n = d.ncon;
-      const seen = new Set();
-      for (let i = 0; i < n; i++) {
-        const c = d.contact.get(i);
-        const key = c.geom1 + "_" + c.geom2;
-        seen.add(key);
-        const depth = Math.max(0, -c.dist);
-        const prev = this._prevShakeSpikes.get(key) ?? 0;
-        const delta = depth - prev;
-        this._prevShakeSpikes.set(key, depth);
-        if (delta > 0.0015) {
-          this.shakeEnergy = Math.min(1.2, this.shakeEnergy + Math.min(0.6, delta * 150));
-        }
-      }
-      for (const k of this._prevShakeSpikes.keys()) if (!seen.has(k)) this._prevShakeSpikes.delete(k);
-    }
-
-    // Exponential decay (~400 ms half-life)
-    this.shakeEnergy *= Math.exp(-dtSec / 0.25);
-    if (this.shakeEnergy < 0.002) { this.shakeEnergy = 0; return; }
-
-    // Random offset in camera-local right/up axes so the shake tracks view orientation.
-    const amp = this.shakeEnergy * 0.05; // meters at full energy
-    const forward = new THREE.Vector3();
-    this.camera.getWorldDirection(forward);
-    const right = new THREE.Vector3().crossVectors(forward, this.camera.up).normalize();
-    const up = new THREE.Vector3().crossVectors(right, forward).normalize();
-    this._shakeOffset.copy(right).multiplyScalar((Math.random() - 0.5) * 2 * amp)
-      .addScaledVector(up, (Math.random() - 0.5) * 2 * amp);
-    this.camera.position.add(this._shakeOffset);
-  }
-
-  applyWind() {
-    if (!this.data || !this.model) return;
-    // Master toggle — wind sliders only take effect when "Wind" checkbox is on.
-    // Default off so the humanoid doesn't drift around unless the user asks for it.
-    const active = this.params.windEnabled && this.params.wind > 0;
-    const w = active ? this.params.wind : 0;
-    const fx = active ? w * Math.cos(this.params.windDir) : 0;
-    const fy = active ? w * Math.sin(this.params.windDir) : 0;
-    const xfrc = this.data.xfrc_applied;
-    // Overwrite every body's wrench each frame — grabber runs after and will clobber
-    // its one body's slot. This guarantees a slider change takes effect immediately.
-    for (let b = 1; b < this.model.nbody; b++) {
-      const off = b * 6;
-      xfrc[off + 0] = fx;
-      xfrc[off + 1] = fy;
-      xfrc[off + 2] = 0;
-      xfrc[off + 3] = 0;
-      xfrc[off + 4] = 0;
-      xfrc[off + 5] = 0;
-    }
-  }
-
-  // Bullet-time blend [0..1] eases toward bulletTime target; bloom + time-dilation ramp follow it.
-  updateBulletTime(dtSec) {
-    const target = this.params.bulletTime ? 1 : 0;
-    // exponential approach — ~300 ms to reach ~95% of target at dt=1/60
-    const rate = 1 - Math.exp(-dtSec / 0.12);
-    this.bulletBlend += (target - this.bulletBlend) * rate;
-    if (Math.abs(target - this.bulletBlend) < 1e-4) this.bulletBlend = target;
-    if (this.bloom) {
-      this.bloom.strength = this._bloomBase + this.bulletBlend * 0.55;
-    }
-  }
-
-  stepPhysics() {
-    if (this.params.paused || !this.model) return;
-    const timestep = this.model.opt.timestep;
-    const bulletSlow = 1 - this.bulletBlend * 0.85; // 1.0 -> 0.15 at full bullet-time
-    const wallDt = this.clock.getDelta() * 1000 * this.params.timescale * bulletSlow;
-    if (this.mujocoTime === 0) this.mujocoTime = performance.now() - wallDt;
-    this.mujocoTime += wallDt;
-    const simStart = performance.now();
-    while (this.mujocoTime < performance.now()) {
-      this.mujoco.mj_step(this.model, this.data);
-      this.mujocoTime += timestep * 1000;
-      if (performance.now() - simStart > 30) break; // avoid runaway
-    }
-  }
-
-  syncMeshes() {
-    if (!this.model || !this.data) return;
-    for (let b = 1; b < this.model.nbody; b++) {
-      const group = this.bodies[b];
-      if (!group) continue;
-      getPosition(this.data.xpos, b, group.position);
-      getQuaternion(this.data.xquat, b, group.quaternion);
-    }
-  }
-
   animate = () => {
     requestAnimationFrame(this.animate);
     const now = performance.now();
     const frameDt = this._lastFrameMs ? (now - this._lastFrameMs) / 1000 : 0;
     this._lastFrameMs = now;
     this.updateCamTween();
-    this.updateCinematicOrbit(Math.min(frameDt, 0.05)); // clamp to 50 ms so tab-unfocus doesn't snap camera
-    this.updateBulletTime(Math.min(frameDt, 0.05));
+    this.updateCinematicOrbit(Math.min(frameDt, 0.05));
     this.controls.update();
     this.applyWind();
     this.grabber?.apply();
-    this.applyPunches();
-    this._autoEngageGetUp(Math.min(frameDt, 0.05));
-    this.getUpFSM?.tick(Math.min(frameDt, 0.05));
-    this.humanoidCtrl?.update();  // PD ctrl for humanoid self-right — no-op unless enabled
+    this.applyStandHold();
     this.stepPhysics();
-    this.replay?.update(); // samples while live, scrubs qpos during replay (overrides stepPhysics output)
+    this.replay?.update();
     this.syncMeshes();
     this.trails?.update();
-    this.contactViz?.update();
     this.audio?.update();
     this.sparks?.update();
     this.metricsHud?.update();
     this.crosshair?.update();
-    this.hoverHighlight?.update(); // per-frame, but only writes when target changes
-    this._updateHints();            // cheap: textContent only on state change
-    this._updateWindCompass();      // cheap: skips when wind+dir unchanged
+    this.hoverHighlight?.update();
+    this._updateHints();
+    this._updateWindCompass();
     this._updatePauseChip();
-    this._updateCatapultScore();    // no-op outside __catapult.xml
-    this._updateCatapultHud();      // hides/shows chip; DOM text only on change
-    this.updateScreenShake(Math.min(frameDt, 0.05));
     this.composer.render();
     this.stats.update();
   };

@@ -3,26 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MuJoCo × Three.js Playground</title>
+  <title>Rex Heng</title>
   <style>
     html, body { margin:0; padding:0; height:100%; background:#05070c; color:#e8ecf5; font-family: ui-sans-serif, system-ui, -apple-system, "Inter", sans-serif; overflow:hidden; }
     canvas { display:block; }
-    #hud { position:fixed; bottom:16px; left:16px; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.8); opacity:.92; }
-    #hud h1 { margin:0 0 4px; font-size:18px; font-weight:600; letter-spacing:.04em; }
-    #hud p { margin:0; font-size:12px; opacity:.75; }
+    #hud { position:fixed; bottom:16px; left:76px; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.8); opacity:.82; }
+    #hud h1 { margin:0 0 4px; font-size:15px; font-weight:600; letter-spacing:.06em; }
+    #hud p { margin:0; font-size:11px; opacity:.7; }
     .lil-gui { --background-color:#0d1220ee; --widget-color:#1b2340; --focus-color:#2a3560; --title-background-color:#0a0e1a; --title-text-color:#e8ecf5; --text-color:#cfd6e8; font-family: ui-monospace, monospace !important; }
-    /* Bullet-time vignette + chromatic tint. Pointer-events:none so it can't eat clicks. */
-    body::after {
-      content:""; position:fixed; inset:0; pointer-events:none;
-      background: radial-gradient(ellipse at center, transparent 45%, rgba(80,10,30,0.0) 70%, rgba(80,10,30,0.0) 100%);
-      mix-blend-mode: screen;
-      opacity: 0; transition: opacity 300ms ease-out;
-      z-index: 5;
-    }
-    body.bullet-time::after {
-      background: radial-gradient(ellipse at center, transparent 35%, rgba(120,20,40,0.35) 80%, rgba(140,25,45,0.55) 100%);
-      opacity: 1;
-    }
   </style>
   <script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.js"></script>
   <script type="importmap">

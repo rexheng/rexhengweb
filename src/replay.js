@@ -17,12 +17,9 @@
 // "re-simulated"; that's fine — the rigid motion is the dramatic bit.
 
 const CAPACITY = 80;    // samples held
-const SAMPLE_MS = 50;   // sample cadence = 3 Hz... wait, 50ms = 20Hz. 80 samples @ 50ms = 4s window.
+const SAMPLE_MS = 50;   // sample cadence = 20Hz. 80 samples @ 50ms = 4s window.
 const REPLAY_SPEED = 0.3; // 0.3× = slo-mo
 const SEPIA_CSS = "sepia(0.75) contrast(1.08) brightness(0.95) saturate(1.1)";
-const AUTO_SPIKE_THRESHOLD = 0.006;  // penetration-depth delta that counts as "big impact" — 5× the sparks threshold
-const AUTO_COOLDOWN_MS = 5000;       // don't retrigger auto-replay within 5s of the last one
-const AUTO_MIN_SAMPLES = 20;         // need ≥1s of buffer to bother auto-replaying
 
 export class Replay {
   constructor(app) {
@@ -34,13 +31,6 @@ export class Replay {
     this.active = false;    // true during replay
     this._scrubT = 0;       // replay playhead in ms (relative to oldest sample)
     this._savedPaused = false;
-
-    // Auto-replay state: toggle in GUI, detect via per-contact-pair penetration-depth
-    // spike (same shape as sparks/audio spike detection). Cooldown prevents chain
-    // triggers from a single tumble.
-    this.autoEnabled = false;
-    this._prevDepths = new Map();    // geomPair → last penetration depth
-    this._lastAutoTriggerMs = 0;
 
     // Banner overlay — only visible while replaying.
     const banner = document.createElement("div");
@@ -78,53 +68,7 @@ export class Replay {
         this._sample(nowMs);
         this._lastSampleMs = nowMs;
       }
-      if (this.autoEnabled) this._checkAutoTrigger(nowMs);
     }
-  }
-
-  // Scans current contacts for penetration-depth spikes — same pattern as
-  // sparks/audio. A spike larger than AUTO_SPIKE_THRESHOLD fires auto-replay
-  // iff the cooldown has elapsed AND we have enough buffer to replay.
-  // Per-frame cost: O(ncon) map ops. ncon is typically <40 on humanoid; when
-  // toggle is off this method never runs.
-  _checkAutoTrigger(nowMs) {
-    const { data } = this.app;
-    if (!data) return;
-    if (nowMs - this._lastAutoTriggerMs < AUTO_COOLDOWN_MS) return;
-    if (this.count < AUTO_MIN_SAMPLES) return;
-
-    const ncon = data.ncon;
-    const seen = new Set();
-    let fired = false;
-    for (let i = 0; i < ncon; i++) {
-      const c = data.contact.get(i);
-      const key = c.geom1 + "_" + c.geom2;
-      seen.add(key);
-      const depth = Math.max(0, -c.dist);
-      const hadPrev = this._prevDepths.has(key);
-      const prev = this._prevDepths.get(key) ?? 0;
-      this._prevDepths.set(key, depth);
-      // Only count as a spike if we already had a baseline for this pair — a
-      // brand-new contact isn't necessarily a violent event (object just touched
-      // the floor at rest), and treating "depth" as "delta" produces false
-      // positives on scene load.
-      if (!hadPrev) continue;
-      const delta = depth - prev;
-      if (!fired && delta > AUTO_SPIKE_THRESHOLD) {
-        fired = true;
-        // Record timestamp BEFORE starting so the cooldown resets even if the
-        // user aborts the replay early.
-        this._lastAutoTriggerMs = nowMs;
-        this.start();
-      }
-    }
-    // Drop stale keys so the map doesn't grow unbounded.
-    for (const k of this._prevDepths.keys()) if (!seen.has(k)) this._prevDepths.delete(k);
-  }
-
-  setAutoEnabled(v) {
-    this.autoEnabled = v;
-    if (!v) this._prevDepths.clear();
   }
 
   _sample(nowMs) {
