@@ -17,7 +17,6 @@ import { Replay } from "./replay.js";
 import { PortfolioOverlay } from "./portfolioOverlay.js";
 import { ProjectSystem } from "./projects.js";
 import { ControlsPanel } from "./controlsPanel.js";
-import { HumanoidPilot } from "./humanoidPilot.js";
 import { injectUI } from "./ui.js";
 import load_mujoco from "../vendor/mujoco/mujoco_wasm.js";
 
@@ -306,9 +305,6 @@ class App {
     this.projectSystem = new ProjectSystem(this);
     this.projectSystem.onSceneLoaded();
 
-    // Humanoid pilot — WASD/Space/Ctrl/V/G control when enabled (Stage 0+).
-    this.pilot = new HumanoidPilot(this);
-
     // Portfolio overlay — collapsible, left-anchored.
     this.portfolio = new PortfolioOverlay({
       name: "Rex Heng",
@@ -571,15 +567,12 @@ class App {
     this.updateCamTween();
     this.updateCinematicOrbit(Math.min(frameDt, 0.05));
     this.controls.update();
-    this.pilot?.update();
     this.applyWind();
-    this.pilot?.applyDrive();   // Stage 2: pelvis wrench — after applyWind zeros xfrc, before grabber may override
     this.grabber?.apply();
     this.applyStandHold();
     this.stepPhysics();
     this.replay?.update();
     this.syncMeshes();
-    this.pilot?.updateCamera();   // after body transforms are current
     this.trails?.update();
     this.sparks?.update();
     this.metricsHud?.update();
