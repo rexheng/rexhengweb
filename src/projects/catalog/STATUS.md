@@ -6,3 +6,4 @@
 | republic | Republic | built | 2026-04-24 | topple | Second worked example. Description is a placeholder — Rex to supply real abstract. |
 | neo-riemannian-explorer | Neo-Riemannian Explorer | built | 2026-04-24 | null | Piano octave sprite. Description verbatim from projects/index.html card. |
 | four-letters | Four Letters | built | 2026-04-24 | null | 4×4 letter tile grid, "REX " across row 1. Letter shapes are scale-hacks; future pass could use a real text mesh. |
+| sustainalytics-scraper | Sustainalytics Scraper | built | 2026-04-24 | null | Three stacked cardboard boxes + green leaf emblem. No direct visual reference for a scraping script; silhouette is a stand-in. |
