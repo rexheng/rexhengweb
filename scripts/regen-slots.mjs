@@ -29,11 +29,18 @@ function slotZ(i) {
 }
 
 function slotLine(i) {
+  // contype=2 conaffinity=1 is the physics-agent's static collision filter
+  // (commit 010a20b on mujoco-portfolio). Pairwise rule: (a.contype &
+  // b.conaff) | (b.contype & a.conaff). Slot-slot = 0, slot-floor = 1,
+  // slot-humanoid = 1. Parked slots never inter-penetrate but live slots
+  // still collide with floor and ragdoll. NO runtime toggle needed —
+  // DO NOT CHANGE these attributes.
   return (
     `${INDENT}<body name="project_slot_${i}" pos="0 0 ${slotZ(i)}">` +
     `<freejoint/>` +
     `<geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" ` +
-    `rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/>` +
+    `rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" ` +
+    `contype="2" conaffinity="1"/>` +
     `</body>`
   );
 }
@@ -64,19 +71,20 @@ function main() {
   // same indent level as the bodies.
   const lines = [];
   lines.push(`${INDENT}${BEGIN}`);
-  lines.push(
-    `${INDENT}<!-- Portfolio project slot pool. Eight dormant freejoint capsules parked`,
-  );
-  lines.push(
-    `${INDENT}     well below the floor. ProjectSystem claims a slot on demand, teleports`,
-  );
-  lines.push(
-    `${INDENT}     it into the scene, and attaches a procedural Three.js mesh group on`,
-  );
-  lines.push(
-    `${INDENT}     top. Empty slots stay parked at z=-60 so they never render or collide`,
-  );
-  lines.push(`${INDENT}     visibly with anything. -->`);
+  lines.push(`${INDENT}<!-- Portfolio project slot pool. Eight dormant freejoint capsules parked`);
+  lines.push(`${INDENT}     well below the floor. Collision mask trick: slot geoms have`);
+  lines.push(`${INDENT}     contype=2 conaffinity=1. Floor + humanoid default to contype=1`);
+  lines.push(`${INDENT}     conaffinity=1. Pairwise collision requires (a.contype & b.conaff)`);
+  lines.push(`${INDENT}     OR (b.contype & a.conaff):`);
+  lines.push(`${INDENT}       slot-floor : (2 & 1) | (1 & 1) = 0 | 1 = 1 → collide ✓`);
+  lines.push(`${INDENT}       slot-slot  : (2 & 1) | (2 & 1) = 0 | 0 = 0 → no collide ✓`);
+  lines.push(`${INDENT}       slot-torso : (2 & 1) | (1 & 1) = 0 | 1 = 1 → collide ✓`);
+  lines.push(`${INDENT}     So parked slots can stack on the same axis without generating`);
+  lines.push(`${INDENT}     dozens of inter-penetrating contacts (which otherwise explodes the`);
+  lines.push(`${INDENT}     sim to NaN on frame 1 and the humanoid launches), but spawned`);
+  lines.push(`${INDENT}     projects still land on the floor and interact with the ragdoll.`);
+  lines.push(`${INDENT}     NO runtime toggle needed — the mask is correct for both states.`);
+  lines.push(`${INDENT}     **DO NOT CHANGE contype/conaffinity ON THESE GEOMS.** -->`);
   for (let i = 0; i < SLOT_COUNT; i++) lines.push(slotLine(i));
   lines.push(`${INDENT}${END}`);
   const block = lines.join(eol);

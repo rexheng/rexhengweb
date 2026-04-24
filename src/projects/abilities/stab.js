@@ -1,5 +1,13 @@
-// Stab ability — one-shot lunge toward the humanoid torso with a spin.
-// Ported from the pre-refactor src/projects.js stabAbility.
+// Stab ability — pre-rotation + fast lunge + contact-reactive torso knockback.
+//
+// Ported from the physics-agent rewrite on mujoco-portfolio (commit 010a20b,
+// "Fix physics explosion, add persistent pin + stab knockback + starfield").
+// The post-rewrite behaviour is: sprite rotates to face the torso, lunges at
+// 22 m/s with a forward tumble, and on first contact with any humanoid body
+// writes a cinematic knockback directly to the torso's qvel so the whole
+// ragdoll pinwheels back. Without this scripted second stage a 2.5 kg prop
+// contact gets absorbed by the articulated chain and barely moves the 41 kg
+// humanoid.
 
 import * as THREE from "three";
 import { findBody } from "./impulse.js";
@@ -17,27 +25,103 @@ export function stab({ app, slot }) {
   slotPos.setFromMatrixPosition(slot.group.matrixWorld);
 
   // Direction from slot → torso in THREE world, swizzled to MJ world.
-  // THREE → MJ: (x, y, z) → (x, -z, y).
-  const dir = torsoPos.clone().sub(slotPos).normalize();
-  const mjDx = dir.x;
-  const mjDy = -dir.z;
-  const mjDz = dir.y;
+  // THREE → MJ: (x, y, z)_three → (x, -z, y)_mj.
+  const dirT = torsoPos.clone().sub(slotPos).normalize();
+  const mjDx = dirT.x;
+  const mjDy = -dirT.z;
+  const mjDz = dirT.y;
 
-  // Impulse: fast lunge at ~14 m/s with a small upward bias + hefty spin.
   const model = app.model, data = app.data;
   const jntAdr = model.body_jntadr[slot.bodyID];
+  const qposAdr = model.jnt_qposadr[jntAdr];
   const dofAdr = model.jnt_dofadr[jntAdr];
-  const SPEED = 14.0;
+
+  // Rotate sprite to face the torso BEFORE the lunge fires. The mesh was
+  // built in Three.js with the visor at local +z; the MuJoCo loader
+  // swizzles such that local-MJ +y maps to local-THREE +z. So "visor
+  // forward" in the body's MJ-local frame is +y. We need a quaternion
+  // that rotates MJ-local +y onto the MJ-world target direction.
+  const qTurn = new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 1, 0),
+    new THREE.Vector3(mjDx, mjDy, mjDz),
+  );
+  // Three stores (x, y, z, w); MJ qpos stores (w, x, y, z). Convert.
+  data.qpos[qposAdr + 3] = qTurn.w;
+  data.qpos[qposAdr + 4] = qTurn.x;
+  data.qpos[qposAdr + 5] = qTurn.y;
+  data.qpos[qposAdr + 6] = qTurn.z;
+
+  // Lunge velocity: much faster than a free-drop for meaningful impact.
+  // 22 m/s is roughly knife-thrust speed — fast enough that the humanoid
+  // gets knocked cleanly when Amogus connects.
+  const SPEED = 22.0;
   data.qvel[dofAdr + 0] = mjDx * SPEED;
   data.qvel[dofAdr + 1] = mjDy * SPEED;
-  data.qvel[dofAdr + 2] = mjDz * SPEED + 2.5; // upward bias so it launches cleanly
-  // Spin axis roughly perpendicular to lunge direction — tumble forward.
+  data.qvel[dofAdr + 2] = mjDz * SPEED + 2.5;  // small upward bias
+  // Forward tumble: spin axis perpendicular to lunge direction.
   const perpAxisX = -mjDy;
   const perpAxisY = mjDx;
   data.qvel[dofAdr + 3] = perpAxisX * 18;
   data.qvel[dofAdr + 4] = perpAxisY * 18;
   data.qvel[dofAdr + 5] = (Math.random() - 0.5) * 6;
 
-  // One-shot impulse; no per-frame tick needed.
-  return { tick() { return false; } };
+  // Flush the qpos write so mj_step sees the new orientation THIS frame.
+  app.mujoco.mj_forward(model, data);
+
+  // Collision-reactive second stage: watch for sprite geom touching any
+  // humanoid body. On first contact, punch the torso with a direct qvel
+  // impulse so the whole ragdoll flies back.
+  const amogusGeoms = new Set();
+  const humanoidGeoms = new Set();
+  for (let g = 0; g < model.ngeom; g++) {
+    const bid = model.geom_bodyid[g];
+    if (bid === slot.bodyID) amogusGeoms.add(g);
+    if (bid > 0) {
+      const bodyGroup = app.bodies?.[bid];
+      const name = bodyGroup?.name || "";
+      if (!name.startsWith("project_slot_")) humanoidGeoms.add(g);
+    }
+  }
+
+  let torsoBodyID = -1;
+  for (const [id, g] of Object.entries(app.bodies || {})) {
+    if (g?.name === "torso") { torsoBodyID = Number(id); break; }
+  }
+  if (torsoBodyID < 0) return { tick() { return false; } };
+  const torsoJnt = model.body_jntadr[torsoBodyID];
+  const torsoDof = torsoJnt >= 0 ? model.jnt_dofadr[torsoJnt] : -1;
+  const torsoIsFree = torsoJnt >= 0 && model.jnt_type[torsoJnt] === 0;
+
+  let hit = false;
+  let timeoutMs = 1500;
+
+  return {
+    tick(dt) {
+      if (hit) return false;
+      timeoutMs -= dt;
+      if (timeoutMs <= 0) return false;
+      if (!torsoIsFree || torsoDof < 0) return false;
+
+      const ncon = data.ncon;
+      if (!ncon) return true;
+      for (let i = 0; i < ncon; i++) {
+        const c = data.contact.get(i);
+        const g1 = c.geom1, g2 = c.geom2;
+        const a1 = amogusGeoms.has(g1), h2 = humanoidGeoms.has(g2);
+        const a2 = amogusGeoms.has(g2), h1 = humanoidGeoms.has(g1);
+        if ((a1 && h2) || (a2 && h1)) {
+          const KNOCK_SPEED = 7.5;
+          data.qvel[torsoDof + 0] = mjDx * KNOCK_SPEED;
+          data.qvel[torsoDof + 1] = mjDy * KNOCK_SPEED;
+          data.qvel[torsoDof + 2] = mjDz * KNOCK_SPEED + 3.0;
+          data.qvel[torsoDof + 3] = -mjDy * 6;
+          data.qvel[torsoDof + 4] =  mjDx * 6;
+          data.qvel[torsoDof + 5] = (Math.random() - 0.5) * 3;
+          hit = true;
+          return false;
+        }
+      }
+      return true;
+    },
+  };
 }
