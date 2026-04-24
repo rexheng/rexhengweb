@@ -299,7 +299,10 @@ export class ProjectSystem {
   _fireAbility(slot) {
     const def = slot.project;
     if (!def?.ability) return;
-    const fn = def.ability({ app: this.app, slot });
+    // Ability context includes the slot's mesh group so tick-based abilities
+    // (pulse, swarm, cycle) can add child meshes, rotate satellite children,
+    // or hot-swap materials/emblems without going through the slot object.
+    const fn = def.ability({ app: this.app, slot, mesh: slot.meshGroup });
     if (fn && typeof fn.tick === "function") this._activeAbilities.push(fn);
     // Close the card so the user sees the result.
     this.dismissCard();
