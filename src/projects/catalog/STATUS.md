@@ -9,3 +9,4 @@
 | sustainalytics-scraper | Sustainalytics Scraper | built | 2026-04-24 | null | Three stacked cardboard boxes + green leaf emblem. No direct visual reference for a scraping script; silhouette is a stand-in. |
 | sustainable-report-analyser | Sustainable Report Analyser | built | 2026-04-24 | null | Folder-with-page slab + magnifier ring. Palette ties to scraper (sage) and Republic (sandstone). |
 | lse-peter | LSE Peter | built | 2026-04-24 | null | First Peter. Uses shared peterAvatar primitive (promoted to builders/). LSE purple + book-stack emblem. |
+| nus-peter | NUS Peter | built | 2026-04-24 | null | Peter + NUS orange + mortarboard emblem. |
