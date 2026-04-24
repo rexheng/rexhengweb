@@ -15,7 +15,7 @@ import { Crosshair } from "./crosshair.js";
 import { HoverHighlight } from "./hoverHighlight.js";
 import { Replay } from "./replay.js";
 import { PortfolioOverlay } from "./portfolioOverlay.js";
-import { ProjectSystem } from "./projects.js";
+import { ProjectSystem } from "./projects/system.js";
 import { ControlsPanel } from "./controlsPanel.js";
 import { injectUI } from "./ui.js";
 import load_mujoco from "../vendor/mujoco/mujoco_wasm.js";
