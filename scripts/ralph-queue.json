@@ -1,0 +1,160 @@
+[
+  {
+    "id": "neo-riemannian-explorer",
+    "label": "Neo-Riemannian Explorer",
+    "title": "Neo-Riemannian Explorer",
+    "card_description": "Interactive music theory visualisation tool featuring two modes: Transformation for chord transformations (P/L/R operations) with visual graph traversal, and Negative Harmony Mode for converting chords and progressions using axis reflection. Includes chord identification, interactive piano, and keyboard shortcuts.",
+    "tags": [
+      "React",
+      "Vite",
+      "Music Theory",
+      "Visualisation"
+    ],
+    "card_link": "https://neoriemannian.vercel.app/",
+    "sprite_role": "prop",
+    "source": "project-card",
+    "accent": "#8a6bbf",
+    "catalog_folder": "src/projects/catalog/neo-riemannian-explorer"
+  },
+  {
+    "id": "four-letters",
+    "label": "Four Letters",
+    "title": "Four Letters",
+    "card_description": "Word-search puzzle game with custom game logic and implementation. Features intuitive UI design with multiple input methods including type, swipe, and tap controls for seamless gameplay across devices.",
+    "tags": [
+      "Game Development",
+      "UI Design",
+      "JavaScript",
+      "Touch Controls"
+    ],
+    "card_link": "https://four-letters-two.vercel.app/",
+    "sprite_role": "character",
+    "source": "project-card",
+    "accent": "#d47a42",
+    "catalog_folder": "src/projects/catalog/four-letters"
+  },
+  {
+    "id": "sustainalytics-scraper",
+    "label": "Sustainalytics Scraper",
+    "title": "Sustainalytics Scraper",
+    "card_description": "Python-based web scraper for extracting ESG data from Sustainalytics platform. Automated data collection for sustainability metrics analysis.",
+    "tags": [
+      "Python",
+      "Web Scraping",
+      "ESG",
+      "Data Analysis"
+    ],
+    "card_link": "https://github.com/rexheng/sustainlyticsscraper/tree/main",
+    "sprite_role": "prop",
+    "source": "project-card",
+    "accent": "#6b9b5f",
+    "catalog_folder": "src/projects/catalog/sustainalytics-scraper"
+  },
+  {
+    "id": "sustainable-report-analyser",
+    "label": "Sustainable Report Analyser",
+    "title": "Sustainable Report Analyser",
+    "card_description": "AI-powered prompt engineering solution for analyzing sustainability reports. Extract key ESG metrics and insights.",
+    "tags": [
+      "Prompt Engineering",
+      "AI",
+      "ESG",
+      "NLP"
+    ],
+    "card_link": "https://docs.google.com/document/d/1e5PgHN8UrYMhesZB3XK-g0LJO-lboEt4aJv-cW73s4Y/edit?usp=sharing",
+    "sprite_role": "prop",
+    "source": "project-card",
+    "accent": "#6b9b5f",
+    "catalog_folder": "src/projects/catalog/sustainable-report-analyser"
+  },
+  {
+    "id": "lse-peter",
+    "label": "LSE Peter",
+    "title": "LSE Peter · Instagram",
+    "card_description": "Educational content series on Instagram under the handle .",
+    "tags": [
+      "Instagram",
+      "Education"
+    ],
+    "card_link": null,
+    "sprite_role": "prop",
+    "source": "instagram-card",
+    "accent": "#c94a82",
+    "catalog_folder": "src/projects/catalog/lse-peter"
+  },
+  {
+    "id": "nus-peter",
+    "label": "NUS Peter",
+    "title": "NUS Peter · Instagram",
+    "card_description": "Educational content series on Instagram under the handle .",
+    "tags": [
+      "Instagram",
+      "Education"
+    ],
+    "card_link": null,
+    "sprite_role": "prop",
+    "source": "instagram-card",
+    "accent": "#c94a82",
+    "catalog_folder": "src/projects/catalog/nus-peter"
+  },
+  {
+    "id": "govt-peter",
+    "label": "Govt Peter",
+    "title": "Govt Peter · Instagram",
+    "card_description": "Educational content series on Instagram under the handle .",
+    "tags": [
+      "Instagram",
+      "Education"
+    ],
+    "card_link": null,
+    "sprite_role": "prop",
+    "source": "instagram-card",
+    "accent": "#c94a82",
+    "catalog_folder": "src/projects/catalog/govt-peter"
+  },
+  {
+    "id": "econ-peter",
+    "label": "Econ Peter",
+    "title": "Econ Peter · Instagram",
+    "card_description": "Educational content series on Instagram under the handle .",
+    "tags": [
+      "Instagram",
+      "Education"
+    ],
+    "card_link": null,
+    "sprite_role": "prop",
+    "source": "instagram-card",
+    "accent": "#c94a82",
+    "catalog_folder": "src/projects/catalog/econ-peter"
+  },
+  {
+    "id": "literature-peter",
+    "label": "Literature Peter",
+    "title": "Literature Peter · Instagram",
+    "card_description": "Educational content series on Instagram under the handle .",
+    "tags": [
+      "Instagram",
+      "Education"
+    ],
+    "card_link": null,
+    "sprite_role": "prop",
+    "source": "instagram-card",
+    "accent": "#c94a82",
+    "catalog_folder": "src/projects/catalog/literature-peter"
+  },
+  {
+    "id": "lawsuit-peter",
+    "label": "Lawsuit Peter",
+    "title": "Lawsuit Peter · Instagram",
+    "card_description": "Educational content series on Instagram under the handle .",
+    "tags": [
+      "Instagram",
+      "Education"
+    ],
+    "card_link": null,
+    "sprite_role": "prop",
+    "source": "instagram-card",
+    "accent": "#c94a82",
+    "catalog_folder": "src/projects/catalog/lawsuit-peter"
+  }
+]

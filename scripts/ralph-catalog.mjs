@@ -1,0 +1,188 @@
+// scripts/ralph-catalog.mjs
+//
+// Outer driver for the Ralph catalog workflow. Parses projects/index.html
+// for every project card, normalises each to an `id`, and emits:
+//   - scripts/ralph-queue.json   — structured queue for automation
+//   - scripts/ralph-queue.md     — human-readable queue + per-project
+//                                  prompts ready for a /loop skill.
+//
+// Only projects that do NOT already have a folder under
+// `src/projects/catalog/<id>/` are added to the queue. Amogus and
+// Republic are already built so they're skipped.
+//
+// CLI: node scripts/ralph-catalog.mjs
+
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(__dirname, "..");
+const INDEX_HTML = resolve(ROOT, "projects", "index.html");
+const CATALOG_DIR = resolve(ROOT, "src", "projects", "catalog");
+const QUEUE_JSON = resolve(__dirname, "ralph-queue.json");
+const QUEUE_MD = resolve(__dirname, "ralph-queue.md");
+const PROMPT_MD = resolve(CATALOG_DIR, "_ralph_subagent_prompt.md");
+
+function slugify(label) {
+  return label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-+/g, "-");
+}
+
+function stripTags(html) {
+  return html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
+function parseCards(html) {
+  // Find every <div class="project-card"> … </div> block and pull out
+  // the title / description / tags / link. The HTML is hand-written and
+  // well-formed enough that a simple regex works; if it ever gets
+  // generated or template-y we should switch to a proper parser.
+  const cardRegex = /<div class="project-card">([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/g;
+  const out = [];
+  for (const match of html.matchAll(cardRegex)) {
+    const block = match[1];
+    const titleMatch = block.match(/<h3 class="project-title">([\s\S]*?)<\/h3>/);
+    const descMatch = block.match(/<p class="project-description">([\s\S]*?)<\/p>/);
+    const tags = [...block.matchAll(/<span class="project-tag">([\s\S]*?)<\/span>/g)]
+      .map((m) => stripTags(m[1]));
+    // Also handle Instagram cards which use a different structure.
+    const igNameMatch = block.match(/<div class="instagram-name">([\s\S]*?)<\/div>/);
+    const igHandleMatch = block.match(/<div class="instagram-handle">([\s\S]*?)<\/div>/);
+    const linkMatch = block.match(/<a[^>]+href="([^"]+)"[^>]+class="project-link"/);
+    if (titleMatch) {
+      const label = stripTags(titleMatch[1]);
+      out.push({
+        id: slugify(label),
+        label,
+        title: label,
+        card_description: descMatch ? stripTags(descMatch[1]) : "",
+        tags,
+        card_link: linkMatch ? linkMatch[1] : null,
+        sprite_role: guessRole(label, tags),
+        source: "project-card",
+      });
+    } else if (igNameMatch) {
+      const label = stripTags(igNameMatch[1]);
+      const handle = igHandleMatch ? stripTags(igHandleMatch[1]) : "";
+      out.push({
+        id: slugify(label),
+        label,
+        title: `${label} · Instagram`,
+        card_description: `Educational content series on Instagram under the handle ${handle}.`,
+        tags: ["Instagram", "Education"],
+        card_link: linkMatch ? linkMatch[1] : null,
+        sprite_role: "prop",
+        source: "instagram-card",
+      });
+    }
+  }
+  return out;
+}
+
+function guessRole(label, tags) {
+  const l = label.toLowerCase();
+  const t = tags.map((x) => x.toLowerCase());
+  if (t.some((x) => x.includes("game"))) return "character";
+  if (l.includes("scraper") || l.includes("analyser") || l.includes("analyzer")) return "prop";
+  if (l.includes("peter")) return "character";
+  return "prop";
+}
+
+function suggestAccent(tags) {
+  const t = tags.map((x) => x.toLowerCase());
+  if (t.some((x) => x.includes("esg") || x.includes("sustainab"))) return "#6b9b5f";
+  if (t.some((x) => x.includes("music"))) return "#8a6bbf";
+  if (t.some((x) => x.includes("game"))) return "#d47a42";
+  if (t.some((x) => x.includes("python"))) return "#4a82c9";
+  if (t.some((x) => x.includes("instagram"))) return "#c94a82";
+  return "#8a8a8a";
+}
+
+function buildQueue() {
+  if (!existsSync(INDEX_HTML)) {
+    console.error(`ralph-catalog: missing ${INDEX_HTML}`);
+    process.exit(1);
+  }
+  const html = readFileSync(INDEX_HTML, "utf8");
+  const cards = parseCards(html);
+  const queue = [];
+  for (const card of cards) {
+    const catalogPath = resolve(CATALOG_DIR, card.id);
+    if (existsSync(catalogPath)) continue; // skip already-built
+    queue.push({
+      ...card,
+      accent: suggestAccent(card.tags),
+      catalog_folder: `src/projects/catalog/${card.id}`,
+    });
+  }
+  return queue;
+}
+
+function renderQueueMd(queue, promptTemplate) {
+  const lines = [];
+  lines.push("# Ralph queue — projects pending catalog build");
+  lines.push("");
+  lines.push(
+    "Generated by `scripts/ralph-catalog.mjs`. Each entry below is a filled-in",
+  );
+  lines.push("subagent prompt ready to hand to a /loop skill or a manual run.");
+  lines.push("");
+  lines.push("## Queue summary");
+  lines.push("");
+  lines.push("| # | id | label | tags | role | accent |");
+  lines.push("|---|---|---|---|---|---|");
+  queue.forEach((e, i) => {
+    lines.push(
+      `| ${i + 1} | \`${e.id}\` | ${e.label} | ${e.tags.join(", ")} | ${e.sprite_role} | \`${e.accent}\` |`,
+    );
+  });
+  lines.push("");
+  lines.push("## Per-project prompts");
+  lines.push("");
+  lines.push("To run one, dispatch a subagent with the prompt below + the");
+  lines.push("metadata under its `## inputs` heading. The shared prompt");
+  lines.push("(blast radius, workflow, commit rules) lives at");
+  lines.push("`src/projects/catalog/_ralph_subagent_prompt.md` — it's");
+  lines.push("intentionally NOT duplicated here so the source of truth");
+  lines.push("stays single.");
+  lines.push("");
+  queue.forEach((e, i) => {
+    lines.push(`### ${i + 1}. \`${e.id}\` — ${e.label}`);
+    lines.push("");
+    lines.push("**Inputs:**");
+    lines.push("");
+    lines.push("```json");
+    lines.push(JSON.stringify(e, null, 2));
+    lines.push("```");
+    lines.push("");
+    lines.push(
+      `**Shared prompt:** see \`src/projects/catalog/_ralph_subagent_prompt.md\` (substitute \`{{ID}}\` → \`${e.id}\`, \`{{label}}\` → \`${e.label}\`, etc.).`,
+    );
+    lines.push("");
+    lines.push("---");
+    lines.push("");
+  });
+  return lines.join("\n");
+}
+
+function main() {
+  const queue = buildQueue();
+  const promptTemplate = existsSync(PROMPT_MD) ? readFileSync(PROMPT_MD, "utf8") : "";
+
+  writeFileSync(QUEUE_JSON, JSON.stringify(queue, null, 2), "utf8");
+  writeFileSync(QUEUE_MD, renderQueueMd(queue, promptTemplate), "utf8");
+
+  process.stdout.write(
+    `ralph-catalog: queued ${queue.length} project(s)\n` +
+      `  json: ${QUEUE_JSON}\n  md:   ${QUEUE_MD}\n`,
+  );
+  for (const e of queue) {
+    process.stdout.write(`    - ${e.id.padEnd(30)} ${e.label} (${e.source})\n`);
+  }
+}
+
+main();
