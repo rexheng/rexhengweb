@@ -13,3 +13,4 @@
 | govt-peter | Govt Peter | built | 2026-04-24 | null | Peter + navy + gavel emblem. |
 | econ-peter | Econ Peter | built | 2026-04-24 | null | Peter + finance green + 3-bar chart emblem. |
 | literature-peter | Literature Peter | built | 2026-04-24 | null | Peter + burgundy + quill/inkwell emblem. |
+| lawsuit-peter | Lawsuit Peter | built | 2026-04-24 | null | Peter + courtroom black + scales-of-justice emblem. |
