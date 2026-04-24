@@ -185,16 +185,20 @@
     <!-- Portfolio project slot pool. Eight dormant freejoint capsules parked
          well below the floor. ProjectSystem claims a slot on demand, teleports
          it into the scene, and attaches a procedural Three.js mesh group on
-         top. Empty slots stay parked at z=-60 so they never render or collide
-         visibly with anything. -->
-    <body name="project_slot_0" pos="0 0 -60"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
-    <body name="project_slot_1" pos="0 0 -60.5"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
-    <body name="project_slot_2" pos="0 0 -61"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
-    <body name="project_slot_3" pos="0 0 -61.5"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
-    <body name="project_slot_4" pos="0 0 -62"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
-    <body name="project_slot_5" pos="0 0 -62.5"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
-    <body name="project_slot_6" pos="0 0 -63"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
-    <body name="project_slot_7" pos="0 0 -63.5"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002"/></body>
+         top. Parked slots have contype=0 conaffinity=0 so they DO NOT generate
+         contacts with each other or the floor — critical because they stack
+         vertically at x=y=0 and their capsule extents heavily overlap. Without
+         this filter, MuJoCo spawns dozens of penetrating contacts at t=0 and
+         the whole sim (including the humanoid) explodes to NaN on frame 1.
+         projects.js flips contype/conaffinity to 1 on spawn, back to 0 on park. -->
+    <body name="project_slot_0" pos="0 0 -60"><freejoint/><geom name="project_slot_geom_0" type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="0" conaffinity="0"/></body>
+    <body name="project_slot_1" pos="0 0 -60.5"><freejoint/><geom name="project_slot_geom_1" type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="0" conaffinity="0"/></body>
+    <body name="project_slot_2" pos="0 0 -61"><freejoint/><geom name="project_slot_geom_2" type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="0" conaffinity="0"/></body>
+    <body name="project_slot_3" pos="0 0 -61.5"><freejoint/><geom name="project_slot_geom_3" type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="0" conaffinity="0"/></body>
+    <body name="project_slot_4" pos="0 0 -62"><freejoint/><geom name="project_slot_geom_4" type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="0" conaffinity="0"/></body>
+    <body name="project_slot_5" pos="0 0 -62.5"><freejoint/><geom name="project_slot_geom_5" type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="0" conaffinity="0"/></body>
+    <body name="project_slot_6" pos="0 0 -63"><freejoint/><geom name="project_slot_geom_6" type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="0" conaffinity="0"/></body>
+    <body name="project_slot_7" pos="0 0 -63.5"><freejoint/><geom name="project_slot_geom_7" type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="0" conaffinity="0"/></body>
   </worldbody>
 
   <contact>

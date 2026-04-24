@@ -281,7 +281,17 @@ export class ProjectSystem {
     this.dismissCard();
 
     const bodies = this.app.bodies;
-    if (!bodies) return;
+    const model = this.app.model;
+    if (!bodies || !model) return;
+
+    // Build a bodyID -> geomID map for slot bodies. Each slot body has exactly
+    // one geom; we toggle its contype/conaffinity on spawn/park so parked slots
+    // never generate contacts (they all stack at x=y=0 below the floor and
+    // would otherwise inter-penetrate and blow the sim up on frame 1).
+    const bodyToGeom = new Map();
+    for (let g = 0; g < model.ngeom; g++) {
+      bodyToGeom.set(model.geom_bodyid[g], g);
+    }
 
     // Index slot bodies by name.
     for (let i = 0; i < SLOT_COUNT; i++) {
@@ -292,8 +302,10 @@ export class ProjectSystem {
           // at z=-60 which is far below the floor, but visible from certain
           // camera angles. Hide the mesh until the slot is claimed.
           g.visible = false;
+          const bodyID = Number(id);
           this.slots.push({
-            bodyID: Number(id),
+            bodyID,
+            geomID: bodyToGeom.get(bodyID) ?? -1,
             name: wantName,
             group: g,
             project: null,
@@ -304,6 +316,18 @@ export class ProjectSystem {
         }
       }
     }
+  }
+
+  // Toggle collision for a slot's geom. Parked slots must have contype=0
+  // conaffinity=0 to avoid penetrating each other (they all live at x=y=0
+  // beneath the floor). When a slot is spawned into the world it needs
+  // contype=1 conaffinity=1 so the capsule collides with the floor + humanoid.
+  _setSlotCollision(slot, enabled) {
+    const model = this.app.model;
+    if (!model || slot.geomID < 0) return;
+    const v = enabled ? 1 : 0;
+    model.geom_contype[slot.geomID] = v;
+    model.geom_conaffinity[slot.geomID] = v;
   }
 
   /**
@@ -333,6 +357,9 @@ export class ProjectSystem {
     slot.group.add(mesh);
     slot.meshGroup = mesh;
     slot.group.visible = true;
+
+    // Enable collision now that the slot is entering the play area.
+    this._setSlotCollision(slot, true);
 
     this.app._rebuildGrabbables?.();
 
@@ -411,6 +438,9 @@ export class ProjectSystem {
     slot.meshGroup = null;
     slot.project = null;
     slot.group.visible = false;
+
+    // Disable collision so the parked slot doesn't penetrate other parked slots.
+    this._setSlotCollision(slot, false);
 
     // Teleport the body back far below the floor.
     const model = this.app.model, data = this.app.data;
