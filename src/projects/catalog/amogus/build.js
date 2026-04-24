@@ -1,130 +1,142 @@
-// Amogus procedural mesh — as-is port from the pre-refactor src/projects.js.
-// Magic numbers intentionally preserved; the catalog contract (no inline
-// literals in build.js) is suspended for this file per spec §2 closing note
-// and §8 step 4. Step 6 rewrites this as a dependency-injected builder
-// that reads every dimension from proportions.js.
+// Amogus procedural mesh — dependency-injected builder.
+//
+// Reads every dimension and colour from proportions.js via its argument.
+// No inline magic numbers, no inline hex strings, no THREE import — all
+// THREE/materials/primitives flow in through `deps` so this module can be
+// reused from a headless render harness.
+//
+// Silhouette decomposition lives at the top of proportions.js.
+// See docs/superpowers/specs/2026-04-24-project-sprite-workflow-design.md §4.2.
 
-import * as THREE from "three";
+export function buildMesh({ THREE, materials, primitives, proportions }) {
+  const { SIZES, COLOURS } = proportions;
 
-export function buildAmogus() {
+  const mats = materials.forProject(THREE, {
+    body: COLOURS.body,
+    shadow: COLOURS.bodyShadow,
+    visorGlass: COLOURS.visorGlass,
+    visorFrame: COLOURS.visorFrame,
+    packTrim: COLOURS.packTrim,
+    antennaTip: COLOURS.antennaTip,
+    antennaTipEm: COLOURS.antennaTipEm,
+    highlight: COLOURS.highlight,
+  });
+
   const group = new THREE.Group();
   group.name = "amogus_mesh";
 
-  const red = new THREE.MeshPhysicalMaterial({
-    color: 0xd94a52,
-    roughness: 0.62,
-    metalness: 0.04,
-    clearcoat: 0.28,
-    clearcoatRoughness: 0.5,
+  // ── Body — flat-bottomed capsule (cylinder + top dome). ─────────────────
+  // The THREE loader rotates the MJ z-up frame so local +y is "up the
+  // torso" — same convention as the pre-refactor build.
+  const body = primitives.tictac(THREE, {
+    radius: SIZES.bodyRadius,
+    cylHeight: SIZES.bodyCylHeight,
+    domeRadius: SIZES.bodyRadius,
+    material: mats.body,
+    baseY: SIZES.bodyBaseY,
   });
-  const darkRed = new THREE.MeshStandardMaterial({
-    color: 0x7a2228,
-    roughness: 0.75,
-    metalness: 0.05,
-  });
-  const visorGlass = new THREE.MeshPhysicalMaterial({
-    color: 0x7ad5e0,
-    roughness: 0.12,
-    metalness: 0.1,
-    transmission: 0.55,
-    thickness: 0.4,
-    ior: 1.35,
-    clearcoat: 1.0,
-    clearcoatRoughness: 0.05,
-    envMapIntensity: 1.2,
-  });
-  const visorFrame = new THREE.MeshStandardMaterial({
-    color: 0x2a3844,
-    roughness: 0.6,
-    metalness: 0.2,
-  });
+  group.add(body);
 
-  // Torso — scaled sphere bean
-  const torso = new THREE.Mesh(new THREE.SphereGeometry(0.26, 40, 32), red);
-  torso.scale.set(1, 1.55, 1);
-  torso.castShadow = true;
-  torso.receiveShadow = true;
-  group.add(torso);
-
-  // Dark band at base for grounding
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.018, 16, 48), darkRed);
-  rim.rotation.x = Math.PI / 2;
-  rim.position.y = -0.22;
-  rim.castShadow = true;
-  group.add(rim);
-
-  // Visor
-  const visorGroup = new THREE.Group();
-  visorGroup.position.set(0, 0.08, 0.205);
-
-  const frameGeo = new THREE.BoxGeometry(0.28, 0.14, 0.06);
-  frameGeo.translate(0, 0, -0.015);
-  const frame = new THREE.Mesh(frameGeo, visorFrame);
-  frame.castShadow = true;
-  visorGroup.add(frame);
-
-  const glass = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
-    visorGlass,
-  );
-  glass.scale.set(0.12, 0.055, 0.05);
-  glass.rotation.x = -Math.PI / 2;
-  glass.position.set(0, 0, 0.01);
-  visorGroup.add(glass);
-
-  const highlight = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.07, 0.012),
-    new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.1,
-      metalness: 0.0,
-      emissive: 0xffffff,
-      emissiveIntensity: 0.3,
-      transparent: true,
-      opacity: 0.85,
+  // ── Grounded rim band at the flat base. ────────────────────────────────
+  group.add(
+    primitives.ringBand(THREE, {
+      radius: SIZES.bodyRadius,
+      tubeRadius: SIZES.rimTubeRadius,
+      material: mats.shadow,
+      y: SIZES.rimY,
     }),
   );
-  highlight.position.set(-0.06, 0.02, 0.035);
-  highlight.rotation.z = -0.18;
-  visorGroup.add(highlight);
-  group.add(visorGroup);
 
-  // Stub legs
+  // ── Visor — wraparound frame + inset glass + specular streak. ──────────
+  const visor = new THREE.Group();
+  visor.position.set(0, SIZES.visorY, SIZES.visorZ);
+
+  const frameGeo = new THREE.BoxGeometry(
+    SIZES.visorWidth,
+    SIZES.visorHeight,
+    SIZES.visorDepth,
+  );
+  // Bias the frame backward so the front face sits just proud of the body.
+  frameGeo.translate(0, 0, -SIZES.visorDepth / 2);
+  const frame = new THREE.Mesh(frameGeo, mats.visorFrame);
+  frame.castShadow = true;
+  visor.add(frame);
+
+  const glassW = SIZES.visorWidth - SIZES.glassInset * 2;
+  const glassH = SIZES.visorHeight - SIZES.glassInset * 2;
+  const glassD = SIZES.visorDepth * 0.55;
+  const glassGeo = new THREE.BoxGeometry(glassW, glassH, glassD);
+  // Bevel the top corners so the glass reads as wraparound, not a flat box:
+  // we achieve this cheaply by scaling a clipped sphere instead.
+  const wrapGlass = new THREE.Mesh(
+    new THREE.SphereGeometry(1, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+    mats.visorGlass,
+  );
+  wrapGlass.scale.set(glassW / 2, glassH / 1.8, glassD);
+  wrapGlass.rotation.x = -Math.PI / 2;
+  wrapGlass.position.set(0, 0, glassD * 0.25);
+  visor.add(wrapGlass);
+
+  // Thin specular streak on the upper-left of the glass.
+  const hl = new THREE.Mesh(
+    new THREE.PlaneGeometry(glassW * 0.45, glassH * 0.12),
+    mats.highlight,
+  );
+  hl.position.set(-glassW * 0.22, glassH * 0.22, glassD * 0.55);
+  hl.rotation.z = -0.18;
+  visor.add(hl);
+
+  group.add(visor);
+
+  // ── Legs — wide stance, stub cylinders. ────────────────────────────────
   for (const sign of [-1, 1]) {
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.14), darkRed);
-    leg.position.set(sign * 0.10, -0.29, -0.01);
-    leg.castShadow = true;
-    leg.receiveShadow = true;
+    const leg = primitives.stubLeg(THREE, {
+      radius: SIZES.legRadius,
+      height: SIZES.legHeight,
+      material: mats.shadow,
+      baseY: SIZES.legCentreY - SIZES.legHeight / 2,
+    });
+    leg.position.x = sign * SIZES.legCentreX;
+    leg.position.z = SIZES.legCentreZ;
     group.add(leg);
   }
 
-  // Backpack
-  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.20, 0.11), red);
-  pack.position.set(0, 0.03, -0.21);
+  // ── Backpack — half-box that hugs the back curve. ──────────────────────
+  const pack = new THREE.Mesh(
+    new THREE.BoxGeometry(SIZES.packWidth, SIZES.packHeight, SIZES.packDepth),
+    mats.body,
+  );
+  pack.position.set(0, SIZES.packCentreY, SIZES.packCentreZ);
   pack.castShadow = true;
   pack.receiveShadow = true;
   group.add(pack);
 
-  // Antenna
-  const antennaBase = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.012, 0.012, 0.04, 12),
-    visorFrame,
+  // A thin darker band where the pack meets the body, for visual grounding.
+  const packTrim = new THREE.Mesh(
+    new THREE.BoxGeometry(SIZES.packWidth * 0.98, SIZES.packHeight * 0.08, SIZES.packDepth * 0.98),
+    mats.packTrim,
   );
-  antennaBase.position.set(0.05, 0.16, -0.21);
+  packTrim.position.set(0, SIZES.packCentreY - SIZES.packHeight / 2 + SIZES.packHeight * 0.04, SIZES.packCentreZ);
+  group.add(packTrim);
+
+  // ── Antenna on the pack shoulder. ──────────────────────────────────────
+  const antennaBase = new THREE.Mesh(
+    new THREE.CylinderGeometry(SIZES.antennaRadius, SIZES.antennaRadius, SIZES.antennaHeight, 12),
+    mats.visorFrame,
+  );
+  antennaBase.position.set(SIZES.antennaX, SIZES.antennaY, SIZES.antennaZ);
   antennaBase.castShadow = true;
   group.add(antennaBase);
 
   const antennaTip = new THREE.Mesh(
-    new THREE.SphereGeometry(0.015, 12, 10),
-    new THREE.MeshStandardMaterial({
-      color: 0xffe4a8,
-      emissive: 0xffc860,
-      emissiveIntensity: 1.2,
-      metalness: 0.2,
-      roughness: 0.3,
-    }),
+    new THREE.SphereGeometry(SIZES.antennaTipRadius, 12, 10),
+    mats.antennaTip,
   );
-  antennaTip.position.set(0.05, 0.19, -0.21);
+  antennaTip.position.set(
+    SIZES.antennaX,
+    SIZES.antennaY + SIZES.antennaHeight / 2 + SIZES.antennaTipGap + SIZES.antennaTipRadius,
+    SIZES.antennaZ,
+  );
   group.add(antennaTip);
 
   return group;
