@@ -10,16 +10,13 @@ import * as primitives from "../../builders/primitives.js";
 export default {
   id: "republic",
   label: "Republic",
-  title: "The Republic — a standing order",
-  subtitle: "2026 · a marble column, loosely installed",
-  meta: "three.js · procedural · lathe",
-  // Placeholder accent pulled from spec §6 (warm sandstone).
+  title: "The Republic — research intelligence platform",
+  subtitle: "2026 · ETH Oxford",
+  meta: "research · intelligence · ETH Oxford",
+  // Warm sandstone accent.
   accent: "#c9b58a",
-  // PLACEHOLDER ABSTRACT — Rex to supply the real copy. Republic has no
-  // corresponding card on projects/index.html. Current text positions it
-  // as an experiment in procedural Roman/Greek architecture.
   description:
-    "An experiment in procedural classical architecture — a single Doric column, entasis and flutes and all, composed from Three.js lathes and primitives and grafted onto the ragdoll playground as a toppling landmark. Placeholder abstract; real copy pending.",
+    "The Republic is a research intelligence platform built at ETH Oxford — built around the procedural Doric column that reads as both title and landmark. It ingests research literature and synthesises it into navigable briefs, so a user can walk into a new field and leave with a defensible position rather than a tab graveyard.",
   links: [
     { label: "Source", href: "#" },
   ],
