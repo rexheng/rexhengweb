@@ -184,3 +184,83 @@ export function disc(THREE, { radius, height, material, segments = 40 }) {
   mesh.receiveShadow = true;
   return mesh;
 }
+
+/**
+ * "Peter" avatar — a stylised standing figure for the Instagram Peter
+ * network. Six different Peters (LSE, NUS, Govt, Econ, Literature,
+ * Lawsuit) share this silhouette: a rounded torso, a spherical head,
+ * two stubby arms, and a subject-specific emblem sitting just above the
+ * head. Each Peter supplies its own palette + emblem mesh.
+ *
+ *   {
+ *     scale = 1,
+ *     bodyMat, headMat, accentMat,
+ *     emblemBuilder: (THREE, { material, y, scale }) => Object3D,
+ *   }
+ *
+ * Returns a Group centred on the origin's horizontal plane; the flat
+ * bottom of the legs sits at y ≈ -0.5*scale*D. Scale defaults to 1
+ * (uses D=0.26 internally through the argument convention — the caller
+ * passes the final scale factor so the sprite can fit the slot capsule).
+ */
+export function peterAvatar(THREE, { bodyMat, headMat, accentMat, emblemBuilder, D = 0.26 }) {
+  const group = new THREE.Group();
+  group.name = "peter_avatar";
+
+  // Body — a rounded capsule using tictac as the lower/upper torso.
+  const torsoR = 0.55 * D;
+  const torsoCyl = 0.95 * D;
+  const torso = tictac(THREE, {
+    radius: torsoR,
+    cylHeight: torsoCyl,
+    domeRadius: torsoR,
+    material: bodyMat,
+    baseY: -0.60 * D,
+  });
+  group.add(torso);
+
+  // Ground rim for contact shadow.
+  group.add(
+    ringBand(THREE, {
+      radius: torsoR,
+      tubeRadius: 0.05 * D,
+      material: accentMat,
+      y: -0.60 * D,
+    }),
+  );
+
+  // Head — sphere sitting just above the torso dome.
+  const headR = 0.35 * D;
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(headR, 24, 18),
+    headMat,
+  );
+  head.position.y = -0.60 * D + torsoCyl + torsoR + headR * 0.75;
+  head.castShadow = true;
+  head.receiveShadow = true;
+  group.add(head);
+
+  // Two stubby arms — tiny capsules at the torso sides.
+  for (const sign of [-1, 1]) {
+    const arm = new THREE.Mesh(
+      new THREE.SphereGeometry(0.15 * D, 14, 12),
+      accentMat,
+    );
+    arm.scale.set(0.8, 1.5, 0.8);
+    arm.position.set(sign * (torsoR + 0.06 * D), -0.60 * D + torsoCyl * 0.55, 0);
+    arm.castShadow = true;
+    group.add(arm);
+  }
+
+  // Emblem — subject-specific, supplied by the caller. Positioned above
+  // the head by default; the emblem builder can ignore the y hint.
+  if (emblemBuilder) {
+    const emblem = emblemBuilder(THREE, {
+      headTopY: head.position.y + headR,
+      D,
+    });
+    if (emblem) group.add(emblem);
+  }
+
+  return group;
+}
