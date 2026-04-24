@@ -186,6 +186,309 @@ export function disc(THREE, { radius, height, material, segments = 40 }) {
 }
 
 /**
+ * London Underground roundel — red torus with a horizontal bar across.
+ *
+ *   { outerR, tubeR, barW, barH, barD, torusMat, barMat, textMat = null }
+ *
+ * The torus lies in the XY plane (rotated so it faces +Z). The bar is a box
+ * extruded through the torus's centre, visibly thicker than the torus so it
+ * reads as the canonical London Underground roundel. Returns a Group
+ * centred on its own origin.
+ */
+export function roundel(THREE, { outerR, tubeR, barW, barH, barD, torusMat, barMat, textMat = null }) {
+  const group = new THREE.Group();
+  group.name = "roundel";
+
+  const torus = new THREE.Mesh(
+    new THREE.TorusGeometry(outerR, tubeR, 20, 60),
+    torusMat,
+  );
+  // TorusGeometry's tube revolves around +Z by default; rotate so the ring
+  // faces the viewer (+Z axis becomes the torus normal, lying in XY plane).
+  torus.castShadow = true;
+  torus.receiveShadow = true;
+  group.add(torus);
+
+  const bar = new THREE.Mesh(
+    new THREE.BoxGeometry(barW, barH, barD),
+    barMat,
+  );
+  bar.castShadow = true;
+  bar.receiveShadow = true;
+  group.add(bar);
+
+  if (textMat) {
+    // Small white "text plate" in the centre of the bar — a slab that a
+    // caller can position letters on later. For the sprite read, a single
+    // white slab at 40%×60% of the bar is enough to trigger the memory of
+    // the STATION roundel.
+    const plate = new THREE.Mesh(
+      new THREE.BoxGeometry(barW * 0.42, barH * 0.62, barD * 1.05),
+      textMat,
+    );
+    group.add(plate);
+  }
+
+  return group;
+}
+
+/**
+ * Stadium track — an oval ring made of two half-circles and two straight
+ * sections. Used for the Oliver Wyman running-track sprite.
+ *
+ *   { outerW, outerD, tubeR, material }
+ *
+ * Returns a Group. Total X extent = outerW, total Z extent = outerD. The
+ * straight sections run along the X axis, the half-circles sit at ±X ends.
+ * Y centre = 0, tube thickness = tubeR.
+ */
+export function stadiumTrack(THREE, { outerW, outerD, tubeR, material }) {
+  const group = new THREE.Group();
+  group.name = "stadium_track";
+
+  const halfDepth = outerD / 2;                   // radius of the end caps
+  const straightLen = Math.max(0.01, outerW - outerD);
+
+  // Two straights — cylinders along X. Length along X axis means rotation
+  // of PI/2 around Z so the cylinder's length aligns with X.
+  for (const sign of [-1, 1]) {
+    const cyl = new THREE.Mesh(
+      new THREE.CylinderGeometry(tubeR, tubeR, straightLen, 18, 1, false),
+      material,
+    );
+    cyl.rotation.z = Math.PI / 2;
+    cyl.position.set(0, 0, sign * halfDepth);
+    cyl.castShadow = true;
+    group.add(cyl);
+  }
+
+  // Two half-circle caps — half-torus on each X end.
+  for (const sign of [-1, 1]) {
+    const cap = new THREE.Mesh(
+      new THREE.TorusGeometry(halfDepth, tubeR, 14, 28, Math.PI),
+      material,
+    );
+    // Flat on the XZ plane (torus normal = +Y), rotated to open toward the
+    // straights (i.e. the half-torus arc opens toward +X on the +X side).
+    cap.rotation.x = Math.PI / 2;
+    cap.rotation.y = sign === 1 ? -Math.PI / 2 : Math.PI / 2;
+    cap.position.set(sign * straightLen / 2, 0, 0);
+    cap.castShadow = true;
+    group.add(cap);
+  }
+
+  return group;
+}
+
+/**
+ * Plus/cross slab — an NHS plus sign composed of two overlapping boxes.
+ *
+ *   { armLength, armWidth, armDepth, material }
+ *
+ * armLength is the tip-to-tip length of each arm; armWidth is the thickness
+ * of the arm; armDepth is the extrusion along Z. The cross is centred on
+ * origin, lying in the XY plane.
+ */
+export function crossSlab(THREE, { armLength, armWidth, armDepth, material }) {
+  const group = new THREE.Group();
+  group.name = "cross_slab";
+
+  const horiz = new THREE.Mesh(
+    new THREE.BoxGeometry(armLength, armWidth, armDepth),
+    material,
+  );
+  horiz.castShadow = true;
+  horiz.receiveShadow = true;
+  group.add(horiz);
+
+  const vert = new THREE.Mesh(
+    new THREE.BoxGeometry(armWidth, armLength, armDepth),
+    material,
+  );
+  vert.castShadow = true;
+  vert.receiveShadow = true;
+  group.add(vert);
+
+  return group;
+}
+
+/**
+ * Open produce crate — a slatted wooden box. Three slats on each long face,
+ * open top. Used for the Peel food-waste marketplace sprite.
+ *
+ *   { width, depth, height, slats = 3, material }
+ *
+ * Width = X extent, Depth = Z extent, Height = Y extent. Centred on its own
+ * origin at y = height/2 (so the base sits at y=0).
+ */
+export function produceCrate(THREE, { width, depth, height, slats = 3, material }) {
+  const group = new THREE.Group();
+  group.name = "produce_crate";
+
+  const slatH = height / (slats * 2 - 1);   // slat + gap + slat + gap + slat
+  const slatThickness = width * 0.05;
+  const slatGap = slatH;                    // equal to slat height so pattern is even
+
+  // Long-face slats (facing ±Z).
+  for (let s = 0; s < slats; s++) {
+    const y = slatH / 2 + s * (slatH + slatGap);
+    for (const sign of [-1, 1]) {
+      const slat = new THREE.Mesh(
+        new THREE.BoxGeometry(width, slatH, slatThickness),
+        material,
+      );
+      slat.position.set(0, y, sign * (depth / 2));
+      slat.castShadow = true;
+      slat.receiveShadow = true;
+      group.add(slat);
+    }
+  }
+
+  // Short-face slats (facing ±X) — narrower, same count.
+  for (let s = 0; s < slats; s++) {
+    const y = slatH / 2 + s * (slatH + slatGap);
+    for (const sign of [-1, 1]) {
+      const slat = new THREE.Mesh(
+        new THREE.BoxGeometry(slatThickness, slatH, depth),
+        material,
+      );
+      slat.position.set(sign * (width / 2), y, 0);
+      slat.castShadow = true;
+      slat.receiveShadow = true;
+      group.add(slat);
+    }
+  }
+
+  // Thin solid base.
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(width, slatThickness, depth),
+    material,
+  );
+  base.position.y = slatThickness / 2;
+  base.castShadow = true;
+  base.receiveShadow = true;
+  group.add(base);
+
+  return group;
+}
+
+/**
+ * Plain rectangular building block — used for city skylines.
+ *
+ *   { width, depth, height, material }
+ *
+ * Centred on origin at y = height/2 (base at y=0).
+ */
+export function buildingBlock(THREE, { width, depth, height, material }) {
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(width, height, depth),
+    material,
+  );
+  mesh.position.y = height / 2;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+/**
+ * Floating 3D music note — a stem + an oblique noteHead.
+ *
+ *   { noteHeadR, stemLength, stemR, material }
+ *
+ * The stem points up from (0, 0, 0); the noteHead (a squashed sphere) sits
+ * at the base of the stem, tilted slightly for readability.
+ */
+export function musicNote(THREE, { noteHeadR, stemLength, stemR, material }) {
+  const group = new THREE.Group();
+  group.name = "music_note";
+
+  const stem = new THREE.Mesh(
+    new THREE.CylinderGeometry(stemR, stemR, stemLength, 12),
+    material,
+  );
+  stem.position.y = stemLength / 2;
+  stem.castShadow = true;
+  group.add(stem);
+
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(noteHeadR, 20, 16),
+    material,
+  );
+  head.scale.set(1.0, 0.7, 0.6);
+  head.rotation.z = -0.3;
+  head.position.set(-noteHeadR * 0.25, 0, 0);
+  head.castShadow = true;
+  group.add(head);
+
+  return group;
+}
+
+/**
+ * Scroll emblem — a flat cylinder with a slight ribbon. Used for the
+ * peter-network Cambridge outfit.
+ *
+ *   { length, radius, material }
+ *
+ * length is along X, the cylinder's central axis.
+ */
+export function scrollEmblem(THREE, { length, radius, material }) {
+  const group = new THREE.Group();
+  group.name = "scroll_emblem";
+
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius, radius, length, 20),
+    material,
+  );
+  body.rotation.z = Math.PI / 2;
+  body.castShadow = true;
+  group.add(body);
+
+  // A thin darker ribbon wrapping the scroll mid-length — implement as a
+  // second cylinder with slightly larger radius and short length.
+  const ribbon = new THREE.Mesh(
+    new THREE.CylinderGeometry(radius * 1.08, radius * 1.08, length * 0.18, 20),
+    material,
+  );
+  ribbon.rotation.z = Math.PI / 2;
+  ribbon.castShadow = true;
+  group.add(ribbon);
+
+  return group;
+}
+
+/**
+ * Briefcase emblem — box body + handle bar. Simplified from the brief
+ * (no latching hardware — the handle alone is enough to read as briefcase
+ * at the sprite's pixel size).
+ *
+ *   { width, height, depth, handleR, material }
+ */
+export function briefcaseEmblem(THREE, { width, height, depth, handleR, material }) {
+  const group = new THREE.Group();
+  group.name = "briefcase_emblem";
+
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(width, height, depth),
+    material,
+  );
+  body.castShadow = true;
+  group.add(body);
+
+  // Handle — a thin torus arch above the body.
+  const handle = new THREE.Mesh(
+    new THREE.TorusGeometry(width * 0.28, handleR, 8, 20, Math.PI),
+    material,
+  );
+  handle.position.set(0, height / 2 + handleR, 0);
+  handle.rotation.x = 0;
+  handle.rotation.z = 0;
+  handle.castShadow = true;
+  group.add(handle);
+
+  return group;
+}
+
+/**
  * "Peter" avatar — a stylised standing figure for the Instagram Peter
  * network. Six different Peters (LSE, NUS, Govt, Econ, Literature,
  * Lawsuit) share this silhouette: a rounded torso, a spherical head,
