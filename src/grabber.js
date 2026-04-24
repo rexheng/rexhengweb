@@ -27,10 +27,17 @@ export class Grabber {
     // GMod physics-gun feel: distance from camera to grab point. Wheel scroll
     // during drag multiplies this to push/pull objects along the view ray.
     this.grabDist = 1.0;
-    this.frozen = false; // right-click during drag: freeze at current pose
     // Phys-gun rotate: E=clockwise, Q=counter-clockwise around camera-forward axis.
     // Only active while left-dragging a freejoint body.
     this.rotateKey = 0; // -1, 0, +1
+    // Pin-drag state: when the user mousedowns on a body that is currently
+    // pinned, we mark the grab as "armed". The pin stays enforced until the
+    // cursor moves past UNPIN_THRESHOLD_PX, at which point we unpin and let
+    // the normal grab spring take over. Stops accidental click-nudges from
+    // breaking pins.
+    this._pinArmed = false;
+    this._downX = 0;
+    this._downY = 0;
 
     // scratch
     this._grabWorld = new THREE.Vector3();
@@ -126,7 +133,11 @@ export class Grabber {
     this.targetWorld.copy(hit.point);
     // Record initial camera→hit distance so wheel scroll can scale it.
     this.grabDist = this.app.camera.position.distanceTo(hit.point);
-    this.frozen = false;
+    // If this body is currently pinned, arm the unpin-on-move behavior.
+    // The pin stays enforced until the cursor drifts past the threshold.
+    this._pinArmed = !!this.app.pinSystem?.isPinned(this.bodyID);
+    this._downX = ev.clientX;
+    this._downY = ev.clientY;
 
     this.line.visible = true;
     this.dot.visible = true;
@@ -140,6 +151,19 @@ export class Grabber {
 
   onMove = (ev) => {
     if (!this.active) return;
+    // Pin-drag: until the cursor moves past the threshold, don't break the
+    // pin. Updating targetWorld is fine — the pin's stiffer spring wins
+    // while armed. Once we pass the threshold, unpin and let the grab take
+    // over normally.
+    if (this._pinArmed) {
+      const UNPIN_THRESHOLD_PX = 6;
+      const dx = ev.clientX - this._downX;
+      const dy = ev.clientY - this._downY;
+      if ((dx * dx + dy * dy) > UNPIN_THRESHOLD_PX * UNPIN_THRESHOLD_PX) {
+        this.app.pinSystem?.unpin(this.bodyID);
+        this._pinArmed = false;
+      }
+    }
     this.setMouse(ev);
     this.raycaster.setFromCamera(this.mouseNDC, this.app.camera);
     // GMod-style: target point = camera_origin + ray_dir * grabDist.
@@ -213,8 +237,11 @@ export class Grabber {
     if (ev.code === "KeyE") this.rotateKey = 1;
     else if (ev.code === "KeyQ") this.rotateKey = -1;
     else if (ev.code === "KeyF") {
-      // Freeze the currently-held body in mid-air. No-op if nothing is held.
-      if (this.active) this.toggleFreeze();
+      // Toggle-pin: lock the targeted body in world space. If actively
+      // grabbing, pin/unpin that body. Otherwise raycast from crosshair and
+      // toggle whatever pinned body is under it (enables tap-F-to-unpin
+      // without having to drag it).
+      this.toggleTargetPin();
     } else if (ev.code === "KeyP") {
       // Punt the body under the crosshair along the camera ray.
       // Works whether or not anything is being held.
@@ -227,15 +254,29 @@ export class Grabber {
     }
   };
 
-  // Toggle freeze on the currently-held body. While frozen, we zero
-  // linear+angular velocity every tick and peg the spring target onto
-  // the grab point (no pull), so the body hovers in place like GMod's
-  // physics gun freeze. The visual grab dot changes colour to signal state.
-  toggleFreeze() {
-    if (!this.active) return;
-    this.frozen = !this.frozen;
-    this.dot.material.color.setHex(this.frozen ? 0x66ccff : 0xffc04d);
-    this.grabDot.material.color.setHex(this.frozen ? 0x66ccff : 0xff5533);
+  // Toggle the persistent pin on whichever body is under the cursor.
+  // Preference order:
+  //   1. If actively grabbing — pin/unpin the grabbed body.
+  //   2. Else raycast from the crosshair NDC; toggle the hit body.
+  // After pinning, clear _pinArmed so the current drag doesn't immediately
+  // try to unpin it on the next mousemove.
+  toggleTargetPin() {
+    const ps = this.app.pinSystem;
+    if (!ps) return;
+    let targetBody = -1;
+    if (this.active && this.bodyID > 0) {
+      targetBody = this.bodyID;
+    } else {
+      const ndc = this.app.crosshair?._ndc ?? this.mouseNDC;
+      if (!ndc) return;
+      this.raycaster.setFromCamera(ndc, this.app.camera);
+      const hs = this.raycaster.intersectObjects(this.app.getGrabbables(), false);
+      if (!hs.length) return;
+      targetBody = hs[0].object.bodyID ?? -1;
+    }
+    if (targetBody <= 0) return;
+    ps.togglePin(targetBody);
+    this._pinArmed = false;
   }
 
   // Punt whatever is under the cursor/crosshair along the camera ray. Uses
@@ -254,22 +295,31 @@ export class Grabber {
 
   onUp = (ev) => {
     if (!this.active) return;
+    const releasedBodyID = this.bodyID;
     this.active = false;
     try {
       if (this.pointerId >= 0) this.app.renderer.domElement.releasePointerCapture(this.pointerId);
     } catch (_) {}
     this.pointerId = -1;
     this.bodyID = -1;
+    this._pinArmed = false;
     this.app.controls.enabled = true;
     this.line.visible = false;
     this.dot.visible = false;
     this.grabDot.visible = false;
-    // Reset freeze colors for next grab.
-    this.frozen = false;
-    this.dot.material.color.setHex(0xffc04d);
-    this.grabDot.material.color.setHex(0xff5533);
+    // Clear per-body xfrc for every body EXCEPT currently-pinned bodies —
+    // their pin-spring entries in xfrc_applied must survive this frame or
+    // the pin snaps for one tick before pinSystem.apply() reruns.
     const data = this.app.data;
-    if (data) for (let i = 0; i < data.xfrc_applied.length; i++) data.xfrc_applied[i] = 0;
+    const ps = this.app.pinSystem;
+    if (data) {
+      const nbody = this.app.model?.nbody ?? (data.xfrc_applied.length / 6);
+      for (let b = 0; b < nbody; b++) {
+        if (ps?.isPinned(b)) continue;
+        const off = b * 6;
+        for (let k = 0; k < 6; k++) data.xfrc_applied[off + k] = 0;
+      }
+    }
   };
 
   updateLine(a, b) {
@@ -327,21 +377,6 @@ export class Grabber {
       vLinX = mjVx;
       vLinY = mjVz;
       vLinZ = -mjVy;
-    }
-
-    // Freeze mode: zero velocities directly each tick via qvel at the body's free joint
-    // (if it has one). Much stabler than trying to counteract via xfrc alone.
-    if (this.frozen) {
-      const jntAdr = this.app.model?.body_jntadr?.[this.bodyID];
-      if (jntAdr !== undefined && jntAdr >= 0) {
-        const dofAdr = this.app.model.jnt_dofadr[jntAdr];
-        // Free joint has 6 qvel dofs: 3 linear + 3 angular.
-        if (dofAdr >= 0 && data.qvel && data.qvel.length >= dofAdr + 6) {
-          for (let k = 0; k < 6; k++) data.qvel[dofAdr + k] = 0;
-        }
-      }
-      // Peg the target to the current grab point — no pull force, just hover.
-      this.targetWorld.copy(this._grabWorld);
     }
 
     // Delta in THREE world.

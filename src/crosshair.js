@@ -108,7 +108,8 @@ export class Crosshair {
     // Priority: active grab > hover > idle. Throttle hover raycast to ~20 Hz.
     const grabber = this.app.grabber;
     if (grabber?.active) {
-      this._applyState(grabber.frozen ? "frozen" : "grab");
+      const pinned = this.app.pinSystem?.isPinned(grabber.bodyID);
+      this._applyState(pinned ? "frozen" : "grab");
       return;
     }
 

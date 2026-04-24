@@ -5,6 +5,11 @@ import * as THREE from "three";
 let _gridTex = null;
 function gridTexture() {
   if (_gridTex) return _gridTex;
+  // Texture repeat = 25 across the 100m floor plane. Each 512×512 canvas
+  // tile therefore covers 4m of world; pixels per cm: 128. Grid lines:
+  //   micro   every  12.8 px  (0.1m)   — barely visible, reads as texture
+  //   fine    every  64   px  (0.5m)   — standard ruler
+  //   bold    every 256   px  (2.0m)   — primary scale anchor
   const c = document.createElement("canvas");
   c.width = c.height = 512;
   const ctx = c.getContext("2d");
@@ -20,16 +25,42 @@ function gridTexture() {
     img.data[i + 2] = Math.max(0, Math.min(255, img.data[i + 2] + n));
   }
   ctx.putImageData(img, 0, 0);
-  // fine grid
-  ctx.strokeStyle = "rgba(120,170,255,0.10)";
+
+  // Sparse warm highlight cells — randomly picked 0.5m squares get a very
+  // faint amber fill so the floor isn't monotone. ~6% density.
+  const rng = () => Math.random();
+  ctx.fillStyle = "rgba(210,150,80,0.035)";
+  for (let gy = 0; gy < 8; gy++) {
+    for (let gx = 0; gx < 8; gx++) {
+      if (rng() < 0.06) {
+        ctx.fillRect(gx * 64, gy * 64, 64, 64);
+      }
+    }
+  }
+
+  // Micro-grid (0.1m) — very faint; just enough to give near-camera floor
+  // some rendered texture instead of reading as flat slate.
+  ctx.strokeStyle = "rgba(120,170,255,0.035)";
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= 512; x += 12.8) {
+    ctx.beginPath(); ctx.moveTo(Math.round(x), 0); ctx.lineTo(Math.round(x), 512); ctx.stroke();
+  }
+  for (let y = 0; y <= 512; y += 12.8) {
+    ctx.beginPath(); ctx.moveTo(0, Math.round(y)); ctx.lineTo(512, Math.round(y)); ctx.stroke();
+  }
+
+  // Fine grid (0.5m)
+  ctx.strokeStyle = "rgba(120,170,255,0.11)";
   ctx.lineWidth = 1;
   for (let x = 0; x <= 512; x += 64) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke(); }
   for (let y = 0; y <= 512; y += 64) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke(); }
-  // bold grid every 256 (2m)
-  ctx.strokeStyle = "rgba(140,190,255,0.22)";
+
+  // Bold grid (2.0m) — primary scale anchor
+  ctx.strokeStyle = "rgba(140,190,255,0.24)";
   ctx.lineWidth = 2;
   for (let x = 0; x <= 512; x += 256) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke(); }
-  for (let y = 0; y <= 512; y += 256) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(0 + 512, y); ctx.stroke(); }
+  for (let y = 0; y <= 512; y += 256) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke(); }
+
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(25, 25);

@@ -17,6 +17,7 @@ import { Replay } from "./replay.js";
 import { PortfolioOverlay } from "./portfolioOverlay.js";
 import { ProjectSystem } from "./projects.js";
 import { ControlsPanel } from "./controlsPanel.js";
+import { PinSystem } from "./pinSystem.js";
 import { injectUI } from "./ui.js";
 import load_mujoco from "../vendor/mujoco/mujoco_wasm.js";
 
@@ -129,8 +130,11 @@ class App {
     // Three.js scene setup
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x121a2a);
-    this.scene.fog = new THREE.FogExp2(0x0e1524, 0.008);
+    // No fog — visibility must stay crisp for the playground.
 
+    // Gradient sky dome. Slowly rotates so the star field drifts imperceptibly
+    // giving the scene a subtle "world is alive" motion without drawing the
+    // eye away from the humanoid.
     const skyGeo = new THREE.SphereGeometry(120, 48, 24);
     const skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide,
@@ -139,19 +143,76 @@ class App {
         midColor: { value: new THREE.Color(0x2a3a5c) },
         bottomColor: { value: new THREE.Color(0x6a5a4a) },
         offset: { value: 4 },
+        uTime: { value: 0 },
       },
       vertexShader: `varying vec3 vWorldPos;
         void main() { vec4 wp = modelMatrix * vec4(position,1.0); vWorldPos = wp.xyz; gl_Position = projectionMatrix*viewMatrix*wp; }`,
-      fragmentShader: `uniform vec3 topColor; uniform vec3 midColor; uniform vec3 bottomColor; uniform float offset;
+      fragmentShader: `
+        uniform vec3 topColor; uniform vec3 midColor; uniform vec3 bottomColor; uniform float offset;
+        uniform float uTime;
         varying vec3 vWorldPos;
+
+        // Cheap 3D hash → 0..1. Good enough for twinkle noise.
+        float hash(vec3 p) {
+          p = fract(p * vec3(443.8975, 397.2973, 491.1871));
+          p += dot(p, p.yzx + 19.19);
+          return fract((p.x + p.y) * p.z);
+        }
+
+        // Procedural star field via cell-based point sampling. Roughly 120
+        // stars across the upper hemisphere; each cell on a rotated sphere
+        // has at most one star, and cells with hash below a threshold are
+        // empty so the distribution feels natural rather than grid-like.
+        float stars(vec3 d) {
+          // Rotate the sky direction slowly around the world-up axis so stars
+          // drift across the dome. Full revolution every ~10 minutes.
+          float ang = uTime * 0.0105;
+          float ca = cos(ang), sa = sin(ang);
+          vec3 rd = vec3(ca * d.x + sa * d.z, d.y, -sa * d.x + ca * d.z);
+
+          // Fade stars below the horizon so we don't render specks through
+          // the warm earth-colored lower hemisphere.
+          float horizonMask = smoothstep(-0.05, 0.15, rd.y);
+          if (horizonMask <= 0.0) return 0.0;
+
+          // Grid the direction into cells. Higher density = more cells tested.
+          // 28 cells per axis ≈ ~120 visible stars above horizon.
+          vec3 cell = floor(rd * 28.0);
+          float h = hash(cell);
+          // 7% of cells actually host a star — keeps density natural.
+          if (h < 0.93) return 0.0;
+
+          // Star location within the cell — jitter so stars aren't on a grid.
+          vec3 jitter = vec3(hash(cell + 1.3), hash(cell + 2.7), hash(cell + 4.1));
+          vec3 starDir = normalize((cell + jitter) / 28.0 - 0.5);
+          float d2 = 1.0 - dot(normalize(rd), starDir);
+
+          // Per-star magnitude: some bright, most dim.
+          float mag = pow(hash(cell + 7.7), 3.0);  // skews toward dim
+          // Per-star twinkle — slow pulse at unique rate per star.
+          float twinkleRate = 0.4 + 2.0 * hash(cell + 9.1);
+          float twinklePhase = hash(cell + 12.3) * 6.2831;
+          float twinkle = 0.75 + 0.25 * sin(uTime * twinkleRate + twinklePhase);
+
+          // Star "disk" — gaussian-ish falloff. Tighten with higher exponent
+          // so stars read as hard points rather than fuzzy blobs.
+          float intensity = exp(-d2 * 9000.0) * mag * twinkle * horizonMask;
+          return intensity;
+        }
+
         void main() {
-          float h = normalize(vWorldPos + vec3(0., offset, 0.)).y;
+          vec3 nd = normalize(vWorldPos + vec3(0., offset, 0.));
+          float h = nd.y;
           vec3 col = h > 0.0
             ? mix(midColor, topColor, pow(h, 0.55))
             : mix(midColor, bottomColor, pow(-h, 0.7));
+          // Overlay stars (additive, pale warm-white so they blend with bloom).
+          float s = stars(normalize(vWorldPos));
+          col += vec3(1.0, 0.97, 0.92) * s * 1.6;
           gl_FragColor = vec4(col, 1.0);
         }`,
     });
+    this._skyMat = skyMat;
     this.scene.add(new THREE.Mesh(skyGeo, skyMat));
 
     this.camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 200);
@@ -231,10 +292,9 @@ class App {
     this._hintsEl = hud.querySelector("#hud-hints");
     this._currentHintKey = "";
     this._HINT_PRESETS = {
-      idle:    `Left-drag grab · P punt · R replay`,
-      hover:   `Left-drag to grab · P punt · R replay`,
-      grab:    `Wheel push/pull · E/Q rotate · F freeze · Release to let go`,
-      frozen:  `Body frozen mid-air · Release mouse to keep floating · F to unfreeze`,
+      idle:    `Left-drag grab · F pin · P punt · R replay`,
+      hover:   `Left-drag to grab · F pin · P punt`,
+      grab:    `Wheel push/pull · E/Q rotate · F toggle pin · Release to let go`,
       replay:  `◉ Slo-mo replay — press R again to return to live`,
     };
     this._updateHints();
@@ -242,6 +302,7 @@ class App {
     addEventListener("resize", () => this.onResize());
 
     await this.switchScene(this.currentScene);
+    this.pinSystem = new PinSystem(this);
     this.grabber = new Grabber(this);
     this.trails = new Trails(this);
     this.trails.setEnabled(this.params.trails);
@@ -265,6 +326,7 @@ class App {
         { label: "Email", href: "mailto:rexheng@gmail.com" },
         { label: "LinkedIn", href: "https://www.linkedin.com/in/rexheng/" },
         { label: "GitHub", href: "https://github.com/rexheng" },
+        { label: "Resume", href: "/cv/" },
       ],
     });
 
@@ -272,6 +334,11 @@ class App {
   }
 
   async switchScene(name) {
+    // Drop any pins first — they reference bodyIDs in the OLD model, which
+    // become dangling once we reload. Must run before we dispose meshes so
+    // that original materials get restored to live objects (doesn't matter
+    // for memory but keeps the logic clean).
+    this.pinSystem?.clearAll();
     if (this.mujocoRoot) {
       this.scene.remove(this.mujocoRoot);
       this.mujocoRoot.traverse((o) => {
@@ -309,6 +376,10 @@ class App {
 
   resetSim() {
     if (!this.model) return;
+    // Drop all pins so the reset keyframe actually takes — otherwise the
+    // pin springs snap bodies back to their pre-reset world pose for the
+    // next frame.
+    this.pinSystem?.clearAll();
     this.mujoco.mj_resetData(this.model, this.data);
     this.mujoco.mj_forward(this.model, this.data);
     this._orbitCenter = null;
@@ -425,7 +496,7 @@ class App {
     const g = this.grabber;
     let key = "idle";
     if (this.replay?.active) key = "replay";
-    else if (g?.active) key = g.frozen ? "frozen" : "grab";
+    else if (g?.active) key = "grab";
     else if ((this.crosshair?.hoveredBodyID ?? -1) > 0) key = "hover";
     if (key === this._currentHintKey) return;
     this._currentHintKey = key;
@@ -449,8 +520,10 @@ class App {
     this.updateCamTween();
     this.updateCinematicOrbit(Math.min(frameDt, 0.05));
     this.controls.update();
+    if (this._skyMat) this._skyMat.uniforms.uTime.value = now * 0.001;
     this.applyWind();
     this.grabber?.apply();
+    this.pinSystem?.apply();
     this.stepPhysics();
     this.replay?.update();
     this.syncMeshes();

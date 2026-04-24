@@ -20,6 +20,10 @@ const HIGHLIGHT = {
   hover:  { r: 0.15, g: 0.60, b: 0.75, intensity: 0.9 },
   grab:   { r: 0.85, g: 0.55, b: 0.15, intensity: 1.1 },
   frozen: { r: 0.25, g: 0.45, b: 0.85, intensity: 0.8 },
+  // "pinned" shows up when a body is persistently pinned (via pinSystem)
+  // but NOT currently being grabbed. Same blue family as `frozen` but
+  // slightly softer so freshly-pinned bodies don't scream for attention.
+  pinned: { r: 0.30, g: 0.55, b: 1.00, intensity: 0.55 },
 };
 
 export class HoverHighlight {
@@ -29,6 +33,9 @@ export class HoverHighlight {
     // Track which bodyID is currently "lit" so we only diff on change.
     this._currentBodyID = -1;
     this._currentState = null;
+    // Comma-joined sorted pinned-body-id list, recomputed each frame. Lets
+    // us diff pin-set changes cheaply.
+    this._currentPinSig = "";
     // Cache of { material: {origColor: Color, origIntensity: number} }
     this._touchedMats = new Map();
     // Scratch color to avoid allocation.
@@ -40,14 +47,22 @@ export class HoverHighlight {
     if (!v) this._restore();
   }
 
-  // Decide target bodyID + state based on grabber / crosshair.
+  // Decide target bodyID + state based on grabber / crosshair / pinSystem.
+  //   - Grabbing a pinned body: "frozen" (tightest + loudest tint).
+  //   - Grabbing anything else: "grab".
+  //   - Hovering a pinned body (no grab): "pinned" treated as hover highlight.
+  //   - Hovering a normal body: "hover".
   _resolveTarget() {
     const grabber = this.app.grabber;
+    const ps = this.app.pinSystem;
     if (grabber?.active && grabber.bodyID > 0) {
-      return { bodyID: grabber.bodyID, state: grabber.frozen ? "frozen" : "grab" };
+      const state = ps?.isPinned(grabber.bodyID) ? "frozen" : "grab";
+      return { bodyID: grabber.bodyID, state };
     }
     const hoverID = this.app.crosshair?.hoveredBodyID ?? -1;
-    if (hoverID > 0) return { bodyID: hoverID, state: "hover" };
+    if (hoverID > 0) {
+      return { bodyID: hoverID, state: ps?.isPinned(hoverID) ? "frozen" : "hover" };
+    }
     return { bodyID: -1, state: null };
   }
 
@@ -95,13 +110,32 @@ export class HoverHighlight {
   update() {
     if (!this.enabled) return;
     const { bodyID, state } = this._resolveTarget();
-    if (bodyID === this._currentBodyID && state === this._currentState) return;
-    // Target changed — restore old, then apply new.
+    const ps = this.app.pinSystem;
+    // Snapshot the set of pinned bodies so we can diff against last frame.
+    const pinnedNow = ps ? new Set(ps.pins.keys()) : new Set();
+
+    // Fast-path: no change to focus target AND pin membership unchanged.
+    const pinSig = Array.from(pinnedNow).sort().join(",");
+    if (
+      bodyID === this._currentBodyID &&
+      state === this._currentState &&
+      pinSig === this._currentPinSig
+    ) return;
+
+    // Something changed — restore everything and re-apply the current layout.
     this._restore();
+    // First apply the soft "pinned" tint to every pinned body EXCEPT the
+    // one that will receive the focus tint (to avoid double-tinting a
+    // single material and to let focus override).
+    for (const pid of pinnedNow) {
+      if (pid === bodyID) continue;
+      this._apply(pid, "pinned");
+    }
     if (bodyID > 0 && state) {
       this._apply(bodyID, state);
-      this._currentBodyID = bodyID;
-      this._currentState = state;
     }
+    this._currentBodyID = bodyID;
+    this._currentState = state;
+    this._currentPinSig = pinSig;
   }
 }

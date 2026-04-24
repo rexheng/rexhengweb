@@ -196,29 +196,132 @@ function stabAbility({ app, slot }) {
   slotPos.setFromMatrixPosition(slot.group.matrixWorld);
 
   // Direction from slot → torso in THREE world, swizzled to MJ world.
-  // THREE → MJ: (x, y, z) → (x, -z, y).
-  const dir = torsoPos.clone().sub(slotPos).normalize();
-  const mjDx = dir.x;
-  const mjDy = -dir.z;
-  const mjDz = dir.y;
+  // THREE → MJ: (x, y, z)_three → (x, -z, y)_mj.
+  const dirT = torsoPos.clone().sub(slotPos).normalize();
+  const mjDx = dirT.x;
+  const mjDy = -dirT.z;
+  const mjDz = dirT.y;
 
-  // Impulse: fast lunge at ~14 m/s with a small upward bias + hefty spin.
   const model = app.model, data = app.data;
   const jntAdr = model.body_jntadr[slot.bodyID];
+  const qposAdr = model.jnt_qposadr[jntAdr];
   const dofAdr = model.jnt_dofadr[jntAdr];
-  const SPEED = 14.0;
+
+  // Rotate Amogus to face the torso BEFORE the lunge fires. The mesh was
+  // built in Three.js with the visor at local +z; the MuJoCo loader
+  // swizzles such that local-MJ +y maps to local-THREE +z. So "visor
+  // forward" in the body's MJ-local frame is +y. We need a quaternion
+  // that rotates MJ-local +y onto the MJ-world target direction.
+  //
+  // Use THREE.Quaternion.setFromUnitVectors as the numerically stable
+  // shortest-arc implementation, working in a temp MJ-space (treating
+  // MJ's z-up coords as THREE's y-up just for the math — the quaternion
+  // semantics are identical).
+  const qTurn = new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 1, 0),
+    new THREE.Vector3(mjDx, mjDy, mjDz),
+  );
+  // Three stores (x, y, z, w); MJ qpos stores (w, x, y, z). Convert.
+  data.qpos[qposAdr + 3] = qTurn.w;
+  data.qpos[qposAdr + 4] = qTurn.x;
+  data.qpos[qposAdr + 5] = qTurn.y;
+  data.qpos[qposAdr + 6] = qTurn.z;
+
+  // Lunge velocity: much faster than a free-drop for meaningful impact.
+  // 22 m/s is roughly knife-thrust speed — fast enough that the humanoid
+  // gets knocked cleanly when Amogus connects.
+  const SPEED = 22.0;
   data.qvel[dofAdr + 0] = mjDx * SPEED;
   data.qvel[dofAdr + 1] = mjDy * SPEED;
-  data.qvel[dofAdr + 2] = mjDz * SPEED + 2.5; // upward bias so it launches cleanly
-  // Spin axis roughly perpendicular to lunge direction — tumble forward.
+  data.qvel[dofAdr + 2] = mjDz * SPEED + 2.5;  // small upward bias
+  // Forward tumble: spin axis perpendicular to lunge direction.
   const perpAxisX = -mjDy;
   const perpAxisY = mjDx;
   data.qvel[dofAdr + 3] = perpAxisX * 18;
   data.qvel[dofAdr + 4] = perpAxisY * 18;
   data.qvel[dofAdr + 5] = (Math.random() - 0.5) * 6;
 
-  // No per-frame tick needed — it's a one-shot impulse. Return immediately.
-  return { tick() { return false; } };
+  // Flush the qpos write so mj_step sees the new orientation THIS frame.
+  app.mujoco.mj_forward(model, data);
+
+  // Collision-reactive second-stage: watch for Amogus's geom touching any
+  // humanoid body. On first contact, punch the torso with a direct qvel
+  // impulse so the whole ragdoll flies back — simple contact impulse from
+  // a 2.5 kg prop gets absorbed by the articulated chain and barely moves
+  // the 41 kg humanoid, so this scripted "special stab" adds the
+  // cinematic knockback.
+  //
+  // To detect contact we walk `data.contact` each frame. Each contact has
+  // geom1, geom2; we precompute which geoms belong to Amogus's slot and
+  // which belong to the humanoid, then check membership.
+  const amogusGeoms = new Set();
+  const humanoidGeoms = new Set();
+  for (let g = 0; g < model.ngeom; g++) {
+    const bid = model.geom_bodyid[g];
+    if (bid === slot.bodyID) amogusGeoms.add(g);
+    // Humanoid body IDs are everything from the torso (bodyID 1) up
+    // through the arms/legs but NOT the project_slot_* bodies. We
+    // identify humanoid bodies by excluding body 0 (world) and any body
+    // whose name starts with "project_slot_".
+    if (bid > 0) {
+      const bodyGroup = app.bodies?.[bid];
+      const name = bodyGroup?.name || "";
+      if (!name.startsWith("project_slot_")) humanoidGeoms.add(g);
+    }
+  }
+
+  // Find torso body id + its freejoint dofs so we can write qvel directly.
+  let torsoBodyID = -1;
+  for (const [id, g] of Object.entries(app.bodies || {})) {
+    if (g?.name === "torso") { torsoBodyID = Number(id); break; }
+  }
+  if (torsoBodyID < 0) return { tick() { return false; } };
+  const torsoJnt = model.body_jntadr[torsoBodyID];
+  const torsoDof = torsoJnt >= 0 ? model.jnt_dofadr[torsoJnt] : -1;
+  // The humanoid torso is a freejoint, so its first 6 qvel entries are
+  // (linear x/y/z, angular x/y/z) in MJ world. Confirm by checking type.
+  const torsoIsFree = torsoJnt >= 0 && model.jnt_type[torsoJnt] === 0;
+
+  let hit = false;
+  let timeoutMs = 1500;  // Give up after 1.5s if Amogus never connects.
+
+  return {
+    tick(dt) {
+      if (hit) return false;
+      timeoutMs -= dt;
+      if (timeoutMs <= 0) return false;
+      if (!torsoIsFree || torsoDof < 0) return false;
+
+      // Scan active contacts. Matches how sparks.js walks them:
+      // `data.contact.get(i)` returns { geom1, geom2, dist, pos }.
+      const ncon = data.ncon;
+      if (!ncon) return true;
+      for (let i = 0; i < ncon; i++) {
+        const c = data.contact.get(i);
+        const g1 = c.geom1, g2 = c.geom2;
+        const a1 = amogusGeoms.has(g1), h2 = humanoidGeoms.has(g2);
+        const a2 = amogusGeoms.has(g2), h1 = humanoidGeoms.has(g1);
+        if ((a1 && h2) || (a2 && h1)) {
+          // Apply knockback to the torso along the stab direction. This
+          // is the scripted "special stab" — independent of contact-
+          // impulse propagation so the whole ragdoll takes it cleanly.
+          const KNOCK_SPEED = 7.5;   // m/s — cinematic but not unreasonable
+          data.qvel[torsoDof + 0] = mjDx * KNOCK_SPEED;
+          data.qvel[torsoDof + 1] = mjDy * KNOCK_SPEED;
+          data.qvel[torsoDof + 2] = mjDz * KNOCK_SPEED + 3.0;   // lift
+          // Add a torso tumble — spin around an axis perpendicular to hit
+          // direction so the humanoid pinwheels backward rather than just
+          // sliding.
+          data.qvel[torsoDof + 3] = -mjDy * 6;
+          data.qvel[torsoDof + 4] =  mjDx * 6;
+          data.qvel[torsoDof + 5] = (Math.random() - 0.5) * 3;
+          hit = true;
+          return false;
+        }
+      }
+      return true;
+    },
+  };
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -281,19 +384,12 @@ export class ProjectSystem {
     this.dismissCard();
 
     const bodies = this.app.bodies;
-    const model = this.app.model;
-    if (!bodies || !model) return;
+    if (!bodies) return;
 
-    // Build a bodyID -> geomID map for slot bodies. Each slot body has exactly
-    // one geom; we toggle its contype/conaffinity on spawn/park so parked slots
-    // never generate contacts (they all stack at x=y=0 below the floor and
-    // would otherwise inter-penetrate and blow the sim up on frame 1).
-    const bodyToGeom = new Map();
-    for (let g = 0; g < model.ngeom; g++) {
-      bodyToGeom.set(model.geom_bodyid[g], g);
-    }
-
-    // Index slot bodies by name.
+    // Index slot bodies by name. Collision filtering is handled statically
+    // in humanoid.xml (contype=2 conaffinity=1) — slots never collide with
+    // each other but always collide with floor + humanoid. No runtime
+    // toggle required.
     for (let i = 0; i < SLOT_COUNT; i++) {
       const wantName = `project_slot_${i}`;
       for (const [id, g] of Object.entries(bodies)) {
@@ -302,10 +398,8 @@ export class ProjectSystem {
           // at z=-60 which is far below the floor, but visible from certain
           // camera angles. Hide the mesh until the slot is claimed.
           g.visible = false;
-          const bodyID = Number(id);
           this.slots.push({
-            bodyID,
-            geomID: bodyToGeom.get(bodyID) ?? -1,
+            bodyID: Number(id),
             name: wantName,
             group: g,
             project: null,
@@ -316,18 +410,6 @@ export class ProjectSystem {
         }
       }
     }
-  }
-
-  // Toggle collision for a slot's geom. Parked slots must have contype=0
-  // conaffinity=0 to avoid penetrating each other (they all live at x=y=0
-  // beneath the floor). When a slot is spawned into the world it needs
-  // contype=1 conaffinity=1 so the capsule collides with the floor + humanoid.
-  _setSlotCollision(slot, enabled) {
-    const model = this.app.model;
-    if (!model || slot.geomID < 0) return;
-    const v = enabled ? 1 : 0;
-    model.geom_contype[slot.geomID] = v;
-    model.geom_conaffinity[slot.geomID] = v;
   }
 
   /**
@@ -357,9 +439,6 @@ export class ProjectSystem {
     slot.group.add(mesh);
     slot.meshGroup = mesh;
     slot.group.visible = true;
-
-    // Enable collision now that the slot is entering the play area.
-    this._setSlotCollision(slot, true);
 
     this.app._rebuildGrabbables?.();
 
@@ -438,9 +517,6 @@ export class ProjectSystem {
     slot.meshGroup = null;
     slot.project = null;
     slot.group.visible = false;
-
-    // Disable collision so the parked slot doesn't penetrate other parked slots.
-    this._setSlotCollision(slot, false);
 
     // Teleport the body back far below the floor.
     const model = this.app.model, data = this.app.data;
