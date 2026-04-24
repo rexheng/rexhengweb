@@ -11,3 +11,4 @@
 | lse-peter | LSE Peter | built | 2026-04-24 | null | First Peter. Uses shared peterAvatar primitive (promoted to builders/). LSE purple + book-stack emblem. |
 | nus-peter | NUS Peter | built | 2026-04-24 | null | Peter + NUS orange + mortarboard emblem. |
 | govt-peter | Govt Peter | built | 2026-04-24 | null | Peter + navy + gavel emblem. |
+| econ-peter | Econ Peter | built | 2026-04-24 | null | Peter + finance green + 3-bar chart emblem. |
