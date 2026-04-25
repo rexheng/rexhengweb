@@ -223,6 +223,8 @@ const CSS = `
   user-select: none;
   max-height: calc(100vh - 44px);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 #rex-controls::-webkit-scrollbar { width: 6px; }
 #rex-controls::-webkit-scrollbar-track { background: transparent; }
@@ -980,10 +982,21 @@ canvas { touch-action: none; }
   /* Belt-and-braces: if .is-collapsed sneaks in from a prior desktop
      session's localStorage, force sections visible inside the sheet. */
   #rex-controls.is-collapsed .rex-section { display: block; }
-  #rex-controls.is-collapsed .rex-panel-title-tag { display: inline; }
   /* While dragging, suppress the slide transition so the sheet tracks
      the finger 1:1 instead of easing on every pointermove. */
   #rex-controls.is-dragging { transition: none; }
+
+  /* Mobile section order: Projects → Physics → Camera → Effects → Scene */
+  #rex-controls header.rex-panel-title { order: 0; }
+  #rex-controls [data-section="projects"] { order: 1; }
+  #rex-controls [data-section="physics"]  { order: 2; }
+  #rex-controls [data-section="camera"]   { order: 3; }
+  #rex-controls [data-section="effects"]  { order: 4; }
+  #rex-controls [data-section="scene"]    { order: 5; }
+
+  /* Hide "Controls" title text and subtitle — handle already communicates it. */
+  #rex-controls .rex-panel-title-main { display: none; }
+  #rex-controls .rex-panel-title-tag  { display: none; }
 
   /* Compact HUD — title bottom-left, metrics float to the right of it. */
   #hud {

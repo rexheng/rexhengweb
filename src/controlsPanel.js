@@ -65,13 +65,16 @@ export class ControlsPanel {
     } catch {}
 
     // Scene section
-    root.appendChild(this._section("Scene", [
+    const scene = this._section("Scene", [
       this._button("Reset", () => this.app.resetSim()),
       this._button("Random Perturb", () => this.app.randomPerturb()),
-    ]));
+    ]);
+    scene.dataset.section = "scene";
+    root.appendChild(scene);
 
     // Physics section — toggles + segmented controls + sliders + compass.
     const phys = this._sectionShell("Physics");
+    phys.dataset.section = "physics";
     phys.appendChild(this._row("Paused", this._toggle("paused", (v) => this._set("paused", v))));
 
     phys.appendChild(this._labelLine("Gravity"));
@@ -98,12 +101,14 @@ export class ControlsPanel {
 
     // Camera
     const cam = this._sectionShell("Camera");
+    cam.dataset.section = "camera";
     cam.appendChild(this._row("Cinematic Orbit", this._toggle("orbit", (v) => this._set("orbit", v))));
     cam.appendChild(this._sliderRow("Speed", "orbitSpeed", 0.02, 0.6, 0.01, (v) => `${v.toFixed(2)} rad/s`));
     root.appendChild(cam);
 
     // Effects
     const fx = this._sectionShell("Effects");
+    fx.dataset.section = "effects";
     fx.appendChild(this._row("Trajectory Trails", this._toggle("trails", (v) => { this._set("trails", v); this.app.trails?.setEnabled(v); })));
     fx.appendChild(this._row("Impact Sparks", this._toggle("sparks", (v) => { this._set("sparks", v); this.app.sparks?.setEnabled(v); })));
     root.appendChild(fx);
@@ -111,6 +116,7 @@ export class ControlsPanel {
     // Projects — selection grid of accent-tinted monogram tiles.
     // Each tile spawns its project; the footer shows slot usage + Clear.
     const projSection = this._sectionShell("Projects");
+    projSection.dataset.section = "projects";
     projSection.appendChild(this._projectGrid());
     root.appendChild(projSection);
 
