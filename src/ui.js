@@ -1141,8 +1141,19 @@ export function initMobileShell() {
     if (isTap) {
       root.classList.toggle("is-open");
     } else {
-      // Drag finished — open if pulled up past the midpoint, close otherwise.
-      const settledOpen = dragState.startOpen ? dy < closedOffsetPx() / 2 : dy < -closedOffsetPx() / 2;
+      // Settle: open/close based on distance OR velocity — whichever fires first.
+      // 60px threshold feels responsive without accidental triggers.
+      const SETTLE_PX = 60;
+      const velocity = dt > 0 ? Math.abs(dy) / dt : 0; // px/ms
+      const FLICK_V = 0.3;
+      const isFlickUp   = dy < 0 && velocity >= FLICK_V;
+      const isFlickDown = dy > 0 && velocity >= FLICK_V;
+      let settledOpen;
+      if (dragState.startOpen) {
+        settledOpen = isFlickUp || (!isFlickDown && dy > -SETTLE_PX);
+      } else {
+        settledOpen = isFlickUp || (!isFlickDown && dy < -SETTLE_PX);
+      }
       root.classList.toggle("is-open", settledOpen);
     }
     dragState = null;
