@@ -4,20 +4,20 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Rex Heng</title>
-  <meta name="description" content="Rex Heng — Philosophy, Politics and Economics at LSE. Works across risk, policy, and software. Education, work, projects, and hobbies." />
+  <meta name="description" content="Rex Heng — Philosophy, Politics and Economics at LSE & UC Berkeley. Laidlaw Scholar. 6× hackathon wins. Prior experience at PwC, DBS, Boeing, and the Singapore Armed Forces." />
   <meta name="author" content="Rex Heng" />
   <meta name="robots" content="index,follow" />
 
   <meta property="og:type" content="profile" />
   <meta property="og:title" content="Rex Heng" />
-  <meta property="og:description" content="PPE at LSE. Works across risk, policy, and software." />
+  <meta property="og:description" content="PPE at LSE & UC Berkeley. Laidlaw Scholar. 6× hackathon wins." />
   <meta property="og:url" content="https://rexheng.com/cv/" />
   <meta property="profile:first_name" content="Rex" />
   <meta property="profile:last_name" content="Heng" />
 
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="Rex Heng" />
-  <meta name="twitter:description" content="PPE at LSE. Works across risk, policy, and software." />
+  <meta name="twitter:description" content="PPE at LSE & UC Berkeley. Laidlaw Scholar. 6× hackathon wins." />
 
   <link rel="canonical" href="https://rexheng.com/cv/" />
 
@@ -205,6 +205,14 @@
       height: 1px;
       background: var(--rex-rule);
       margin-left: 8px;
+    }
+    .block-tag {
+      font-family: var(--rex-font-mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--rex-amber);
+      margin: -16px 0 28px;
     }
 
     /* ─── Entry list (Education, Work) ─── */
@@ -395,23 +403,22 @@
     .pc-links a.gh::after { content: "→"; }
 
     /* ─── Hobbies ─── */
+    /* Card-style cells with an outer border on the grid container. Equal
+       padding on every cell so the rhythm reads consistently regardless of
+       whether the grid wraps to 3 / 2 / 1 columns. Internal grid lines are
+       drawn via 1px gaps over a translucent background, so wrap points
+       never produce orphaned half-borders. */
     .hobbies {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 0;
-      border-top: 1px solid var(--rex-rule);
+      gap: 1px;
+      background: var(--rex-rule);
+      border: 1px solid var(--rex-rule);
     }
     .hobby {
-      padding: 22px 24px 22px 0;
-      border-right: 1px solid var(--rex-rule);
-      border-bottom: 1px solid var(--rex-rule);
+      padding: 24px 26px;
+      background: var(--rex-ink);
     }
-    .hobby:nth-child(3n) { border-right: none; padding-right: 0; }
-    .hobby:nth-child(3n+2) { padding-left: 24px; padding-right: 24px; }
-    .hobby:nth-child(3n+1) { }
-    /* Last row of a 3-col grid (final 3 children) has no row beneath it,
-       so strip the bottom border to avoid an orphaned half-frame. */
-    .hobby:nth-last-child(-n+3) { border-bottom: none; }
     .hobby-title {
       font-family: var(--rex-font-serif);
       font-weight: 400;
@@ -462,6 +469,11 @@
       .reveal.in { opacity: 1; transform: translateY(0); }
     }
 
+    /* ─── Tablet ─── */
+    @media (max-width: 960px) and (min-width: 761px) {
+      .hobbies { grid-template-columns: repeat(2, 1fr); }
+    }
+
     /* ─── Mobile ─── */
     @media (max-width: 760px) {
       .cv-shell { padding: 0 20px; }
@@ -474,10 +486,7 @@
       .entry-org { font-size: 22px; }
       .project-grid { grid-template-columns: 1fr; }
       .hobbies { grid-template-columns: 1fr; }
-      .hobby, .hobby:nth-child(3n), .hobby:nth-child(3n+2) {
-        padding: 18px 0;
-        border-right: none;
-      }
+      .hobby { padding: 20px 22px; }
       .cv-footer { flex-direction: column; align-items: flex-start; }
     }
 
@@ -521,8 +530,7 @@
 
     <header class="hero">
       <h1 class="hero-name">Rex <em>Heng</em></h1>
-      <p class="hero-intro">Reading <em>PPE</em> at the London School of Economics. Active across risk, policy, and software — building credit benchmarks at a bank, organising AI case competitions in London, and shipping production prototypes that connect the three.</p>
-      <p class="hero-intro-secondary">This page is the comprehensive record of education, employment, projects, and outside interests. The interactive arrow returns to the MuJoCo physics sandbox at the site root.</p>
+      <p class="hero-intro">Philosophy, Politics and Economics at <em>LSE</em> · UC Berkeley. 6× hackathon wins. Laidlaw Scholar. Prior experience at PwC, DBS, Boeing, and as a Lieutenant in the Singapore Armed Forces.</p>
     </header>
 
     <!-- ─── Education ─── -->
@@ -585,18 +593,6 @@
 
         <article class="entry reveal">
           <div class="entry-meta">
-            <span class="dates">Oct 2024 — Present</span>
-            <span class="place">Cambridge &amp; London</span>
-          </div>
-          <div class="entry-body">
-            <h3 class="entry-org">Cambridge Consulting Network</h3>
-            <p class="entry-role">Vice President <span class="sep">·</span> Client Acquisition</p>
-            <p class="entry-text">Lead client acquisition and engagement delivery. Expanded the active client base 6× (2 to 12+) across AI, biotechnology, and not-for-profit sectors, generating engagement revenue of approximately $45K. Directed five concurrent advisory projects with 25+ consultants and C-suite counterparts, including market-entry strategy for an oat-milk producer and an eight-week operational advisory for a refugee-services charity.</p>
-          </div>
-        </article>
-
-        <article class="entry reveal">
-          <div class="entry-meta">
             <span class="dates">Jan — Feb 2024</span>
             <span class="place">Singapore</span>
           </div>
@@ -609,25 +605,13 @@
 
         <article class="entry reveal">
           <div class="entry-meta">
-            <span class="dates">May — Jul 2025</span>
-            <span class="place">Southwark</span>
+            <span class="dates">Oct 2024 — Present</span>
+            <span class="place">Cambridge &amp; London</span>
           </div>
           <div class="entry-body">
-            <h3 class="entry-org">Blackfriars Settlement</h3>
-            <p class="entry-role">Income Development Volunteer <span class="sep">·</span> Community charity</p>
-            <p class="entry-text">Rebuilt the corporate partnerships page on Elementor and designed a three-tier sponsorship framework ($5K–$25K) covering venue hire, CSR programmes, and community packages. Conducted outbound engagement with 150+ corporate prospects, converting 22 into active volunteering partners across four months.</p>
-          </div>
-        </article>
-
-        <article class="entry reveal">
-          <div class="entry-meta">
-            <span class="dates">Oct 2024 — Jan 2025</span>
-            <span class="place">LSE Fund</span>
-          </div>
-          <div class="entry-body">
-            <h3 class="entry-org">MBP Capital</h3>
-            <p class="entry-role">Macroeconomic Analyst <span class="sep">·</span> LSE Investment Fund</p>
-            <p class="entry-text">Selected as one of 19 analysts on LSE's real-capital portfolio. Rotated across the FX, credit, and commodities desks. Published a 4,000-word research note on copper, covering Chinese demand drivers and M&amp;A activity across South American producers.</p>
+            <h3 class="entry-org"><a href="https://ccnlondon.vercel.app/" target="_blank" rel="noopener noreferrer">Cambridge Consulting Network</a></h3>
+            <p class="entry-role">Vice President <span class="sep">·</span> Client Acquisition</p>
+            <p class="entry-text">Lead client acquisition and engagement delivery. Expanded the active client base 6× (2 to 12+) across AI, biotechnology, and not-for-profit sectors, generating engagement revenue of approximately $45K. Directed five concurrent advisory projects with 25+ consultants and C-suite counterparts, including market-entry strategy for an oat-milk producer and an eight-week operational advisory for a refugee-services charity. Concurrently co-founded the London Intervarsity Case Competition (LICC) — London's first AI-focused case competition — alongside Richard Min, scaling it from inception to 250+ registrants and 60+ teams across LSE, Imperial, UCL, and KCL.</p>
           </div>
         </article>
 
@@ -642,6 +626,18 @@
             <p class="entry-text">Sole platoon commander overseeing four platoons and the welfare, training, and operational readiness of approximately 100 servicemen. Discharged monthly secretarial duties and authored formal incident reports for command review, developing the discipline of communicating clearly under operational pressure and assuming responsibility for issues outside immediate scope.</p>
           </div>
         </article>
+
+        <article class="entry reveal">
+          <div class="entry-meta">
+            <span class="dates">May — Jul 2025</span>
+            <span class="place">Southwark</span>
+          </div>
+          <div class="entry-body">
+            <h3 class="entry-org">Blackfriars Settlement</h3>
+            <p class="entry-role">Income Development Volunteer <span class="sep">·</span> Community charity</p>
+            <p class="entry-text">Rebuilt the corporate partnerships page on Elementor and designed a three-tier sponsorship framework ($5K–$25K) covering venue hire, CSR programmes, and community packages. Conducted outbound engagement with 150+ corporate prospects, converting 22 into active volunteering partners across four months.</p>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -652,6 +648,7 @@
         <h2 class="block-title" id="projects-heading">Projects</h2>
         <span class="block-rule"></span>
       </div>
+      <p class="block-tag reveal">15× hackathons · 6× wins</p>
 
       <div class="project-grid">
 
@@ -887,23 +884,6 @@
           </div>
           <div class="pc-links">
             <a href="https://attictheband.com" target="_blank" rel="noopener noreferrer">Visit</a>
-          </div>
-        </article>
-
-        <article class="project-card reveal">
-          <div class="pc-head">
-            <h3 class="pc-title">London Intervarsity Case</h3>
-            <span class="pc-meta">Co-Organiser · 2025-26</span>
-          </div>
-          <p class="pc-subtitle">London's first AI-focused case competition</p>
-          <p class="pc-desc">Co-founded LICC alongside Richard Min. Scaled the competition from inception to 250+ registrants and 60+ participating teams across LSE, Imperial, UCL, and KCL. Co-authored the 20-page Project Atlas case study — an ethical AI-allocation dilemma framed against EU AI Act exposure — and designed the five-category scoring rubric applied to 45 final submissions.</p>
-          <div class="pc-tags">
-            <span class="pc-tag">Event Design</span>
-            <span class="pc-tag">Case Writing</span>
-            <span class="pc-tag">Partnerships</span>
-          </div>
-          <div class="pc-links">
-            <a href="https://rexheng.com/" target="_blank" rel="noopener noreferrer">Read more</a>
           </div>
         </article>
 
