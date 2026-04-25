@@ -12,14 +12,31 @@ export class MetricsHud {
     this.el = document.createElement("div");
     this.el.id = "metrics-hud";
     this.el.innerHTML = `
-      <div class="m-head"><span>Metrics</span><span>·</span></div>
-      <div class="m-row"><span class="m-label">FPS</span><span class="m-value" data-k="fps">–</span></div>
-      <div class="m-row"><span class="m-label">Peak Spd</span><span class="m-value" data-k="speed">0.00 m/s</span></div>
-      <div class="m-row"><span class="m-label">Peak Hit</span><span class="m-value" data-k="depth">0.00 mm</span></div>
-      <div class="m-row"><span class="m-label">Contacts</span><span class="m-value" data-k="ncon">0</span></div>
-      <div class="m-row"><span class="m-label">Motion</span><span class="m-value" data-k="motion">0 / 0</span></div>
+      <div class="m-head">
+        <span>Metrics</span>
+        <button class="m-collapse" type="button" aria-label="Collapse metrics">−</button>
+      </div>
+      <div class="m-body">
+        <div class="m-row"><span class="m-label">FPS</span><span class="m-value" data-k="fps">–</span></div>
+        <div class="m-row"><span class="m-label">Peak Spd</span><span class="m-value" data-k="speed">0.00 m/s</span></div>
+        <div class="m-row"><span class="m-label">Peak Hit</span><span class="m-value" data-k="depth">0.00 mm</span></div>
+        <div class="m-row"><span class="m-label">Contacts</span><span class="m-value" data-k="ncon">0</span></div>
+        <div class="m-row"><span class="m-label">Motion</span><span class="m-value" data-k="motion">0 / 0</span></div>
+      </div>
     `;
     document.body.appendChild(this.el);
+    const collapseBtn = this.el.querySelector(".m-collapse");
+    collapseBtn.addEventListener("click", () => {
+      const collapsed = this.el.classList.toggle("is-collapsed");
+      try { localStorage.setItem("rex-metrics-collapsed", collapsed ? "1" : "0"); } catch {}
+      collapseBtn.textContent = collapsed ? "+" : "−";
+    });
+    try {
+      if (localStorage.getItem("rex-metrics-collapsed") === "1") {
+        this.el.classList.add("is-collapsed");
+        collapseBtn.textContent = "+";
+      }
+    } catch {}
     this._vFps = this.el.querySelector('[data-k="fps"]');
     this._vSpeed = this.el.querySelector('[data-k="speed"]');
     this._vDepth = this.el.querySelector('[data-k="depth"]');

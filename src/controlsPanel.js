@@ -47,8 +47,21 @@ export class ControlsPanel {
       <header class="rex-panel-title">
         <div class="rex-panel-title-main">Controls</div>
         <div class="rex-panel-title-tag">Rex Heng · Playground</div>
+        <button class="rex-panel-collapse" type="button" aria-label="Collapse controls">−</button>
       </header>
     `;
+    root.querySelector(".rex-panel-collapse").addEventListener("click", () => {
+      const collapsed = root.classList.toggle("is-collapsed");
+      try { localStorage.setItem("rex-controls-collapsed", collapsed ? "1" : "0"); } catch {}
+      root.querySelector(".rex-panel-collapse").textContent = collapsed ? "+" : "−";
+    });
+    // Restore previous state
+    try {
+      if (localStorage.getItem("rex-controls-collapsed") === "1") {
+        root.classList.add("is-collapsed");
+        root.querySelector(".rex-panel-collapse").textContent = "+";
+      }
+    } catch {}
 
     // Scene section
     root.appendChild(this._section("Scene", [

@@ -23,7 +23,15 @@ export default {
   ],
   abilityLabel: "Stab!",
   ability: "stab",
-  footprintOffset: 0.14,
+  // Hitbox tuned to actual silhouette (D=0.26):
+  //   width  ≈ bodyRadius D = 0.26 → hx 0.27
+  //   depth  ≈ body + backpack reach behind ≈ 0.30 → hy 0.30
+  //   height ≈ feet (-1.74D) to body top (1.20D) = 2.94D → hz 0.382
+  // Mesh visual extends from local-y -0.452 (feet) to +0.312 (dome top).
+  // Geom bottom at body-z -hz = -0.382. To align mesh feet to geom bottom:
+  //   offset = meshBaseY + hz = -0.452 + 0.382 = -0.07 → mesh shifts UP 0.07.
+  hitbox: { hx: 0.27, hy: 0.30, hz: 0.382 },
+  footprintOffset: -0.07,
   // Wrap the DI builder so the ProjectSystem can call `def.buildMesh()`
   // with no arguments (legacy shape — system.js doesn't need to know about
   // proportions/primitives/materials).

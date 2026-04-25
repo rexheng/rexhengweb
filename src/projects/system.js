@@ -122,11 +122,26 @@ export class ProjectSystem {
     }
     const mesh = def.buildMesh();
     mesh.traverse((o) => { o.bodyID = slot.bodyID; });
-    // The slot capsule's bottom sits 0.48m below the body origin (capsule
-    // half-length 0.22 + radius 0.26). Each def's `footprintOffset` is the
-    // distance to push the mesh group DOWN so its visual base lands flush
-    // on the floor at rest. Default 0 keeps legacy builders that bake their
-    // own offset (e.g. Republic) untouched.
+
+    // Per-project hitbox override. Each slot has a default 0.30×0.30×0.45
+    // box geom (MJ half-extents); when a def supplies `hitbox: {hx, hy, hz}`
+    // we resize the geom so collision matches the actual silhouette instead
+    // of the one-size-fits-all default. axes: hx lateral, hy depth, hz vertical.
+    if (def.hitbox && this.app.model) {
+      const model = this.app.model;
+      const geomAdr = model.body_geomadr[slot.bodyID];
+      if (geomAdr >= 0) {
+        const base = geomAdr * 3;
+        model.geom_size[base + 0] = def.hitbox.hx;
+        model.geom_size[base + 1] = def.hitbox.hy;
+        model.geom_size[base + 2] = def.hitbox.hz;
+      }
+    }
+
+    // The slot box's bottom sits `hz` below the body origin. Each def's
+    // `footprintOffset` is the distance to push the mesh group DOWN so its
+    // visual base lands flush on the floor at rest. Default 0 keeps legacy
+    // builders that bake their own offset (e.g. Republic) untouched.
     const offset = def.footprintOffset ?? 0;
     if (offset !== 0) mesh.position.y = -offset;
     slot.group.add(mesh);

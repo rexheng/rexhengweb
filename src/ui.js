@@ -244,10 +244,38 @@ const CSS = `
 .rex-panel-title-tag {
   font-family: var(--rex-font-mono);
   font-size: 9px;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--rex-amber);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+  margin-left: auto;
 }
+.rex-panel-collapse {
+  background: transparent;
+  border: 1px solid var(--rex-rule-strong);
+  color: var(--rex-ivory-2);
+  width: 22px;
+  height: 22px;
+  margin-left: 10px;
+  font-family: var(--rex-font-mono);
+  font-size: 14px;
+  line-height: 18px;
+  cursor: pointer;
+  padding: 0;
+  transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+.rex-panel-collapse:hover {
+  color: var(--rex-amber);
+  border-color: var(--rex-amber);
+  background: var(--rex-ink-2);
+}
+#rex-controls.is-collapsed { width: auto; }
+#rex-controls.is-collapsed .rex-section { display: none; }
+#rex-controls.is-collapsed .rex-panel-title { border-bottom: 0; }
+#rex-controls.is-collapsed .rex-panel-title-tag { display: none; }
 
 .rex-section {
   border-bottom: 1px solid var(--rex-rule);
@@ -537,7 +565,6 @@ const CSS = `
   border: 1px solid var(--rex-rule-strong);
   padding: 12px 14px;
   width: 180px;
-  pointer-events: none;
   user-select: none;
   line-height: 1.8;
   box-sizing: border-box;
@@ -552,7 +579,28 @@ const CSS = `
   border-bottom: 1px solid var(--rex-rule);
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
+#metrics-hud .m-collapse {
+  background: transparent;
+  border: 1px solid var(--rex-rule);
+  color: var(--rex-ivory-3);
+  width: 18px;
+  height: 18px;
+  font-family: var(--rex-font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  cursor: pointer;
+  padding: 0;
+  transition: color 140ms ease, border-color 140ms ease;
+}
+#metrics-hud .m-collapse:hover {
+  color: var(--rex-amber);
+  border-color: var(--rex-amber);
+}
+#metrics-hud.is-collapsed { width: auto; padding: 8px 12px; }
+#metrics-hud.is-collapsed .m-head { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; }
+#metrics-hud.is-collapsed .m-body { display: none; }
 #metrics-hud .m-row {
   display: flex;
   justify-content: space-between;
