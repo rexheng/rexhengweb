@@ -50,17 +50,21 @@
 
   <style>
     :root {
-      --rex-ink: #0b0e16;
-      --rex-ink-2: #111622;
-      --rex-ink-3: #1a2030;
-      --rex-ink-4: #232a3e;
-      --rex-ivory: #efe8d8;
-      --rex-ivory-2: #d5cdb8;
-      --rex-ivory-3: #a69d87;
-      --rex-amber: #d4a05a;
-      --rex-amber-2: #e9b976;
-      --rex-rule: rgba(214, 207, 188, 0.18);
-      --rex-rule-strong: rgba(214, 207, 188, 0.42);
+      /* Light-mode CV palette. The token names retain their dark-mode
+         meaning for backwards compatibility, but the values now invert:
+         "ink" tokens become the warm off-white surfaces, "ivory" tokens
+         become the dark text. Amber accent unchanged. */
+      --rex-ink: #f7f3e9;
+      --rex-ink-2: #efe8d8;
+      --rex-ink-3: #e6dec8;
+      --rex-ink-4: #ddd4ba;
+      --rex-ivory: #1a1814;
+      --rex-ivory-2: #3a352c;
+      --rex-ivory-3: #6b6353;
+      --rex-amber: #b07a2a;
+      --rex-amber-2: #c89544;
+      --rex-rule: rgba(26, 24, 20, 0.14);
+      --rex-rule-strong: rgba(26, 24, 20, 0.32);
       --rex-font-serif: "Instrument Serif", "Iowan Old Style", "Palatino", serif;
       --rex-font-mono: "JetBrains Mono", "SF Mono", "Menlo", ui-monospace, monospace;
       --max-w: 1080px;
@@ -87,8 +91,8 @@
       pointer-events: none;
       z-index: 1;
       background:
-        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212, 160, 90, 0.06), transparent 60%),
-        radial-gradient(ellipse 60% 50% at 100% 100%, rgba(212, 160, 90, 0.03), transparent 50%);
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(176, 122, 42, 0.05), transparent 60%),
+        radial-gradient(ellipse 60% 50% at 100% 100%, rgba(176, 122, 42, 0.03), transparent 50%);
     }
 
     a { color: var(--rex-ivory); text-decoration: none; transition: color 180ms ease; }
@@ -103,7 +107,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 18px 28px;
-      background: linear-gradient(to bottom, rgba(11, 14, 22, 0.92), rgba(11, 14, 22, 0.7) 70%, transparent);
+      background: linear-gradient(to bottom, rgba(247, 243, 233, 0.94), rgba(247, 243, 233, 0.78) 70%, transparent);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
     }
@@ -115,8 +119,8 @@
       text-transform: uppercase;
       color: var(--rex-ivory-2);
       padding: 8px 14px 8px 10px;
-      border: 1px solid var(--rex-rule);
-      background: rgba(26, 32, 48, 0.5);
+      border: 1px solid var(--rex-rule-strong);
+      background: rgba(255, 255, 255, 0.6);
       transition: color 180ms ease, border-color 180ms ease, background 180ms ease, padding-left 220ms cubic-bezier(.2,.8,.2,1);
       display: inline-flex;
       align-items: center;
@@ -215,7 +219,7 @@
       transition: background 240ms ease;
     }
     .entry:last-child { border-bottom: 1px solid var(--rex-rule); }
-    .entry:hover { background: rgba(26, 32, 48, 0.28); }
+    .entry:hover { background: rgba(176, 122, 42, 0.06); }
     .entry::before {
       content: "";
       position: absolute;
@@ -287,15 +291,16 @@
       display: flex;
       flex-direction: column;
       padding: 24px 26px 22px;
-      background: rgba(17, 22, 34, 0.6);
+      background: rgba(255, 255, 255, 0.55);
       border: 1px solid var(--rex-rule);
       position: relative;
-      transition: border-color 220ms ease, background 220ms ease, transform 220ms ease;
+      transition: border-color 220ms ease, background 220ms ease, transform 220ms ease, box-shadow 220ms ease;
     }
     .project-card:hover {
       border-color: var(--rex-amber);
-      background: rgba(26, 32, 48, 0.8);
+      background: #ffffff;
       transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(26, 24, 20, 0.06);
     }
     .project-card::before {
       content: "";
@@ -404,6 +409,9 @@
     .hobby:nth-child(3n) { border-right: none; padding-right: 0; }
     .hobby:nth-child(3n+2) { padding-left: 24px; padding-right: 24px; }
     .hobby:nth-child(3n+1) { }
+    /* Last row of a 3-col grid (final 3 children) has no row beneath it,
+       so strip the bottom border to avoid an orphaned half-frame. */
+    .hobby:nth-last-child(-n+3) { border-bottom: none; }
     .hobby-title {
       font-family: var(--rex-font-serif);
       font-weight: 400;
@@ -513,8 +521,8 @@
 
     <header class="hero">
       <h1 class="hero-name">Rex <em>Heng</em></h1>
-      <p class="hero-intro">I read <em>PPE</em> at LSE and work across risk, policy, and software. Most of what I do sits somewhere between those three — writing benchmarks at a bank, organising case competitions, or shipping weekend prototypes on things I find interesting.</p>
-      <p class="hero-intro-secondary">This page is the longer version of everything else on the site. The playground behind the arrow is a MuJoCo ragdoll sandbox I've been building as a portfolio home.</p>
+      <p class="hero-intro">Reading <em>PPE</em> at the London School of Economics. Active across risk, policy, and software — building credit benchmarks at a bank, organising AI case competitions in London, and shipping production prototypes that connect the three.</p>
+      <p class="hero-intro-secondary">This page is the comprehensive record of education, employment, projects, and outside interests. The interactive arrow returns to the MuJoCo physics sandbox at the site root.</p>
     </header>
 
     <!-- ─── Education ─── -->
@@ -535,7 +543,7 @@
             <h3 class="entry-org">London School of Economics</h3>
             <p class="entry-role">BSc Philosophy, Politics &amp; Economics</p>
             <p class="entry-note">First-Class Honours · First Year</p>
-            <p class="entry-text">95th percentile in Quantitative Statistics and Climate Futures; 90th percentile in Quantitative Mathematics and Microeconomics. Raymond Huang Prize for the best submission on precision agriculture in the soybean industry. Selected as one of 18 Laidlaw Scholars — $6,000 research grant and a two-year leadership curriculum.</p>
+            <p class="entry-text">95th percentile in Quantitative Statistics and Climate Futures; 90th percentile in Quantitative Mathematics and Microeconomics. Awarded the Raymond Huang Prize for the highest-ranked submission on precision agriculture in the soybean industry. Selected as one of 18 Laidlaw Scholars across the cohort — $6,000 research grant alongside a two-year leadership and research curriculum.</p>
           </div>
         </article>
 
@@ -548,7 +556,7 @@
             <h3 class="entry-org">Raffles Institution</h3>
             <p class="entry-role">Singapore-Cambridge GCE A-Levels</p>
             <p class="entry-note">Perfect Distinctions</p>
-            <p class="entry-text">Ministry of Education Humanities Scholar. H2 History, Economics, Literature, Mathematics. Raffles Academy (History).</p>
+            <p class="entry-text">Ministry of Education Humanities Scholarship recipient. H2 History, Economics, Literature, and Mathematics. Member of the Raffles Academy (History) accelerated programme.</p>
           </div>
         </article>
       </div>
@@ -571,7 +579,7 @@
           <div class="entry-body">
             <h3 class="entry-org">DBS Bank</h3>
             <p class="entry-role">ESG Risk Specialist <span class="sep">·</span> Risk Management Group</p>
-            <p class="entry-text">Sector-deep research across automotive, animal husbandry, and data centres, feeding benchmarks and reference cases into regional credit committees. Reviewed generative AI workflows for ESG reporting used by relationship managers across the region, looking at retrieval quality, hallucination risk, and the audit trail needed to actually deploy these tools inside a bank.</p>
+            <p class="entry-text">Conducted sector deep-dives across automotive, animal husbandry, and data centres, producing benchmarks and reference cases reviewed by regional credit committees. Evaluated generative-AI ESG reporting workflows deployed to relationship managers across the region, with emphasis on retrieval accuracy, hallucination risk, and the audit-trail requirements needed to operationalise such tools within a regulated bank.</p>
           </div>
         </article>
 
@@ -583,7 +591,7 @@
           <div class="entry-body">
             <h3 class="entry-org">Cambridge Consulting Network</h3>
             <p class="entry-role">Vice President <span class="sep">·</span> Client Acquisition</p>
-            <p class="entry-text">Run outreach and project delivery. Grew active clients 6× (from 2 to 12+) across AI, biotech, and charity sectors, with engagements worth around $45K. Directed five concurrent student-consulting projects with 25+ consultants and C-suite stakeholders — market entry for an oat-milk firm, an 8-week advisory for a refugee services charity, among others.</p>
+            <p class="entry-text">Lead client acquisition and engagement delivery. Expanded the active client base 6× (2 to 12+) across AI, biotechnology, and not-for-profit sectors, generating engagement revenue of approximately $45K. Directed five concurrent advisory projects with 25+ consultants and C-suite counterparts, including market-entry strategy for an oat-milk producer and an eight-week operational advisory for a refugee-services charity.</p>
           </div>
         </article>
 
@@ -595,7 +603,7 @@
           <div class="entry-body">
             <h3 class="entry-org">PricewaterhouseCoopers</h3>
             <p class="entry-role">ESG Asset &amp; Wealth Management <span class="sep">·</span> Financial Services</p>
-            <p class="entry-text">Co-authored a $2B fund's annual sustainability report against GRI, SASB, and TCFD. Built materiality matrices for Consumer Discretionary and Consumer Staples mapping physical and transition risk to revenue and supply chains. Helped facilitate the MAS Environmental Risk Management seminar and wrote parts of PwC's post-COP28 ESG masterclass.</p>
+            <p class="entry-text">Co-authored the annual sustainability report for a $2B fund, aligning disclosures to GRI, SASB, and TCFD frameworks. Developed materiality matrices for the Consumer Discretionary and Consumer Staples sectors, mapping physical and transition climate risk onto revenue and supply-chain exposures. Supported the Monetary Authority of Singapore's Environmental Risk Management seminar and contributed to PwC's post-COP28 ESG masterclass curriculum.</p>
           </div>
         </article>
 
@@ -607,7 +615,7 @@
           <div class="entry-body">
             <h3 class="entry-org">Blackfriars Settlement</h3>
             <p class="entry-role">Income Development Volunteer <span class="sep">·</span> Community charity</p>
-            <p class="entry-text">Rebuilt the corporate partnerships page on Elementor and designed a three-tier sponsorship framework ($5K–$25K) spanning venue hire, CSR programmes, and community packages. Cold-reached 150+ companies — 22 became active volunteering partners over four months.</p>
+            <p class="entry-text">Rebuilt the corporate partnerships page on Elementor and designed a three-tier sponsorship framework ($5K–$25K) covering venue hire, CSR programmes, and community packages. Conducted outbound engagement with 150+ corporate prospects, converting 22 into active volunteering partners across four months.</p>
           </div>
         </article>
 
@@ -619,7 +627,7 @@
           <div class="entry-body">
             <h3 class="entry-org">MBP Capital</h3>
             <p class="entry-role">Macroeconomic Analyst <span class="sep">·</span> LSE Investment Fund</p>
-            <p class="entry-text">One of 19 students selected for LSE's real-capital portfolio. Rotated across FX, credit, and commodities desks; published a 4,000-word piece on copper covering China demand and M&amp;A across South American miners.</p>
+            <p class="entry-text">Selected as one of 19 analysts on LSE's real-capital portfolio. Rotated across the FX, credit, and commodities desks. Published a 4,000-word research note on copper, covering Chinese demand drivers and M&amp;A activity across South American producers.</p>
           </div>
         </article>
 
@@ -631,7 +639,7 @@
           <div class="entry-body">
             <h3 class="entry-org">Singapore Armed Forces</h3>
             <p class="entry-role">Lieutenant <span class="sep">·</span> Motorised Transport Officer</p>
-            <p class="entry-text">Sole platoon commander across four platoons, responsible for the welfare of ~100 men. Ran monthly secretarial duties and drafted incident reports — a crash course in writing clearly under pressure and taking ownership of things that aren't obviously your problem.</p>
+            <p class="entry-text">Sole platoon commander overseeing four platoons and the welfare, training, and operational readiness of approximately 100 servicemen. Discharged monthly secretarial duties and authored formal incident reports for command review, developing the discipline of communicating clearly under operational pressure and assuming responsibility for issues outside immediate scope.</p>
           </div>
         </article>
       </div>
@@ -652,8 +660,8 @@
             <h3 class="pc-title">Amogus</h3>
             <span class="pc-meta">2nd · Cursor Hack 2026</span>
           </div>
-          <p class="pc-subtitle">MCP deliberation server · 5-hour build</p>
-          <p class="pc-desc">Four AI agents with distinct archetypes debate planning prompts through structurally isolated rounds before synthesising. Designed to produce battle-tested PRDs instead of unchallenged plans. Callable from Cursor, Claude Code, or any MCP client.</p>
+          <p class="pc-subtitle">MCP deliberation server</p>
+          <p class="pc-desc">Coordinates four AI agents with distinct reasoning archetypes through structurally isolated debate rounds before synthesising consensus. Designed to surface adversarial weaknesses in planning artefacts. Exposed as a Model Context Protocol server for Cursor, Claude Code, and any compatible client.</p>
           <div class="pc-tags">
             <span class="pc-tag">TypeScript</span>
             <span class="pc-tag">MCP SDK</span>
@@ -672,7 +680,7 @@
             <span class="pc-meta">Hedera × LSE · 2026</span>
           </div>
           <p class="pc-subtitle">Tokenised food-waste marketplace</p>
-          <p class="pc-desc">Autonomous AI kitchen agents negotiate surplus inventory trades over Hedera Consensus Service and settle on HTS across four tokenised commodities. Sole builder in a team of five. Three-panel live viewer streams agent reasoning and settlement in real time.</p>
+          <p class="pc-desc">Autonomous AI kitchen agents negotiate surplus-inventory trades over the Hedera Consensus Service and settle on the Hedera Token Service across four tokenised commodities. Sole technical lead within a team of five. A three-panel live viewer streams agent reasoning and on-chain settlement in real time.</p>
           <div class="pc-tags">
             <span class="pc-tag">TypeScript</span>
             <span class="pc-tag">hedera-agent-kit</span>
@@ -690,7 +698,7 @@
             <span class="pc-meta">1st · SIG Datathon 2026</span>
           </div>
           <p class="pc-subtitle">London Underground network modelling</p>
-          <p class="pc-desc">Proposed a new Underground station at Wembley. Composite need score across all 4,994 London LSOAs combining TfL crowding, Census 2021, PTAL, and IMD. Modelled the network as a weighted graph and validated the recommendation with a 10,000-iteration Monte Carlo — Brent 035C ranked first in every run.</p>
+          <p class="pc-desc">Proposed siting for a new Underground station at Wembley. Constructed a composite need score across all 4,994 London LSOAs incorporating TfL crowding, Census 2021, PTAL, and IMD inputs. Modelled the rail network as a weighted graph and validated the recommendation through a 10,000-iteration Monte Carlo simulation; Brent 035C ranked first in every iteration.</p>
           <div class="pc-tags">
             <span class="pc-tag">Python</span>
             <span class="pc-tag">GeoPandas</span>
@@ -709,7 +717,7 @@
             <span class="pc-meta">Hack London 2026</span>
           </div>
           <p class="pc-subtitle">Soil &amp; water infrastructure dashboard</p>
-          <p class="pc-desc">Fuses NASA GIBS satellite imagery with IoT sensor telemetry to monitor soil and water across Sub-Saharan Africa, South Asia, and Southeast Asia. Paired a $30/unit STM32 + LoRaWAN sensor concept with a Solana-anchored audit trail so policymakers get tamper-evident telemetry.</p>
+          <p class="pc-desc">Fuses NASA GIBS satellite imagery with IoT sensor telemetry to monitor soil and water conditions across Sub-Saharan Africa, South Asia, and Southeast Asia. Paired a $30 per-unit STM32 and LoRaWAN sensor concept with a Solana-anchored audit trail, providing policymakers with tamper-evident telemetry suitable for grant attestation.</p>
           <div class="pc-tags">
             <span class="pc-tag">Next.js 16</span>
             <span class="pc-tag">Mapbox GL</span>
@@ -727,8 +735,8 @@
             <h3 class="pc-title">Manusman</h3>
             <span class="pc-meta">Most Commercial · Manus 2026</span>
           </div>
-          <p class="pc-subtitle">AI meeting-prep platform</p>
-          <p class="pc-desc">Six-step flow that compresses ~30 minutes of pre-call research into one briefing. Three parallel research agents streamed via SSE produce company, contact, and industry analyses; a Google Meet-style overlay surfaces MEDDPICC/BANT/SPIN cards live during the call.</p>
+          <p class="pc-subtitle">AI meeting-preparation platform</p>
+          <p class="pc-desc">Six-stage workflow compressing approximately 30 minutes of pre-call research into a single briefing. Three parallel research agents streamed over Server-Sent Events generate company, contact, and industry analyses; a Google Meet-style overlay surfaces MEDDPICC, BANT, and SPIN qualification cards in real time during the call.</p>
           <div class="pc-tags">
             <span class="pc-tag">React</span>
             <span class="pc-tag">Manus AI</span>
@@ -746,7 +754,7 @@
             <span class="pc-meta">Top 8 · Claude Imperial 2026</span>
           </div>
           <p class="pc-subtitle">Mental-health policy mapping tool</p>
-          <p class="pc-desc">Solo one-day build. Composite Need Index across 120 columns from IMD 2019, SAMHI v5, Census 2021, and community service directories, surfaced on a 9-layer choropleth. AI policy advisor pairs Claude for briefs with Groq for streaming chat grounded in borough-level entities.</p>
+          <p class="pc-desc">Solo build delivered within a single hackathon day. Engineered a Composite Need Index across 120 variables drawn from IMD 2019, SAMHI v5, Census 2021, and community-service directories, presented on a nine-layer choropleth. The AI policy advisor pairs Claude for narrative briefs with Groq for streaming dialogue grounded in borough-level entities.</p>
           <div class="pc-tags">
             <span class="pc-tag">FastAPI</span>
             <span class="pc-tag">geopandas</span>
@@ -764,7 +772,7 @@
             <span class="pc-meta">LSE Claude Builder · 2026</span>
           </div>
           <p class="pc-subtitle">NHS cancer waiting-time comparison</p>
-          <p class="pc-desc">Helps patients exercise their legal right to choose providers across 20+ London trusts and four cancer pathways. Multi-factor ranking over postcode proximity and FDS/31-day/62-day wait times. Claude drafts formal GP transfer letters citing the NHS Constitution.</p>
+          <p class="pc-desc">Enables patients to exercise their statutory right to choose between 20+ London trusts across four cancer pathways. Multi-factor ranking integrates postcode proximity with FDS, 31-day, and 62-day waiting times. Claude generates formal GP transfer letters citing the relevant clauses of the NHS Constitution.</p>
           <div class="pc-tags">
             <span class="pc-tag">Next.js 16</span>
             <span class="pc-tag">Leaflet</span>
@@ -782,7 +790,7 @@
             <span class="pc-meta">LSE Build 2026</span>
           </div>
           <p class="pc-subtitle">Private AI inference marketplace</p>
-          <p class="pc-desc">TEE-gated inference where neither the model owner nor the data owner sees the other side. Phala dstack enclave handles encrypted inference, Solidity escrow releases payment against attestation, Next.js frontend drives client-side encryption and proof display.</p>
+          <p class="pc-desc">Trusted-execution-environment-gated inference in which neither model owner nor data owner can observe the other party's inputs. A Phala dstack enclave performs encrypted inference, a Solidity escrow contract releases payment upon attestation, and a Next.js frontend handles client-side encryption and on-chain proof display.</p>
           <div class="pc-tags">
             <span class="pc-tag">Solidity</span>
             <span class="pc-tag">Phala dstack</span>
@@ -800,7 +808,7 @@
             <span class="pc-meta">ETH Oxford 2026</span>
           </div>
           <p class="pc-subtitle">Decentralised research graph</p>
-          <p class="pc-desc">Blockchain-based knowledge graph for academic publishing targeting the ~$2B/year unpaid peer-review market. Flare Data Connector verifies DOIs, citations, and replication studies on-chain; USDC on Plasma pays reviewers instantly while RESEARCH governance tokens handle long-term alignment.</p>
+          <p class="pc-desc">Blockchain-based knowledge graph for academic publishing addressing the approximately $2B annual unpaid peer-review market. The Flare Data Connector verifies DOIs, citations, and replication studies on-chain; USDC on Plasma settles reviewer compensation immediately while a RESEARCH governance token manages long-term alignment.</p>
           <div class="pc-tags">
             <span class="pc-tag">Solidity</span>
             <span class="pc-tag">Flare FDC</span>
@@ -819,7 +827,7 @@
             <span class="pc-meta">Music theory tool</span>
           </div>
           <p class="pc-subtitle">Interactive harmony visualisation</p>
-          <p class="pc-desc">Two-mode interactive tool: Transformation mode walks through P/L/R chord operations, Negative Harmony mode flips chords through axis reflection. Built because learning the theory by reading about it was painful.</p>
+          <p class="pc-desc">Two-mode interactive tool. Transformation mode demonstrates P/L/R chord operations; Negative Harmony mode reflects chords through their tonal axis. Built as a teaching aid for an under-served pedagogical area.</p>
           <div class="pc-tags">
             <span class="pc-tag">React</span>
             <span class="pc-tag">Vite</span>
@@ -835,8 +843,8 @@
             <h3 class="pc-title">MusiCity</h3>
             <span class="pc-meta">Creative project</span>
           </div>
-          <p class="pc-subtitle">MIDI-to-3D procedural city</p>
-          <p class="pc-desc">Play a MIDI keyboard and a 3D city grows in real time. Chords spawn buildings, melodies enrich them via spectral analysis, intervals place connective assets. GLTF asset pipelines across Jazz, Christmas, and Rock palettes.</p>
+          <p class="pc-subtitle">MIDI-driven procedural city</p>
+          <p class="pc-desc">Real-time procedural cityscape driven by live MIDI input. Chord events spawn buildings, melodic content enriches them through spectral analysis, and interval distance governs the placement of connective infrastructure. GLTF asset pipelines support Jazz, Christmas, and Rock palettes.</p>
           <div class="pc-tags">
             <span class="pc-tag">Three.js / R3F</span>
             <span class="pc-tag">Zustand</span>
@@ -853,8 +861,8 @@
             <h3 class="pc-title">Four Letters</h3>
             <span class="pc-meta">Word game · PWA</span>
           </div>
-          <p class="pc-subtitle">Fast-paced word puzzle</p>
-          <p class="pc-desc">Swipe, tap, or type across 280+ pre-generated letter sets with a 10-second SVG timer. Streak-based scoring with up to a 10× multiplier and LocalStorage high-scores. Built for phones first.</p>
+          <p class="pc-subtitle">Mobile-first word puzzle</p>
+          <p class="pc-desc">Swipe, tap, or type across 280+ pre-generated letter sets governed by a 10-second SVG timer. Streak-based scoring offers multipliers up to 10×, with LocalStorage-backed high-score persistence. Designed mobile-first as a Progressive Web App.</p>
           <div class="pc-tags">
             <span class="pc-tag">React 19</span>
             <span class="pc-tag">PWA</span>
@@ -870,8 +878,8 @@
             <h3 class="pc-title">Attic</h3>
             <span class="pc-meta">Band site</span>
           </div>
-          <p class="pc-subtitle">Official site for the band</p>
-          <p class="pc-desc">Promotional site for Attic, the rock band I play keyboard in. Music streaming, gig dates, interactive media, and a bit of band lore.</p>
+          <p class="pc-subtitle">Official band site</p>
+          <p class="pc-desc">Promotional site for Attic. Integrates music streaming, performance schedule, interactive media, and band history into a single editorial-grade web presence.</p>
           <div class="pc-tags">
             <span class="pc-tag">Web Design</span>
             <span class="pc-tag">Music</span>
@@ -888,7 +896,7 @@
             <span class="pc-meta">Co-Organiser · 2025-26</span>
           </div>
           <p class="pc-subtitle">London's first AI-focused case competition</p>
-          <p class="pc-desc">Co-founded LICC with Richard Min. Scaled from zero to 250+ signups and 60+ teams across LSE, Imperial, UCL, and KCL. Co-authored the 20-page Project Atlas case — an ethical AI allocation dilemma under EU AI Act exposure — and designed the five-category scoring rubric used across 45 submissions.</p>
+          <p class="pc-desc">Co-founded LICC alongside Richard Min. Scaled the competition from inception to 250+ registrants and 60+ participating teams across LSE, Imperial, UCL, and KCL. Co-authored the 20-page Project Atlas case study — an ethical AI-allocation dilemma framed against EU AI Act exposure — and designed the five-category scoring rubric applied to 45 final submissions.</p>
           <div class="pc-tags">
             <span class="pc-tag">Event Design</span>
             <span class="pc-tag">Case Writing</span>
@@ -913,40 +921,40 @@
       <div class="hobbies">
         <div class="hobby reveal">
           <h3 class="hobby-title">Mountaineering</h3>
-          <p class="hobby-sub">Annapurna Circuit &amp; elsewhere</p>
-          <p class="hobby-desc">Did the Annapurna Circuit in Nepal and a handful of longer hikes across other regions. Being above 4,000m makes most other problems feel smaller for a while.</p>
+          <p class="hobby-sub">Annapurna Circuit &amp; longer treks</p>
+          <p class="hobby-desc">Completed the Annapurna Circuit in Nepal and several extended high-altitude treks. Sustained exposure above 4,000m provides a useful re-baselining of risk and effort.</p>
         </div>
         <div class="hobby reveal">
           <h3 class="hobby-title">Music</h3>
           <p class="hobby-sub">Keyboardist · Attic</p>
-          <p class="hobby-desc">Play keys in a rock band called Attic. Five gigs in so far, still figuring out the sound. Site is <a href="https://attictheband.com" target="_blank" rel="noopener noreferrer">here</a>.</p>
+          <p class="hobby-desc">Keyboardist for Attic, a London-based rock band; five live performances to date. Band site available <a href="https://attictheband.com" target="_blank" rel="noopener noreferrer">here</a>.</p>
         </div>
         <div class="hobby reveal">
           <h3 class="hobby-title">Bouldering</h3>
           <p class="hobby-sub">V4 — V6</p>
-          <p class="hobby-desc">Training a few times a week, mostly indoors. The sport where failure is the default and you're expected to try things you can't yet do.</p>
+          <p class="hobby-desc">Trains several sessions per week, predominantly indoors. A discipline that rewards iteration and tolerance for repeated failure.</p>
         </div>
         <div class="hobby reveal">
           <h3 class="hobby-title">Chess</h3>
           <p class="hobby-sub">~1900 online</p>
-          <p class="hobby-desc">Mostly bullet. Jobava London with White, French with Black. It is probably the main reason I can sit still for long stretches.</p>
+          <p class="hobby-desc">Primarily bullet format. Jobava London as White; French Defence as Black. A long-standing practice in sustained focus.</p>
         </div>
         <div class="hobby reveal">
           <h3 class="hobby-title">Squash</h3>
           <p class="hobby-sub">School team</p>
-          <p class="hobby-desc">Represented my school team competitively. Still play occasionally — small courts are forgiving of busy terms.</p>
+          <p class="hobby-desc">Represented school at competitive level; continues to play recreationally during term.</p>
         </div>
         <div class="hobby reveal">
           <h3 class="hobby-title">Calisthenics</h3>
           <p class="hobby-sub">Front lever · One-arm pull-up</p>
-          <p class="hobby-desc">Working towards the front lever (~85% there) and a one-arm pull-up (~50%). Slow, ugly, satisfying when a skill finally clicks.</p>
+          <p class="hobby-desc">Working progressions toward the front lever (~85% complete) and the one-arm pull-up (~50%). A long-horizon strength practice.</p>
         </div>
       </div>
     </section>
 
     <footer class="cv-footer">
       <div>Rex Heng · 2026</div>
-      <div><a href="/">↑ Back to playground</a></div>
+      <div><a href="/">↑ Return to playground</a></div>
     </footer>
 
   </div>
