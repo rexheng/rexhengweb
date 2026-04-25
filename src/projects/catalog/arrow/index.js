@@ -18,6 +18,8 @@ export default {
   links: [
     { label: "Source", href: "https://github.com/rexheng/arrow-solver" },
   ],
-  ability: null,
+  abilityLabel: "Launch!",
+  ability: "launch",
+  footprintOffset: 0.22,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };

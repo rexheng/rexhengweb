@@ -19,6 +19,8 @@ export default {
     { label: "Live site", href: "https://inform-eight.vercel.app" },
     { label: "Source", href: "https://github.com/rexheng/Inform" },
   ],
-  ability: null,
+  abilityLabel: "Route!",
+  ability: "dispatch",
+  footprintOffset: 0.29,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };

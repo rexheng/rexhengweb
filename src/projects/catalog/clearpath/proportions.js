@@ -1,33 +1,25 @@
-// ClearPath — NHS plus + clock on top of centre.
+// ClearPath — rectangular NHS block.
 //
-// Silhouette:
-//   1. NHS-blue cross slab — two overlapping boxes forming a plus sign.
-//   2. Clock face disc — a thin cylinder on top of the centre with
-//      12 tick marks around the rim.
+// Silhouette: a single landscape-oriented rectangular slab in NHS corporate
+// blue with white "NHS" lettering across the front face. Reads as the NHS
+// logo plate. Sits with its base flush on the floor.
 
 export const D = 0.26;
 
 export const SIZES = {
-  // Cross — arms 1.2×D long, 0.36×D wide, 0.24×D deep.
-  armLength:    1.20 * D,
-  armWidth:     0.36 * D,
-  armDepth:     0.24 * D,
-  crossY:       0.00,       // vertically centred on origin
+  // Block dimensions (X = width, Y = height, Z = depth).
+  blockW:    2.40 * D,
+  blockH:    1.20 * D,
+  blockD:    0.30 * D,
+  blockBaseY: -0.60 * D,   // bottom of the block in body-local space
 
-  // Clock disc — sits on top of the centre (y = armDepth/2).
-  clockR:       0.30 * D,
-  clockH:       0.05 * D,
-
-  // Tick marks — 12 small boxes arranged around the clock rim.
-  tickCount:    12,
-  tickR:        0.26 * D,   // tick ring radius (slightly inside clockR)
-  tickW:        0.025 * D,
-  tickH:        0.04 * D,
-  tickDepth:    0.02 * D,
+  // White "NHS" plate on the front face — a thin slab inset over the front.
+  letterPlateW: 1.80 * D,
+  letterPlateH: 0.70 * D,
+  letterPlateD: 0.04 * D,  // protrudes a sliver in front of the block
 };
 
 export const COLOURS = {
-  cross:   "#005eb8",   // NHS corporate blue
-  clock:   "#ffffff",
-  ticks:   "#003065",
+  block:   "#005eb8",   // NHS corporate blue
+  letters: "#ffffff",
 };
