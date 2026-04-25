@@ -30,12 +30,42 @@ const CSS = `
 #rex-portfolio-overlay {
   position: fixed;
   left: 22px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 22px;
   z-index: 15;
   color: var(--rex-ivory);
   user-select: none;
   font-family: var(--rex-font-mono);
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+#rex-portfolio-overlay .rex-cta {
+  display: inline-flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 18px;
+  background: var(--rex-ink-2);
+  border: 1px solid var(--rex-rule-strong);
+  color: var(--rex-ivory);
+  font-family: var(--rex-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 220ms ease, border-color 220ms ease, color 220ms ease;
+  white-space: nowrap;
+}
+#rex-portfolio-overlay .rex-cta::after {
+  content: " →";
+  margin-left: 8px;
+  color: var(--rex-amber);
+  letter-spacing: 0;
+}
+#rex-portfolio-overlay .rex-cta:hover {
+  background: var(--rex-ink-3);
+  border-color: var(--rex-amber);
+  color: var(--rex-amber);
 }
 #rex-portfolio-overlay .rex-toggle {
   width: 52px;
@@ -497,7 +527,7 @@ const CSS = `
 
 #metrics-hud {
   position: fixed;
-  top: 22px;
+  bottom: 22px;
   left: 22px;
   z-index: 10;
   font-family: var(--rex-font-mono);

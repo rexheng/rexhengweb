@@ -13,12 +13,14 @@ export class MetricsHud {
     this.el.id = "metrics-hud";
     this.el.innerHTML = `
       <div class="m-head"><span>Metrics</span><span>·</span></div>
+      <div class="m-row"><span class="m-label">FPS</span><span class="m-value" data-k="fps">–</span></div>
       <div class="m-row"><span class="m-label">Peak Spd</span><span class="m-value" data-k="speed">0.00 m/s</span></div>
       <div class="m-row"><span class="m-label">Peak Hit</span><span class="m-value" data-k="depth">0.00 mm</span></div>
       <div class="m-row"><span class="m-label">Contacts</span><span class="m-value" data-k="ncon">0</span></div>
       <div class="m-row"><span class="m-label">Motion</span><span class="m-value" data-k="motion">0 / 0</span></div>
     `;
     document.body.appendChild(this.el);
+    this._vFps = this.el.querySelector('[data-k="fps"]');
     this._vSpeed = this.el.querySelector('[data-k="speed"]');
     this._vDepth = this.el.querySelector('[data-k="depth"]');
     this._vNcon = this.el.querySelector('[data-k="ncon"]');
@@ -28,6 +30,12 @@ export class MetricsHud {
     this.peakDepth = 0;
     this._lastUpdateMs = performance.now();
     this._frame = 0;
+
+    // FPS — rolling 30-frame average. update() is called once per
+    // animation frame from main.js, so each invocation is one frame.
+    this._fpsSamples = new Array(30).fill(16.67);
+    this._fpsIdx = 0;
+    this._fpsLastMs = performance.now();
   }
 
   setEnabled(v) {
@@ -40,6 +48,13 @@ export class MetricsHud {
     const now = performance.now();
     const dt = Math.min(0.2, (now - this._lastUpdateMs) / 1000);
     this._lastUpdateMs = now;
+
+    // FPS sample — inter-frame delta, clamped so a single tab-background
+    // pause doesn't spike the average. Rolling 30-sample window.
+    const frameDeltaMs = Math.min(500, Math.max(1, now - this._fpsLastMs));
+    this._fpsLastMs = now;
+    this._fpsSamples[this._fpsIdx] = frameDeltaMs;
+    this._fpsIdx = (this._fpsIdx + 1) % this._fpsSamples.length;
 
     const model = this.app.model;
     const data = this.app.data;
@@ -74,6 +89,12 @@ export class MetricsHud {
     if (this._frame % 6 !== 0) return;
 
     const fmt = (x, digits) => (x >= 100 ? x.toFixed(0) : x.toFixed(digits));
+    // Rolling mean of the sample buffer → FPS.
+    let sum = 0;
+    for (let i = 0; i < this._fpsSamples.length; i++) sum += this._fpsSamples[i];
+    const avgMs = sum / this._fpsSamples.length;
+    const fps = avgMs > 0 ? (1000 / avgMs) : 0;
+    this._vFps.textContent = `${fps.toFixed(0)}`;
     this._vSpeed.textContent = `${fmt(this.peakSpeed, 2)} m/s`;
     this._vDepth.textContent = `${fmt(this.peakDepth * 1000, 2)} mm`;
     this._vNcon.textContent = `${nc}`;

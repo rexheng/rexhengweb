@@ -5,7 +5,6 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import Stats from "three/addons/libs/stats.module.js";
 import { loadSceneFromURL, getPosition, getQuaternion } from "./mujocoLoader.js";
 import { Grabber } from "./grabber.js";
 import { Trails } from "./trails.js";
@@ -274,13 +273,8 @@ class App {
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
 
-    this.stats = new Stats();
-    this.stats.dom.id = "stats";
-    // Top-right, under the controls panel width so it doesn't overlap.
-    // Tiny, low-opacity — FPS badge, not a focal element.
-    this.stats.dom.style.cssText =
-      "position:fixed;top:auto;bottom:22px;left:220px;z-index:6;opacity:0.38;transform:scale(0.78);transform-origin:bottom left;";
-    document.body.appendChild(this.stats.dom);
+    // FPS is now rendered as a row inside the MetricsHud (bottom-left).
+    // The Stats widget is no longer used.
 
     this.controlsPanel = new ControlsPanel(this);
 
@@ -537,7 +531,6 @@ class App {
     this.controlsPanel?.update();
     this._updatePauseChip();
     this.composer.render();
-    this.stats.update();
   };
 }
 

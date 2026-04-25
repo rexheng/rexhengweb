@@ -70,7 +70,13 @@ export class PortfolioOverlay {
     if (this.tagline) panel.appendChild(taglineEl);
     if (this.links.length) panel.appendChild(linksEl);
 
+    const cta = document.createElement("a");
+    cta.className = "rex-cta";
+    cta.href = "/cv/";
+    cta.textContent = "Professional";
+
     root.appendChild(toggle);
+    root.appendChild(cta);
     root.appendChild(panel);
     document.body.appendChild(root);
 
