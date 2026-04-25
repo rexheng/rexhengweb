@@ -17,6 +17,7 @@ export default {
     "A policy tool that maps mental-health need across all 4,994 London LSOAs, then lets a commissioner talk to the map — a Claude chatbot sits on top of the choropleth and explains where need is concentrated, why, and what services already reach it. Solo build at the Claude Hackathon @ Imperial, finished in the Top 8 of 130 teams.",
   links: [
     { label: "Live site", href: "https://outreach-london.vercel.app" },
+    { label: "Source", href: "https://github.com/rexheng/Outreach" },
   ],
   ability: null,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),

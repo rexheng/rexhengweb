@@ -15,9 +15,7 @@ export default {
   accent: "#e6372a",
   description:
     "A 14-variable linear regression on marathon performance data — splits, pace, elevation, weather, fuelling, sleep — teasing out which signals actually move finish time and which are just gym folklore. Took 1st place at the Oliver Wyman Datathon.",
-  links: [
-    { label: "Source", href: "#" },
-  ],
+  links: [],
   ability: null,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };

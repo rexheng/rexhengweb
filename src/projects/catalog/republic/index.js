@@ -17,9 +17,7 @@ export default {
   accent: "#c9b58a",
   description:
     "The Republic is a research intelligence platform built at ETH Oxford — built around the procedural Doric column that reads as both title and landmark. It ingests research literature and synthesises it into navigable briefs, so a user can walk into a new field and leave with a defensible position rather than a tab graveyard.",
-  links: [
-    { label: "Source", href: "#" },
-  ],
+  links: [],
   abilityLabel: "Topple!",
   ability: "topple",
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),

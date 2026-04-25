@@ -1,7 +1,7 @@
 // Custom control panel — fully replaces lil-gui with the Rex UI design system.
 // Sections: Scene, Physics, Camera, Effects, Projects.
 
-import { PROJECTS } from "./projects.js";
+import { PROJECTS } from "./projects/index.js";
 
 const GRAVITY_OPTIONS = [
   { label: "Earth", value: -9.81 },

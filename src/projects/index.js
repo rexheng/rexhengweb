@@ -1,13 +1,43 @@
-// Project catalog — glob-loaded registry.
+// Project catalog — explicit-import registry.
 // See docs/superpowers/specs/2026-04-24-project-sprite-workflow-design.md §3-§4.
 //
 // Each `src/projects/catalog/<id>/index.js` exports a project def as its
-// default export. This module globs them at build time, validates, and
-// assembles PROJECTS. Ability resolution (`def.ability: "stab"` → function)
-// happens here so `ProjectSystem._fireAbility` can invoke the resolved
-// function directly without knowing about the registry.
+// default export. This module imports each one explicitly (plain ES modules,
+// not Vite's import.meta.glob — the site is served statically by serve.py),
+// validates them, and assembles PROJECTS. Ability resolution
+// (`def.ability: "stab"` → function) happens here so
+// `ProjectSystem._fireAbility` can invoke the resolved function directly.
+//
+// Adding a project: drop a folder under catalog/<id>/, then append one line
+// to the ENTRIES array below.
 
 import { ABILITIES } from "./abilities/index.js";
+
+import amogus from "./catalog/amogus/index.js";
+import arrow from "./catalog/arrow/index.js";
+import clearpath from "./catalog/clearpath/index.js";
+import musicity from "./catalog/musicity/index.js";
+import oliverWyman from "./catalog/oliver-wyman/index.js";
+import olympicWay from "./catalog/olympic-way/index.js";
+import outreach from "./catalog/outreach/index.js";
+import peel from "./catalog/peel/index.js";
+import peterNetwork from "./catalog/peter-network/index.js";
+import republic from "./catalog/republic/index.js";
+import simulacra from "./catalog/simulacra/index.js";
+
+const ENTRIES = [
+  ["catalog/amogus/index.js", amogus],
+  ["catalog/arrow/index.js", arrow],
+  ["catalog/clearpath/index.js", clearpath],
+  ["catalog/musicity/index.js", musicity],
+  ["catalog/oliver-wyman/index.js", oliverWyman],
+  ["catalog/olympic-way/index.js", olympicWay],
+  ["catalog/outreach/index.js", outreach],
+  ["catalog/peel/index.js", peel],
+  ["catalog/peter-network/index.js", peterNetwork],
+  ["catalog/republic/index.js", republic],
+  ["catalog/simulacra/index.js", simulacra],
+];
 
 const REQUIRED_STRING_FIELDS = ["id", "label", "title"];
 
@@ -49,11 +79,6 @@ function resolveAbility(def) {
   return { ...def, abilityKey: def.ability, ability: fn };
 }
 
-const modules = import.meta.glob("./catalog/*/index.js", { eager: true });
-
-export const PROJECTS = Object.entries(modules)
-  .map(([path, mod]) => {
-    const def = mod.default;
-    return validate(def, path) ? resolveAbility(def) : null;
-  })
+export const PROJECTS = ENTRIES
+  .map(([path, def]) => (validate(def, path) ? resolveAbility(def) : null))
   .filter(Boolean);

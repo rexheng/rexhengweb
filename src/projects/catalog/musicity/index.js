@@ -16,7 +16,7 @@ export default {
   description:
     "Musicity was an Encode AI Hackathon entry at the intersection of cities and music — the skyline below and the floating note above are the sprite's shorthand. Full project writeup pending.",
   links: [
-    { label: "Source", href: "#" },
+    { label: "Source", href: "https://github.com/rexheng/musicity" },
   ],
   ability: null,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),

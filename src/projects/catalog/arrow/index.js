@@ -16,7 +16,7 @@ export default {
   description:
     "Arrow is a marketplace for confidential inference: Phala's TEE nodes serve model calls that neither the provider nor the operator can inspect, and the marketplace matches buyers who want privacy to providers who can prove isolation. Built at LSE Build.",
   links: [
-    { label: "Source", href: "#" },
+    { label: "Source", href: "https://github.com/rexheng/arrow-solver" },
   ],
   ability: null,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),

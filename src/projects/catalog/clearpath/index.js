@@ -17,6 +17,7 @@ export default {
     "ClearPath shortens NHS cancer waiting times by activating the patient's right to choose. A user tells the app where they're stuck on a referral; Claude drafts the GP transfer letter, cites the NHS Constitution right to choose, and produces a signed PDF the patient can hand back to their surgery. Built at the Claude Hackathon @ LSE.",
   links: [
     { label: "Live site", href: "https://inform-eight.vercel.app" },
+    { label: "Source", href: "https://github.com/rexheng/Inform" },
   ],
   ability: null,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
