@@ -19,6 +19,8 @@ export default {
     { label: "Live site", href: "https://outreach-london.vercel.app" },
     { label: "Source", href: "https://github.com/rexheng/Outreach" },
   ],
-  ability: null,
+  abilityLabel: "Pulse need!",
+  ability: "heatmap",
+  footprintOffset: 0.29,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };

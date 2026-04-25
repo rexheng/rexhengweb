@@ -22,17 +22,19 @@ export const SIZES = {
   // Plinth — bottom square-ish disc, sits flush on slot ground.
   plinthR:          1.30 * D,
   plinthH:          0.20 * D,
-  plinthBaseY:     -1.50 * D,     // bottom of the plinth ≈ slot capsule base
+  plinthBaseY:     -1.00 * D,     // shorter column so toppled extent fits the slot box
 
   // Base torus — sits on top of the plinth.
   baseR:            1.15 * D,
   baseH:            0.15 * D,
   baseTubeRadius:   0.075 * D,
 
-  // Shaft — fluted lathe with entasis.
+  // Shaft — fluted lathe with entasis. Reduced from 5.0·D so when the column
+  // is toppled, its tip stays within the slot's collision box rather than
+  // clipping through the floor.
   shaftRBottom:     1.00 * D,
   shaftRTop:        0.85 * D,
-  shaftH:           5.00 * D,
+  shaftH:           3.00 * D,
   flutes:           20,
 
   // Necking — narrow ring between shaft and echinus.

@@ -50,18 +50,23 @@ export function topple({ app, slot }) {
   const rotAxisX = -awayY;
   const rotAxisY =  awayX;
 
-  const SPIN = 7.5;   // rad/s — stronger = faster topple
-  const NUDGE = 0.6;  // m/s — small horizontal kick so the fall isn't purely rotational
+  // The slot's flat-bottomed box is hugely stable — pure angular velocity
+  // gets damped at the contact corners before the column tips. Bumping the
+  // body up briefly breaks contact, then SPIN does the rest.
+  const SPIN = 12.0;   // rad/s — stronger to overcome flat-base stability
+  const NUDGE = 0.9;   // m/s — horizontal "away" kick
+  const HOP = 1.6;     // m/s — short upward impulse so the box leaves the floor
 
   const model = app.model, data = app.data;
   const jntAdr = model.body_jntadr[slot.bodyID];
   const dofAdr = model.jnt_dofadr[jntAdr];
   data.qvel[dofAdr + 0] = awayX * NUDGE;
   data.qvel[dofAdr + 1] = awayY * NUDGE;
-  data.qvel[dofAdr + 2] = 0;
+  data.qvel[dofAdr + 2] = HOP;
   data.qvel[dofAdr + 3] = rotAxisX * SPIN;
   data.qvel[dofAdr + 4] = rotAxisY * SPIN;
   data.qvel[dofAdr + 5] = (Math.random() - 0.5) * 0.4;
+  app.mujoco.mj_forward(model, data);
 
   return { tick() { return false; } };
 }

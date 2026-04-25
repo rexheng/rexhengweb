@@ -23,6 +23,7 @@ export default {
   ],
   abilityLabel: "Stab!",
   ability: "stab",
+  footprintOffset: 0.14,
   // Wrap the DI builder so the ProjectSystem can call `def.buildMesh()`
   // with no arguments (legacy shape — system.js doesn't need to know about
   // proportions/primitives/materials).

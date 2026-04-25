@@ -18,6 +18,8 @@ export default {
   links: [
     { label: "Source", href: "https://github.com/rexheng/musicity" },
   ],
-  ability: null,
+  abilityLabel: "Play!",
+  ability: "chord",
+  footprintOffset: 0.24,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };

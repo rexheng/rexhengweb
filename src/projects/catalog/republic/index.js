@@ -20,5 +20,6 @@ export default {
   links: [],
   abilityLabel: "Topple!",
   ability: "topple",
+  footprintOffset: 0.19,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };

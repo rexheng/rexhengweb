@@ -22,5 +22,6 @@ export default {
   ],
   abilityLabel: "Cycle",
   ability: "cycle",
+  footprintOffset: 0.29,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };

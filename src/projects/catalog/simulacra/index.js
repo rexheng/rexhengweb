@@ -20,5 +20,6 @@ export default {
   ],
   abilityLabel: "Swarm!",
   ability: "swarm",
+  footprintOffset: 0.37,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };

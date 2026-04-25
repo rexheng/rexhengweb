@@ -18,6 +18,8 @@ export default {
   links: [
     { label: "Source", href: "https://github.com/rexheng/peel-market" },
   ],
-  ability: null,
+  abilityLabel: "Settle!",
+  ability: "settle",
+  footprintOffset: 0.24,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };

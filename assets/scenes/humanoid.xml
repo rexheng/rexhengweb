@@ -197,14 +197,14 @@
          projects still land on the floor and interact with the ragdoll.
          NO runtime toggle needed — the mask is correct for both states.
          **DO NOT CHANGE contype/conaffinity ON THESE GEOMS.** -->
-    <body name="project_slot_0" pos="0 0 -60"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
-    <body name="project_slot_1" pos="0 0 -60.5"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
-    <body name="project_slot_2" pos="0 0 -61"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
-    <body name="project_slot_3" pos="0 0 -61.5"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
-    <body name="project_slot_4" pos="0 0 -62"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
-    <body name="project_slot_5" pos="0 0 -62.5"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
-    <body name="project_slot_6" pos="0 0 -63"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
-    <body name="project_slot_7" pos="0 0 -63.5"><freejoint/><geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
+    <body name="project_slot_0" pos="0 0 -60"><freejoint/><geom type="box" size="0.30 0.30 0.45" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
+    <body name="project_slot_1" pos="0 0 -60.5"><freejoint/><geom type="box" size="0.30 0.30 0.45" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
+    <body name="project_slot_2" pos="0 0 -61"><freejoint/><geom type="box" size="0.30 0.30 0.45" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
+    <body name="project_slot_3" pos="0 0 -61.5"><freejoint/><geom type="box" size="0.30 0.30 0.45" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
+    <body name="project_slot_4" pos="0 0 -62"><freejoint/><geom type="box" size="0.30 0.30 0.45" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
+    <body name="project_slot_5" pos="0 0 -62.5"><freejoint/><geom type="box" size="0.30 0.30 0.45" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
+    <body name="project_slot_6" pos="0 0 -63"><freejoint/><geom type="box" size="0.30 0.30 0.45" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
+    <body name="project_slot_7" pos="0 0 -63.5"><freejoint/><geom type="box" size="0.30 0.30 0.45" rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" contype="2" conaffinity="1"/></body>
     <!-- SLOT_BLOCK_END -->
   </worldbody>
 

@@ -20,5 +20,6 @@ export default {
   ],
   abilityLabel: "Pulse!",
   ability: "pulse",
+  footprintOffset: 0.11,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };
