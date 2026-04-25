@@ -17,7 +17,7 @@ import { PortfolioOverlay } from "./portfolioOverlay.js";
 import { ProjectSystem } from "./projects/system.js";
 import { ControlsPanel } from "./controlsPanel.js";
 import { PinSystem } from "./pinSystem.js";
-import { injectUI } from "./ui.js";
+import { injectUI, isMobileLayout, initMobileShell } from "./ui.js";
 import load_mujoco from "../vendor/mujoco/mujoco_wasm.js";
 
 const SCENE_FILE = "humanoid.xml";
@@ -143,12 +143,14 @@ class App {
         bottomColor: { value: new THREE.Color(0x6a5a4a) },
         offset: { value: 4 },
         uTime: { value: 0 },
+        uStarsIntensity: { value: 1.0 },
       },
       vertexShader: `varying vec3 vWorldPos;
         void main() { vec4 wp = modelMatrix * vec4(position,1.0); vWorldPos = wp.xyz; gl_Position = projectionMatrix*viewMatrix*wp; }`,
       fragmentShader: `
         uniform vec3 topColor; uniform vec3 midColor; uniform vec3 bottomColor; uniform float offset;
         uniform float uTime;
+        uniform float uStarsIntensity;
         varying vec3 vWorldPos;
 
         // Cheap 3D hash → 0..1. Good enough for twinkle noise.
@@ -207,7 +209,7 @@ class App {
             : mix(midColor, bottomColor, pow(-h, 0.7));
           // Overlay stars (additive, pale warm-white so they blend with bloom).
           float s = stars(normalize(vWorldPos));
-          col += vec3(1.0, 0.97, 0.92) * s * 1.6;
+          col += vec3(1.0, 0.97, 0.92) * s * 1.6 * uStarsIntensity;
           gl_FragColor = vec4(col, 1.0);
         }`,
     });
@@ -217,11 +219,17 @@ class App {
     this.camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 200);
     this.camera.position.set(3.4, 2.2, 3.4);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+    // Detect mobile/coarse-pointer once at boot so we can dial back the
+    // graphics budget on phones (DPR=1, basic shadow filter, smaller bloom).
+    const mobile = isMobileLayout();
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: !mobile,
+      powerPreference: "high-performance",
+    });
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.0 : 1.5));
     this.renderer.setSize(innerWidth, innerHeight);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = mobile ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 0.9;
     document.body.appendChild(this.renderer.domElement);
@@ -277,6 +285,7 @@ class App {
     // The Stats widget is no longer used.
 
     this.controlsPanel = new ControlsPanel(this);
+    initMobileShell();
 
     // HUD
     const hud = document.createElement("div");
@@ -310,6 +319,10 @@ class App {
 
     this.projectSystem = new ProjectSystem(this);
     this.projectSystem.onSceneLoaded();
+
+    // Apply the initial gravity-driven environment so the sky matches
+    // params.gravityLabel on first paint (default: Earth → bright sky).
+    this.setEnvironmentForGravity(this.params.gravityLabel);
 
     // Portfolio overlay — collapsible, left-anchored.
     this.portfolio = new PortfolioOverlay({
@@ -390,6 +403,45 @@ class App {
 
   getGrabbables() {
     return this._grabbables || [];
+  }
+
+  // ── Environment presets ──────────────────────────────────────────────
+  // Earth → bright daytime sky, no stars.
+  // Moon  → existing twilight dome with subtle stars (default).
+  // Space → near-black void, dense bright stars.
+  setEnvironmentForGravity(label) {
+    if (!this._skyMat) return;
+    const u = this._skyMat.uniforms;
+    let top, mid, bot, stars, sceneBg;
+    switch (label) {
+      case "Earth":
+        top    = 0x3d6ea8;   // overhead daylight blue
+        mid    = 0x9bb8d4;   // pale horizon
+        bot    = 0xc8b89a;   // warm earth band
+        stars  = 0.0;
+        sceneBg = 0x9bb8d4;
+        break;
+      case "Space":
+        top    = 0x01030a;   // near-black overhead
+        mid    = 0x05080f;
+        bot    = 0x05080f;   // no warm horizon — pure void
+        stars  = 2.6;        // brighter, denser-feeling stars
+        sceneBg = 0x01030a;
+        break;
+      case "Moon":
+      default:
+        top    = 0x0a1326;   // original twilight values
+        mid    = 0x2a3a5c;
+        bot    = 0x6a5a4a;
+        stars  = 1.0;
+        sceneBg = 0x121a2a;
+        break;
+    }
+    u.topColor.value.setHex(top);
+    u.midColor.value.setHex(mid);
+    u.bottomColor.value.setHex(bot);
+    u.uStarsIntensity.value = stars;
+    if (this.scene) this.scene.background = new THREE.Color(sceneBg);
   }
 
   randomPerturb() {

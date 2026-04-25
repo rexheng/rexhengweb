@@ -777,12 +777,267 @@ const CSS = `
   background: var(--rex-ink-2);
 }
 
+/* ─── Project grid (replaces the old "Add X" list) ─────────────────────── */
+.rex-project-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 6px 18px 8px;
+  background: var(--rex-rule);
+  border: 1px solid var(--rex-rule);
+}
+.rex-project-tile {
+  aspect-ratio: 1 / 1;
+  background: var(--rex-ink);
+  border: 0;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  font-family: var(--rex-font-mono);
+  color: var(--rex-ivory-2);
+  overflow: hidden;
+  transition: background 140ms ease;
+}
+.rex-project-tile:hover { background: var(--rex-ink-2); }
+.rex-project-tile .rex-tile-swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 3px;
+  margin-bottom: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--rex-ink);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  background: var(--accent, var(--rex-ivory-3));
+  transition: filter 140ms ease;
+}
+.rex-project-tile:hover .rex-tile-swatch { filter: brightness(1.15); }
+.rex-project-tile .rex-tile-name {
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--rex-ivory-2);
+  line-height: 1.25;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.rex-project-tile:hover .rex-tile-name { color: var(--rex-amber); }
+.rex-project-tile .rex-tile-pip {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rex-amber);
+  box-shadow: 0 0 6px rgba(212,160,90,0.6);
+}
+.rex-project-tile.is-active {
+  background: var(--rex-ink-3);
+}
+.rex-project-tile.is-active .rex-tile-name { color: var(--rex-amber); }
+
+.rex-project-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 18px 10px;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--rex-ivory-3);
+}
+.rex-project-foot button {
+  background: transparent;
+  border: 0;
+  color: var(--rex-ivory-3);
+  font-family: var(--rex-font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 140ms ease;
+}
+.rex-project-foot button:hover { color: var(--rex-amber); }
+
 /* ─── Hide lil-gui entirely; we replace with rex-controls ───────────────── */
 .lil-gui.root { display: none !important; }
 
 /* ─── Canvas crosshair & stats tweaks to match ─────────────────────────── */
 #stats { opacity: 0.45; }
+
+/* ─── Touch surface: stop pinch/scroll while dragging in canvas ────────── */
+canvas { touch-action: none; }
+
+/* ─── Mobile / tablet — single-column, bottom-sheet controls ───────────── */
+@media (max-width: 820px) {
+  /* Portfolio overlay collapses by default; CTA hidden, only the toggle. */
+  #rex-portfolio-overlay { left: 12px; top: 12px; gap: 6px; }
+  #rex-portfolio-overlay .rex-cta { display: none; }
+  #rex-portfolio-overlay .rex-toggle { width: 44px; height: 44px; font-size: 18px; }
+  #rex-portfolio-overlay .rex-panel { width: min(280px, calc(100vw - 24px)); }
+
+  /* Controls panel becomes a bottom sheet that the user pulls up. */
+  #rex-controls {
+    right: 0;
+    left: 0;
+    top: auto;
+    bottom: 0;
+    width: 100%;
+    max-height: 56vh;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    transform: translateY(calc(100% - 44px));
+    transition: transform 280ms cubic-bezier(.2,.8,.2,1);
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.45);
+  }
+  #rex-controls.is-open { transform: translateY(0); }
+
+  /* Drag handle visible at the top of the sheet so the user knows it pulls. */
+  #rex-controls .rex-panel-title { cursor: pointer; position: relative; }
+  #rex-controls .rex-panel-title::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 3px;
+    background: var(--rex-rule-strong);
+    border-radius: 2px;
+  }
+
+  /* Compact HUD — title bottom-left, metrics float to the right of it. */
+  #hud {
+    left: 12px;
+    bottom: 12px;
+    max-width: calc(100vw - 24px);
+  }
+  #hud h1 { font-size: 18px; }
+  #hud p { font-size: 9px; }
+
+  #metrics-hud {
+    bottom: 12px;
+    right: 12px;
+    left: auto;
+    width: 140px;
+    padding: 8px 10px;
+    font-size: 9px;
+  }
+  #metrics-hud .m-head { font-size: 8px; }
+  #metrics-hud .m-label { font-size: 8.5px; }
+
+  /* Pause chip moves above the controls handle. */
+  #pause-chip { right: 12px; bottom: 56px; }
+
+  /* Wind compass HUD hides on mobile to save room. */
+  #wind-compass-hud { display: none; }
+
+  /* Project labels — bigger, easier to tap. */
+  .rex-project-label {
+    padding: 9px 14px;
+    font-size: 11px;
+  }
+
+  /* Project card fills the viewport with side padding. */
+  #project-card {
+    width: calc(100vw - 24px);
+    max-width: 480px;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+  .rex-ui-card-head { padding: 18px 18px 12px; grid-template-columns: 36px 1fr 32px; gap: 10px; }
+  .rex-ui-card-titles h2 { font-size: 24px; }
+  .rex-ui-card-body { padding: 14px 18px 16px; }
+  .rex-ui-card-body p { font-size: 11.5px; }
+
+  /* Project grid — 2 columns on phones for bigger touch targets. */
+  .rex-project-grid { grid-template-columns: repeat(2, 1fr); }
+  .rex-project-tile { padding: 10px 6px; }
+  .rex-project-tile .rex-tile-swatch { width: 34px; height: 34px; }
+  .rex-project-tile .rex-tile-name { font-size: 9px; }
+
+  /* Bigger toggle / segmented hit areas for fingers. */
+  .rex-toggle-switch { width: 40px; height: 22px; }
+  .rex-toggle-switch::after { width: 14px; height: 14px; }
+  .rex-toggle-switch.on::after { left: 22px; }
+  .rex-segmented button { padding: 11px 4px; font-size: 11px; }
+  .rex-btn { padding: 12px 14px; font-size: 11px; }
+  .rex-row { min-height: 36px; }
+
+  /* Compass smaller. */
+  .rex-compass { width: 96px; height: 96px; margin: 4px auto 8px; }
+}
+
+/* iOS / Safari safe-area: pad for the home-indicator. */
+@supports (padding: max(0px)) {
+  @media (max-width: 820px) {
+    #rex-controls { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+    #hud { left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); }
+    #metrics-hud { right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); }
+  }
+}
+
+/* Body class hook for runtime mobile detection (e.g. coarse pointer + small). */
+body.rex-mobile { /* reserved for JS-applied tweaks */ }
 `;
+
+/**
+ * True if the current viewport should use the mobile/tablet layout.
+ * Uses the same matchMedia query as the @media block in CSS so JS and CSS
+ * agree on what "mobile" means.
+ */
+export function isMobileLayout() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 820px)").matches;
+}
+
+/**
+ * Wire the mobile bottom-sheet behaviour: tap the title bar to open/close
+ * the controls panel. Must run AFTER ControlsPanel has appended #rex-controls
+ * to the DOM. Idempotent — safe to call multiple times.
+ */
+export function initMobileShell() {
+  const root = document.getElementById("rex-controls");
+  if (!root || root.dataset.mobileWired === "1") return;
+  root.dataset.mobileWired = "1";
+
+  const title = root.querySelector(".rex-panel-title");
+  if (!title) return;
+
+  // Tap the title bar (drag handle) to toggle the sheet.
+  title.addEventListener("click", () => {
+    root.classList.toggle("is-open");
+  });
+
+  // Tap outside the controls (on the canvas) closes the sheet so the user
+  // can interact with the scene without it covering content.
+  document.addEventListener("pointerdown", (e) => {
+    if (!isMobileLayout()) return;
+    if (!root.classList.contains("is-open")) return;
+    if (e.target.closest("#rex-controls")) return;
+    root.classList.remove("is-open");
+  });
+
+  // Apply body class so any future selectors can target mobile only.
+  document.body.classList.toggle("rex-mobile", isMobileLayout());
+  window.addEventListener("resize", () => {
+    document.body.classList.toggle("rex-mobile", isMobileLayout());
+  });
+}
 
 export function injectUI() {
   if (document.getElementById("rex-ui-fonts")) return;

@@ -2,14 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="theme-color" content="#05070c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Rex Heng</title>
   <style>
-    html, body { margin:0; padding:0; height:100%; background:#05070c; color:#e8ecf5; font-family: ui-sans-serif, system-ui, -apple-system, "Inter", sans-serif; overflow:hidden; }
-    canvas { display:block; }
-    #hud { position:fixed; bottom:16px; left:76px; pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,.8); opacity:.82; }
-    #hud h1 { margin:0 0 4px; font-size:15px; font-weight:600; letter-spacing:.06em; }
-    #hud p { margin:0; font-size:11px; opacity:.7; }
+    html, body { margin:0; padding:0; height:100%; background:#05070c; color:#e8ecf5; font-family: ui-sans-serif, system-ui, -apple-system, "Inter", sans-serif; overflow:hidden; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+    canvas { display:block; touch-action: none; }
+    /* Bare HUD fallback styles before ui.js injects the full stylesheet. */
     .lil-gui { --background-color:#0d1220ee; --widget-color:#1b2340; --focus-color:#2a3560; --title-background-color:#0a0e1a; --title-text-color:#e8ecf5; --text-color:#cfd6e8; font-family: ui-monospace, monospace !important; }
   </style>
   <script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.js"></script>

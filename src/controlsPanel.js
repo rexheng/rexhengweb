@@ -64,6 +64,7 @@ export class ControlsPanel {
     phys.appendChild(this._segmented("gravity", GRAVITY_OPTIONS, (opt) => {
       this.app.params.gravityLabel = opt.label;
       if (this.app.model) this.app.model.opt.gravity[2] = opt.value;
+      this.app.setEnvironmentForGravity?.(opt.label);
     }));
 
     phys.appendChild(this._labelLine("Timescale"));
@@ -93,18 +94,10 @@ export class ControlsPanel {
     fx.appendChild(this._row("Impact Sparks", this._toggle("sparks", (v) => { this._set("sparks", v); this.app.sparks?.setEnabled(v); })));
     root.appendChild(fx);
 
-    // Projects — each registered project gets an "Add" button; Clear All
-    // parks every mounted slot back below the floor.
+    // Projects — selection grid of accent-tinted monogram tiles.
+    // Each tile spawns its project; the footer shows slot usage + Clear.
     const projSection = this._sectionShell("Projects");
-    for (const def of PROJECTS) {
-      projSection.appendChild(this._button(`Add ${def.label}`, () => {
-        const slot = this.app.projectSystem?.spawn(def.id);
-        if (!slot) console.warn(`No free project slot for ${def.id}`);
-      }));
-    }
-    projSection.appendChild(this._button("Clear All", () => {
-      this.app.projectSystem?.clearAll();
-    }));
+    projSection.appendChild(this._projectGrid());
     root.appendChild(projSection);
 
     document.body.appendChild(root);
@@ -157,6 +150,150 @@ export class ControlsPanel {
     b.textContent = label;
     b.addEventListener("click", onClick);
     return b;
+  }
+
+  // ── Projects grid ────────────────────────────────────────────────────
+  _projectGrid() {
+    const wrap = document.createElement("div");
+
+    const grid = document.createElement("div");
+    grid.className = "rex-project-grid";
+
+    const tiles = new Map(); // id → element, for active-state painting
+
+    for (const def of PROJECTS) {
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = "rex-project-tile";
+      tile.title = def.title || def.label;
+      const tinted = this._mutePastel(def.accent || "#d4a05a");
+      tile.style.setProperty("--accent", tinted);
+
+      const swatch = document.createElement("span");
+      swatch.className = "rex-tile-swatch";
+      swatch.textContent = this._monogram(def);
+
+      const name = document.createElement("span");
+      name.className = "rex-tile-name";
+      name.textContent = def.label;
+
+      tile.appendChild(swatch);
+      tile.appendChild(name);
+
+      tile.addEventListener("click", () => {
+        const slot = this.app.projectSystem?.spawn(def.id);
+        if (!slot) console.warn(`No free project slot for ${def.id}`);
+        this._paintProjectTiles();
+      });
+
+      tiles.set(def.id, tile);
+      grid.appendChild(tile);
+    }
+
+    const foot = document.createElement("div");
+    foot.className = "rex-project-foot";
+    const status = document.createElement("span");
+    status.textContent = `Active 0/8`;
+    const clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.textContent = "Clear all";
+    clearBtn.addEventListener("click", () => {
+      this.app.projectSystem?.clearAll();
+      this._paintProjectTiles();
+    });
+    foot.appendChild(status);
+    foot.appendChild(clearBtn);
+
+    wrap.appendChild(grid);
+    wrap.appendChild(foot);
+
+    this._projectTiles = tiles;
+    this._projectStatus = status;
+    return wrap;
+  }
+
+  _paintProjectTiles() {
+    if (!this._projectTiles) return;
+    const ps = this.app.projectSystem;
+    const active = new Set();
+    let used = 0;
+    if (ps?.slots) {
+      for (const s of ps.slots) {
+        if (s.project) { active.add(s.project.id); used++; }
+      }
+    }
+    for (const [id, tile] of this._projectTiles) {
+      tile.classList.toggle("is-active", active.has(id));
+    }
+    if (this._projectStatus) {
+      const total = ps?.slots?.length ?? 8;
+      this._projectStatus.textContent = `Active ${used}/${total}`;
+    }
+  }
+
+  // Per-id overrides keep monograms unique and readable. Defaults below
+  // handle anything not in the map by taking first letters of the first
+  // two words, falling back to the first two letters of the only word.
+  _monogram(def) {
+    const OVERRIDES = {
+      "amogus":        "AM",
+      "arrow":         "AR",
+      "clearpath":     "CP",
+      "musicity":      "MU",
+      "oliver-wyman":  "OW",
+      "olympic-way":   "OL",
+      "outreach":      "OR",
+      "peel":          "PL",
+      "peter-network": "PN",
+      "republic":      "RP",
+      "simulacra":     "SM",
+    };
+    if (def.id in OVERRIDES) return OVERRIDES[def.id];
+    const label = def.label || def.id || "??";
+    const words = label.split(/[\s·]+/).filter((w) => /[A-Za-z0-9]/.test(w));
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+    const w = words[0] || "??";
+    return (w[0] + (w[1] || w[0])).toUpperCase();
+  }
+
+  // Desaturate + lift toward off-white so accents read pastel against navy.
+  _mutePastel(hex) {
+    const m = hex.replace("#", "").match(/.{2}/g);
+    if (!m) return hex;
+    const [r, g, b] = m.map((x) => parseInt(x, 16) / 255);
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+    const sNew = s * 0.40;       // mute saturation
+    const lNew = 0.78;            // lift to soft pastel
+    const hueToRgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+    let r2, g2, b2;
+    if (sNew === 0) { r2 = g2 = b2 = lNew; }
+    else {
+      const q = lNew < 0.5 ? lNew * (1 + sNew) : lNew + sNew - lNew * sNew;
+      const p = 2 * lNew - q;
+      r2 = hueToRgb(p, q, h + 1 / 3);
+      g2 = hueToRgb(p, q, h);
+      b2 = hueToRgb(p, q, h - 1 / 3);
+    }
+    const toHex = (v) => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0");
+    return `#${toHex(r2)}${toHex(g2)}${toHex(b2)}`;
   }
 
   _toggle(paramKey, onChange) {
@@ -349,6 +486,7 @@ export class ControlsPanel {
     this._paintSegmented("gravity");
     this._paintSegmented("timescale");
     this._updateCompass();
+    this._paintProjectTiles();
     for (const key of Object.keys(this._toggleEls)) this._toggleEls[key].paint();
     for (const [key, { input, val, fmt }] of Object.entries(this._sliderEls)) {
       input.value = this.app.params[key];
@@ -360,6 +498,7 @@ export class ControlsPanel {
   // the compass + slider badges in sync.
   update() {
     this._updateCompass();
+    this._paintProjectTiles();
     for (const [key, { input, val, fmt }] of Object.entries(this._sliderEls)) {
       const v = this.app.params[key];
       if (Math.abs(v - Number(input.value)) > 1e-4) {
