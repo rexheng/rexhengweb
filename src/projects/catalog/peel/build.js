@@ -49,6 +49,8 @@ export function buildMesh({ THREE, materials, primitives, proportions }) {
   );
   coin.position.y = coinY;
   coin.castShadow = true;
+  coin.name = "peel-coin";
+  coin.userData.baseY = coinY;
   group.add(coin);
 
   // Leaf — a stretched sphere on top of the coin.

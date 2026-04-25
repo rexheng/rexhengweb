@@ -57,6 +57,8 @@ export function buildMesh({ THREE, materials, primitives, proportions }) {
       tile.position.set(x, topOfBase + h / 2, z);
       tile.castShadow = true;
       tile.receiveShadow = true;
+      tile.name = `lsoa-tile-${gx * N + gy}`;
+      tile.userData.baseY = tile.position.y;
       group.add(tile);
     }
   }

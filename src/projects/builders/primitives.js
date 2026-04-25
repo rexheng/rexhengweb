@@ -233,6 +233,58 @@ export function roundel(THREE, { outerR, tubeR, barW, barH, barD, torusMat, barM
 }
 
 /**
+ * Point on a stadium-track centreline at parameter t ∈ [0, 1).
+ *
+ *   stadiumTrackPoint({ outerW, outerD }, t) → { x, z }
+ *
+ * Returns sprite-local (x, z) on the centreline of the oval ring built by
+ * `stadiumTrack` (same {outerW, outerD} convention). Lap order: starts at
+ * the +X end of the +Z straight, runs −X along the +Z straight, sweeps
+ * around the −X half-circle, runs +X along the −Z straight, sweeps around
+ * the +X half-circle, and closes the loop. Total path length is normalised
+ * so equal Δt steps trace equal arc-length steps.
+ */
+export function stadiumTrackPoint({ outerW, outerD }, t) {
+  const halfDepth = outerD / 2;
+  const straightLen = Math.max(0.01, outerW - outerD);
+  const arcLen = Math.PI * halfDepth;
+  const total = 2 * straightLen + 2 * arcLen;
+
+  const u = ((t % 1) + 1) % 1;     // wrap into [0, 1)
+  let s = u * total;
+
+  // Segment 1: +Z straight, +X end → −X end (z = +halfDepth, x: +sl/2 → -sl/2).
+  if (s < straightLen) {
+    const k = s / straightLen;
+    return { x: straightLen / 2 - k * straightLen, z: halfDepth };
+  }
+  s -= straightLen;
+  // Segment 2: −X half-circle, sweeping from +Z side to −Z side (CCW from above).
+  if (s < arcLen) {
+    const k = s / arcLen;
+    const ang = Math.PI / 2 + k * Math.PI;
+    return {
+      x: -straightLen / 2 + Math.cos(ang) * halfDepth,
+      z: Math.sin(ang) * halfDepth,
+    };
+  }
+  s -= arcLen;
+  // Segment 3: −Z straight, −X end → +X end (z = -halfDepth, x: -sl/2 → +sl/2).
+  if (s < straightLen) {
+    const k = s / straightLen;
+    return { x: -straightLen / 2 + k * straightLen, z: -halfDepth };
+  }
+  s -= straightLen;
+  // Segment 4: +X half-circle, sweeping from −Z side back to +Z side.
+  const k = s / arcLen;
+  const ang = -Math.PI / 2 + k * Math.PI;
+  return {
+    x: straightLen / 2 + Math.cos(ang) * halfDepth,
+    z: Math.sin(ang) * halfDepth,
+  };
+}
+
+/**
  * Stadium track — an oval ring made of two half-circles and two straight
  * sections. Used for the Oliver Wyman running-track sprite.
  *

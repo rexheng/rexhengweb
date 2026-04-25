@@ -58,6 +58,12 @@ export class ProjectSystem {
 
   // ── Lifecycle hooks ────────────────────────────────────────────────────
   onSceneLoaded() {
+    // Cancel any active tick-based abilities — their scratch meshes may live
+    // on the scene root (dispatch) or attached to slot.group (sprint, pulse,
+    // swarm). Without this they'd leak across scene reloads.
+    for (const a of this._activeAbilities) a.cancel?.();
+    this._activeAbilities = [];
+
     // Clean any prior mounts.
     for (const slot of this.slots) {
       slot.labelEl?.remove();
@@ -116,6 +122,13 @@ export class ProjectSystem {
     }
     const mesh = def.buildMesh();
     mesh.traverse((o) => { o.bodyID = slot.bodyID; });
+    // The slot capsule's bottom sits 0.48m below the body origin (capsule
+    // half-length 0.22 + radius 0.26). Each def's `footprintOffset` is the
+    // distance to push the mesh group DOWN so its visual base lands flush
+    // on the floor at rest. Default 0 keeps legacy builders that bake their
+    // own offset (e.g. Republic) untouched.
+    const offset = def.footprintOffset ?? 0;
+    if (offset !== 0) mesh.position.y = -offset;
     slot.group.add(mesh);
     slot.meshGroup = mesh;
     slot.group.visible = true;
@@ -191,6 +204,19 @@ export class ProjectSystem {
   }
 
   _park(slot) {
+    // Cancel any active abilities tied to this slot before tearing down the
+    // mesh group — abilities (especially `dispatch`) may have scratch meshes
+    // parented to the scene root that survive mesh-group removal.
+    if (this._activeAbilities.length) {
+      this._activeAbilities = this._activeAbilities.filter((a) => {
+        if (a._slotBodyID === slot.bodyID) {
+          a.cancel?.();
+          return false;
+        }
+        return true;
+      });
+    }
+
     slot.labelEl?.remove();
     slot.labelEl = null;
     if (slot.meshGroup?.parent) slot.meshGroup.parent.remove(slot.meshGroup);
@@ -303,7 +329,11 @@ export class ProjectSystem {
     // (pulse, swarm, cycle) can add child meshes, rotate satellite children,
     // or hot-swap materials/emblems without going through the slot object.
     const fn = def.ability({ app: this.app, slot, mesh: slot.meshGroup });
-    if (fn && typeof fn.tick === "function") this._activeAbilities.push(fn);
+    if (fn && typeof fn.tick === "function") {
+      // Tag with the slot bodyID so park can find and cancel its abilities.
+      fn._slotBodyID = slot.bodyID;
+      this._activeAbilities.push(fn);
+    }
     // Close the card so the user sees the result.
     this.dismissCard();
   }

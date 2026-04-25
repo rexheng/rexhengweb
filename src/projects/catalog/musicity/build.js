@@ -44,6 +44,9 @@ export function buildMesh({ THREE, materials, primitives, proportions }) {
     material:   noteMat,
   });
   note.position.y = tallTopY;
+  note.name = "musicity-note";
+  note.userData.baseY = tallTopY;
+  note.userData.material = noteMat;
   group.add(note);
 
   return group;
