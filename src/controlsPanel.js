@@ -50,7 +50,8 @@ export class ControlsPanel {
         <button class="rex-panel-collapse" type="button" aria-label="Collapse controls">−</button>
       </header>
     `;
-    root.querySelector(".rex-panel-collapse").addEventListener("click", () => {
+    root.querySelector(".rex-panel-collapse").addEventListener("click", (e) => {
+      e.stopPropagation();
       const collapsed = root.classList.toggle("is-collapsed");
       try { localStorage.setItem("rex-controls-collapsed", collapsed ? "1" : "0"); } catch {}
       root.querySelector(".rex-panel-collapse").textContent = collapsed ? "+" : "−";

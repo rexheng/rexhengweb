@@ -955,7 +955,13 @@ canvas { touch-action: none; }
   #rex-controls.is-open { transform: translateY(0); }
 
   /* Drag handle visible at the top of the sheet so the user knows it pulls. */
-  #rex-controls .rex-panel-title { cursor: pointer; position: relative; }
+  #rex-controls .rex-panel-title {
+    cursor: grab;
+    position: relative;
+    padding-top: 18px;
+    touch-action: none;
+  }
+  #rex-controls .rex-panel-title:active { cursor: grabbing; }
   #rex-controls .rex-panel-title::before {
     content: "";
     position: absolute;
@@ -967,6 +973,17 @@ canvas { touch-action: none; }
     background: var(--rex-rule-strong);
     border-radius: 2px;
   }
+  /* Desktop collapse button is meaningless on mobile — the bottom sheet
+     already handles open/close. Hide it so taps on the title-bar can't
+     accidentally hit it and wipe the sections via .is-collapsed. */
+  #rex-controls .rex-panel-collapse { display: none; }
+  /* Belt-and-braces: if .is-collapsed sneaks in from a prior desktop
+     session's localStorage, force sections visible inside the sheet. */
+  #rex-controls.is-collapsed .rex-section { display: block; }
+  #rex-controls.is-collapsed .rex-panel-title-tag { display: inline; }
+  /* While dragging, suppress the slide transition so the sheet tracks
+     the finger 1:1 instead of easing on every pointermove. */
+  #rex-controls.is-dragging { transition: none; }
 
   /* Compact HUD — title bottom-left, metrics float to the right of it. */
   #hud {
@@ -1066,10 +1083,62 @@ export function initMobileShell() {
   const title = root.querySelector(".rex-panel-title");
   if (!title) return;
 
-  // Tap the title bar (drag handle) to toggle the sheet.
-  title.addEventListener("click", () => {
-    root.classList.toggle("is-open");
-  });
+  // Sheet geometry. CSS sets transform: translateY(calc(100% - 44px)) when
+  // closed and translateY(0) when .is-open. We compute the closed offset in
+  // px so pointermove can interpolate between the two.
+  const closedOffsetPx = () => Math.max(0, root.offsetHeight - 44);
+
+  let dragState = null;
+  const TAP_THRESHOLD_PX = 6;
+  const TAP_THRESHOLD_MS = 250;
+
+  const onPointerDown = (e) => {
+    if (!isMobileLayout()) return;
+    // Don't hijack pointers on inner controls — only the title acts as the handle.
+    if (e.target.closest(".rex-panel-collapse")) return;
+    dragState = {
+      startY: e.clientY,
+      startT: performance.now(),
+      startOpen: root.classList.contains("is-open"),
+      moved: false,
+      pointerId: e.pointerId,
+    };
+    root.classList.add("is-dragging");
+    try { title.setPointerCapture(e.pointerId); } catch {}
+  };
+
+  const onPointerMove = (e) => {
+    if (!dragState || e.pointerId !== dragState.pointerId) return;
+    const dy = e.clientY - dragState.startY;
+    if (Math.abs(dy) > TAP_THRESHOLD_PX) dragState.moved = true;
+    const base = dragState.startOpen ? 0 : closedOffsetPx();
+    const next = Math.max(0, Math.min(closedOffsetPx(), base + dy));
+    root.style.transform = `translateY(${next}px)`;
+  };
+
+  const onPointerUp = (e) => {
+    if (!dragState || e.pointerId !== dragState.pointerId) return;
+    const dy = e.clientY - dragState.startY;
+    const dt = performance.now() - dragState.startT;
+    root.classList.remove("is-dragging");
+    root.style.transform = "";  // hand control back to CSS
+    try { title.releasePointerCapture(e.pointerId); } catch {}
+
+    const isTap = !dragState.moved && dt < TAP_THRESHOLD_MS;
+    if (isTap) {
+      root.classList.toggle("is-open");
+    } else {
+      // Drag finished — open if pulled up past the midpoint, close otherwise.
+      const settledOpen = dragState.startOpen ? dy < closedOffsetPx() / 2 : dy < -closedOffsetPx() / 2;
+      root.classList.toggle("is-open", settledOpen);
+    }
+    dragState = null;
+  };
+
+  title.addEventListener("pointerdown", onPointerDown);
+  title.addEventListener("pointermove", onPointerMove);
+  title.addEventListener("pointerup", onPointerUp);
+  title.addEventListener("pointercancel", onPointerUp);
 
   // Tap outside the controls (on the canvas) closes the sheet so the user
   // can interact with the scene without it covering content.
