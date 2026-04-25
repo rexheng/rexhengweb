@@ -400,9 +400,24 @@ export class Grabber {
     const mjFz = fy;
 
     // Lever arm from CoM to grab point, in THREE world, then swizzle to MJ world.
-    const rx_t = this._grabWorld.x - this._comWorld.x;
-    const ry_t = this._grabWorld.y - this._comWorld.y;
-    const rz_t = this._grabWorld.z - this._comWorld.z;
+    // CLAMP: the visible mesh on project sprites (Republic column, Peter emblems,
+    // etc.) extends well beyond the physics body's collision capsule. Without
+    // clamping, grabbing the abacus of a 1.5m-tall column produces torque =
+    // 1.5m × 300N = 450 N·m on an auto-derived inertia of ~0.05 kg·m² for the
+    // 0.44m capsule — angular accel ≈9000 rad/s², which manifests as runaway
+    // spin and integrator glitching. We cap |r| to MAX_LEVER so the grab still
+    // tracks the visual point (the spring force is unchanged) but can't produce
+    // torque beyond what the real physics body can absorb. Humanoid limbs have
+    // visual ≈ physical extent, so this cap never fires in the humanoid path.
+    const MAX_LEVER = 0.5;  // ~slot capsule half-length + radius; generous for humanoid limbs too
+    let rx_t = this._grabWorld.x - this._comWorld.x;
+    let ry_t = this._grabWorld.y - this._comWorld.y;
+    let rz_t = this._grabWorld.z - this._comWorld.z;
+    const rLen = Math.hypot(rx_t, ry_t, rz_t);
+    if (rLen > MAX_LEVER) {
+      const s = MAX_LEVER / rLen;
+      rx_t *= s; ry_t *= s; rz_t *= s;
+    }
     const mjRx = rx_t;
     const mjRy = -rz_t;
     const mjRz = ry_t;
