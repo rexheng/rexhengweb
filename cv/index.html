@@ -516,7 +516,31 @@
       .hobby-title { color: #000; }
       .hobby-desc { color: #000; font-size: 9.5pt; }
       .entry::before, .project-card::before { display: none; }
+      .entry-logo, .pc-logo { filter: none; }
     }
+
+    /* ─── Entry logos ─── */
+    .entry-logo {
+      display: block;
+      height: 32px;
+      width: auto;
+      margin-top: 12px;
+      filter: grayscale(1) opacity(0.55);
+      transition: filter 240ms ease;
+    }
+    .entry:hover .entry-logo { filter: grayscale(0) opacity(1); }
+
+    /* ─── Project card logos ─── */
+    .pc-logo {
+      display: block;
+      height: 18px;
+      width: auto;
+      flex-shrink: 0;
+      align-self: center;
+      filter: grayscale(1) opacity(0.5);
+      transition: filter 220ms ease;
+    }
+    .project-card:hover .pc-logo { filter: grayscale(0) opacity(1); }
   </style>
 </head>
 <body>
@@ -867,23 +891,6 @@
           </div>
           <div class="pc-links">
             <a href="https://four-letters-two.vercel.app/" target="_blank" rel="noopener noreferrer">Play</a>
-          </div>
-        </article>
-
-        <article class="project-card reveal">
-          <div class="pc-head">
-            <h3 class="pc-title">Attic</h3>
-            <span class="pc-meta">Band site</span>
-          </div>
-          <p class="pc-subtitle">Official band site</p>
-          <p class="pc-desc">Promotional site for Attic. Integrates music streaming, performance schedule, interactive media, and band history into a single editorial-grade web presence.</p>
-          <div class="pc-tags">
-            <span class="pc-tag">Web Design</span>
-            <span class="pc-tag">Music</span>
-            <span class="pc-tag">Brand</span>
-          </div>
-          <div class="pc-links">
-            <a href="https://attictheband.com" target="_blank" rel="noopener noreferrer">Visit</a>
           </div>
         </article>
 
