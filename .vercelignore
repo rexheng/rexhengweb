@@ -1,0 +1,18 @@
+.playwright-mcp/
+.claude/
+.superpowers/
+docs/
+tasks/
+
+# Loose debug screenshots — never deploy these
+amogus-*.png
+amogus-*.html
+ccn-*.png
+cv-*.png
+humanoid-*.png
+mobile-*.png
+musicity-*.png
+punt-*.png
+spawn-toast*.png
+stars-*.png
+*-debug*.png

@@ -25,3 +25,21 @@ npm-debug.log*
 *.backup
 .vercel
 .env*.local
+
+# Claude / Playwright / Superpowers scratch directories
+.playwright-mcp/
+.claude/
+.superpowers/
+
+# Loose debug screenshots from local agent runs — never commit these
+amogus-*.png
+amogus-*.html
+ccn-*.png
+cv-*.png
+humanoid-*.png
+mobile-*.png
+musicity-*.png
+punt-*.png
+spawn-toast*.png
+stars-*.png
+*-debug*.png
