@@ -51,13 +51,19 @@ export function stab({ app, slot }) {
   data.qpos[qposAdr + 5] = qTurn.y;
   data.qpos[qposAdr + 6] = qTurn.z;
 
-  // Lunge velocity: much faster than a free-drop for meaningful impact.
-  // 22 m/s is roughly knife-thrust speed — fast enough that the humanoid
-  // gets knocked cleanly when Amogus connects.
-  const SPEED = 22.0;
-  data.qvel[dofAdr + 0] = mjDx * SPEED;
-  data.qvel[dofAdr + 1] = mjDy * SPEED;
-  data.qvel[dofAdr + 2] = mjDz * SPEED + 2.5;  // small upward bias
+  // Distance-calibrated lunge: stays in flight ~0.5s regardless of range.
+  // Constant velocity made near-spawns feel like teleports; constant time
+  // keeps the visual moment consistent. Clamp 8..22 m/s.
+  const dist = torsoPos.distanceTo(slotPos);
+  const TARGET_TIME = 0.5;
+  const speed = Math.max(8, Math.min(22, dist / TARGET_TIME));
+
+  // Upward bias scales with speed — short stabs don't get a giant lift.
+  const upwardBias = 2.5 * (speed / 22);
+
+  data.qvel[dofAdr + 0] = mjDx * speed;
+  data.qvel[dofAdr + 1] = mjDy * speed;
+  data.qvel[dofAdr + 2] = mjDz * speed + upwardBias;
   // Forward tumble: spin axis perpendicular to lunge direction.
   const perpAxisX = -mjDy;
   const perpAxisY = mjDx;
@@ -110,7 +116,9 @@ export function stab({ app, slot }) {
         const a1 = amogusGeoms.has(g1), h2 = humanoidGeoms.has(g2);
         const a2 = amogusGeoms.has(g2), h1 = humanoidGeoms.has(g1);
         if ((a1 && h2) || (a2 && h1)) {
-          const KNOCK_SPEED = 7.5;
+          // Proportional to lunge speed so short-range stabs don't pinwheel
+          // the humanoid as hard as long-range ones.
+          const KNOCK_SPEED = 3.0 + (speed / 22) * 4.5;   // → 3.0..7.5
           data.qvel[torsoDof + 0] = mjDx * KNOCK_SPEED;
           data.qvel[torsoDof + 1] = mjDy * KNOCK_SPEED;
           data.qvel[torsoDof + 2] = mjDz * KNOCK_SPEED + 3.0;
