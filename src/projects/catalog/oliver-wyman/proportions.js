@@ -1,41 +1,46 @@
-// Oliver Wyman — 3D line-chart sculpture. See spec §3.7.
+// Oliver Wyman — floating 3D dual-line chart. See spec §3.7.
+//
+// No solid panels: the chart is just a transparent grid frame with two
+// animated lines (red + blue) drawn against it. Reads as data first,
+// not as a sculpture.
 
 export const D = 0.36;
 
 export const SIZES = {
-  // Chart frame (back wall + floor panel + side wall — an L-bracket).
+  // Chart frame extents (used to position grid lines + line points).
   frameW:        1.00 * D,    // x extent
   frameH:        0.90 * D,    // y extent (chart height)
-  frameD:        0.90 * D,    // z extent (depth into page)
-  panelThick:    0.025 * D,   // back/floor/side panel thickness
-
-  // Pedestal beneath the chart.
-  pedestalR:     0.65 * D,
-  pedestalH:     0.06 * D,
+  frameD:        0.10 * D,    // z extent — shallow so it reads as flat-ish
 
   // Line graph.
-  lineRadius:    0.018,        // tube radius
-  pointCount:    5,            // 5 years / 5 columns like the reference
+  lineRadius:    0.014,        // tube radius (slightly thinner so the two
+                               //   colours don't merge visually)
+  pointCount:    5,            // 5 years / 5 columns
 
-  // Padding so the line doesn't clip into the panels.
+  // Padding so the lines don't clip the frame.
   padX:          0.08 * D,
   padY:          0.08 * D,
-  padZ:          0.45 * D,     // line sits on the floor near the back
+
+  // Grid line thickness.
+  gridLineWidth: 1.5,
 };
 
 export const COLOURS = {
-  line:        "#1f4ba5",   // OW navy
-  panelLight:  "#dde0e3",   // pale grey
-  panelMid:    "#b8bcc1",   // mid grey
-  panelDark:   "#8e9298",   // darker grey for side wall
-  grid:        "#ffffff",   // white grid lines
-  pedestal:    "#3a3d42",
+  lineBlue:      "#1f4ba5",   // OW navy
+  lineRed:       "#d4382c",   // signal red
+  grid:          "#ffffff",   // white grid lines (rendered with alpha)
+  axis:          "#ffffff",   // x/y axes (slightly stronger alpha than grid)
+};
+
+export const ALPHA = {
+  grid: 0.18,                  // faint interior grid
+  axis: 0.40,                  // bottom + left axes a touch more visible
 };
 
 // Animation constants used by the onSpawn idle hook.
 export const ANIM = {
-  cyclePeriodMs: 5000,        // time to lerp between target value sets
-  valueMin:      0.15,        // fraction of frameH (lower bound for any point)
-  valueMax:      0.92,        // upper bound — leave a hair of headroom
-  monotonicBias: 0.55,        // chance each new target is upward-trending
+  cyclePeriodMs: 5000,         // time to lerp between target value sets
+  valueMin:      0.10,
+  valueMax:      0.92,
+  monotonicBias: 0.55,         // 55% chance each new target trends upward
 };

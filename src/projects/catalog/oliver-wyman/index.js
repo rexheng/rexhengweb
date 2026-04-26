@@ -1,25 +1,20 @@
-// Oliver Wyman Datathon — 1st place. 3D animated line-chart sculpture
-// (back/floor/side panels with grid, OW-navy line that gently morphs
-// between data shapes every few seconds).
+// Oliver Wyman Datathon — 1st place. Floating dual-line chart with
+// transparent grid: blue (trending up) + red (volatile), both morphing
+// continuously between random data shapes every cyclePeriodMs.
 
 import * as THREE from "three";
 import { buildMesh, nextTargetValues } from "./build.js";
 import { SIZES, ANIM } from "./proportions.js";
 
-// Rebuild the line tube in-place. We allocate a fresh TubeGeometry per
-// frame because Three.js TubeGeometry's vertex layout depends on the
-// tangents/normals computed from the curve, which change each frame —
-// mutating the position attribute alone would leave the geometry
-// kinked. The cost (~12 segments × 8 radial × few-hundred floats) is
-// trivial at this resolution.
+// Rebuild a single line's TubeGeometry given current values.
 function rebuildLineGeometry(lineMesh, values) {
   const points = [];
-  const w = SIZES.frameW, h = SIZES.frameH, d = SIZES.frameD;
+  const w = SIZES.frameW, h = SIZES.frameH;
+  const z = lineMesh.userData.zOffset;
   for (let i = 0; i < SIZES.pointCount; i++) {
     const t = i / (SIZES.pointCount - 1);
     const x = -w / 2 + SIZES.padX + t * (w - 2 * SIZES.padX);
     const y = SIZES.padY + values[i] * (h - 2 * SIZES.padY);
-    const z = -d / 2 + SIZES.padZ;
     points.push(new THREE.Vector3(x, y, z));
   }
   const curve = new THREE.CatmullRomCurve3(points, false, "catmullrom", 0.05);
@@ -45,35 +40,42 @@ export default {
   // Hitbox + footprintOffset auto-derived (§3.9).
   buildMesh: () => buildMesh({ THREE }),
 
-  // Idle animation: lerp between target value sets every cyclePeriodMs,
-  // rebuilding the line tube each frame so the curve smoothly morphs.
+  // Idle animation: each line lerps to a fresh target every cyclePeriodMs,
+  // staggered so the two lines aren't synchronised.
   onSpawn(slot, ctx) {
     const chart = ctx.mesh?.userData?.owChart;
     if (!chart) return null;
-    const lineMesh = chart.lineMesh;
+    const lines = chart.lines;
+    const biases = chart.biases;
 
-    let elapsed = 0;
-    let from = lineMesh.userData.chartValues.slice();
-    let to = nextTargetValues();
+    // Per-line state: current `from`, current `to`, elapsed offset.
+    const states = lines.map((line, i) => ({
+      elapsed: i * 1500,        // stagger so lines don't morph in lockstep
+      from: line.userData.chartValues.slice(),
+      to: nextTargetValues(biases[i]),
+    }));
 
     return {
       tick(dtMs) {
-        elapsed += dtMs;
-        const t = elapsed / ANIM.cyclePeriodMs;
-        if (t >= 1) {
-          elapsed = 0;
-          from = to.slice();
-          to = nextTargetValues();
+        for (let i = 0; i < lines.length; i++) {
+          const st = states[i];
+          st.elapsed += dtMs;
+          const t = st.elapsed / ANIM.cyclePeriodMs;
+          if (t >= 1) {
+            st.elapsed = 0;
+            st.from = st.to.slice();
+            st.to = nextTargetValues(biases[i]);
+          }
+          // Smoothstep ease for the morph.
+          const k = Math.max(0, Math.min(1, st.elapsed / ANIM.cyclePeriodMs));
+          const e = k * k * (3 - 2 * k);
+          const cur = new Array(SIZES.pointCount);
+          for (let j = 0; j < SIZES.pointCount; j++) {
+            cur[j] = st.from[j] + (st.to[j] - st.from[j]) * e;
+          }
+          rebuildLineGeometry(lines[i], cur);
         }
-        // Smoothstep so the morph eases at both ends.
-        const k = t < 1 ? t : 1;
-        const e = k * k * (3 - 2 * k);
-        const cur = new Array(SIZES.pointCount);
-        for (let i = 0; i < SIZES.pointCount; i++) {
-          cur[i] = from[i] + (to[i] - from[i]) * e;
-        }
-        rebuildLineGeometry(lineMesh, cur);
-        return true;        // run forever (cancelled by _park)
+        return true;
       },
       cancel() { /* nothing to restore */ },
     };
