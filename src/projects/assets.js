@@ -52,9 +52,34 @@ export async function preloadModel({ url, target }) {
   const centre = box2.getCenter(new THREE.Vector3());
   scene.position.set(-centre.x, -box2.min.y, -centre.z);
 
-  // 3. Shadow flags.
+  // 3. Shadow flags + material upgrade. FBXLoader emits MeshPhongMaterial
+  // (sometimes Lambert) which renders nearly black under our ACES tone-
+  // mapping + soft ambient lighting. Convert to MeshStandardMaterial,
+  // preserving the diffuse colour, so the model reads cleanly.
   scene.traverse((o) => {
-    if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+    if (!o.isMesh) return;
+    o.castShadow = true;
+    o.receiveShadow = true;
+
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    const upgraded = mats.map((m) => {
+      if (!m) return m;
+      // Already PBR — leave it (GLB models come in as MeshStandardMaterial).
+      if (m.isMeshStandardMaterial || m.isMeshPhysicalMaterial) return m;
+      // Phong/Lambert/Basic → Standard. Preserve diffuse colour and map.
+      const next = new THREE.MeshStandardMaterial({
+        color: m.color ? m.color.clone() : new THREE.Color(0xffffff),
+        map: m.map || null,
+        roughness: 0.6,
+        metalness: 0.0,
+        transparent: !!m.transparent,
+        opacity: m.opacity ?? 1,
+        side: m.side ?? THREE.FrontSide,
+      });
+      m.dispose?.();
+      return next;
+    });
+    o.material = Array.isArray(o.material) ? upgraded : upgraded[0];
   });
 
   return scene;

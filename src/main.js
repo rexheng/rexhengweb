@@ -113,70 +113,9 @@ class App {
     };
   }
 
-  // Cinematic spawn close-up — pushes in tight on `spawnPos` for `holdMs`,
-  // then returns to default framing. Used by the catalog spawn flow so the
-  // user sees what they just summoned. See spec §3.2.
-  frameSpawnCloseup(spawnPos, holdMs = 1500) {
-    // Camera position: 1.4m from spawnPos along the current horizontal
-    // bearing. Slightly above (y = spawnPos.y + 0.4) so it's not shot
-    // from below.
-    const dir = this.camera.position.clone().sub(this.controls.target);
-    dir.y = 0;
-    if (dir.lengthSq() < 1e-6) dir.set(1, 0, 0);
-    dir.normalize();
-    const closeupPos = spawnPos.clone()
-      .addScaledVector(dir, 1.4)
-      .add(new THREE.Vector3(0, 0.4, 0));
-    const closeupTarget = spawnPos.clone();
-
-    this.camTween = {
-      t0: performance.now(),
-      dur: 700,
-      fromPos: this.camera.position.clone(),
-      toPos: closeupPos,
-      fromTarget: this.controls.target.clone(),
-      toTarget: closeupTarget,
-      // After hold, snap back to default framing via updateCamTween's
-      // existing return-on-returnAt branch.
-      returnAt: performance.now() + 700 + holdMs,
-    };
-
-    // Snap-cancel on user input — at any phase. The listener stays armed
-    // for the full sequence (inbound + hold + return). During inbound and
-    // hold we null the tween; during return we set _userInterrupted, which
-    // the patched updateCamTween (Step 2) will read on its next tick.
-    // OrbitControls fires "start" when the user touches mouse/touch.
-    const onStart = () => {
-      if (!this.camTween) return;
-      const elapsed = performance.now() - this.camTween.t0;
-      if (elapsed < 700 + holdMs) {
-        // Inbound or hold phase — kill the tween outright.
-        this.camTween = null;
-      } else {
-        // Return phase — mark for cancellation; updateCamTween reads this.
-        this.camTween._userInterrupted = true;
-      }
-      this.controls.removeEventListener("start", onStart);
-    };
-    this.controls.addEventListener("start", onStart);
-    // Also remove the listener once the full sequence finishes naturally,
-    // so we don't accumulate listeners.
-    setTimeout(() => this.controls.removeEventListener("start", onStart),
-               700 + holdMs + 1000);
-  }
-
   updateCamTween() {
     if (!this.camTween) return;
     const now = performance.now();
-
-    // Mid-tween interrupt — set by frameSpawnCloseup's "start" listener
-    // when the user touches the camera during the auto-return. Existing
-    // boundary check (line below) only consults the OLD tween's flag at
-    // return-trigger; this catches input AFTER the return has begun.
-    if (this.camTween._userInterrupted) {
-      this.camTween = null;
-      return;
-    }
 
     // Trigger return-to-framing after hold period.
     if (this.camTween.returnAt && now >= this.camTween.returnAt) {
