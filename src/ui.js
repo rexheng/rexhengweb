@@ -1086,6 +1086,34 @@ canvas { touch-action: none; }
 
 /* Body class hook for runtime mobile detection (e.g. coarse pointer + small). */
 body.rex-mobile { /* reserved for JS-applied tweaks */ }
+
+/* ─── Boot splash ──────────────────────────────────────────────────────── */
+.rex-boot-splash {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #05070c;
+  color: #c0c8d8;
+  font-family: ui-monospace, monospace;
+  font-size: 14px; letter-spacing: 0.02em;
+  pointer-events: all;
+  transition: opacity 240ms ease-out;
+}
+.rex-boot-splash-spinner {
+  width: 28px; height: 28px;
+  border: 2px solid rgba(192,200,216,0.18);
+  border-top-color: #c0c8d8;
+  border-radius: 50%;
+  animation: rex-boot-spin 0.9s linear infinite;
+  margin-bottom: 12px;
+}
+@keyframes rex-boot-spin {
+  to { transform: rotate(360deg); }
+}
+body.booted .rex-boot-splash {
+  opacity: 0;
+  pointer-events: none;
+}
 `;
 
 /**
@@ -1196,6 +1224,19 @@ export function initMobileShell() {
 }
 
 export function injectUI() {
+  // Boot splash — opaque overlay that masks the FBX preload + WASM
+  // load latency. Removed by App.init() after preload settles.
+  if (!document.getElementById("boot-splash")) {
+    const splash = document.createElement("div");
+    splash.id = "boot-splash";
+    splash.className = "rex-boot-splash";
+    splash.innerHTML = `
+      <div class="rex-boot-splash-spinner"></div>
+      <div class="rex-boot-splash-label">Loading playground…</div>
+    `;
+    document.body.appendChild(splash);
+  }
+
   if (document.getElementById("rex-ui-fonts")) return;
 
   // Fonts

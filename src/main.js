@@ -19,6 +19,8 @@ import { ControlsPanel } from "./controlsPanel.js";
 import { PinSystem } from "./pinSystem.js";
 import { injectUI, isMobileLayout, initMobileShell } from "./ui.js";
 import { initMobileHints } from "./mobileHints.js";
+import { preloadCatalogAssets } from "./projects/assets.js";
+import { PROJECTS } from "./projects/index.js";
 import load_mujoco from "../vendor/mujoco/mujoco_wasm.js";
 
 const SCENE_FILE = "humanoid.xml";
@@ -398,6 +400,11 @@ class App {
     this.replay = new Replay(this);
     this._installPauseChip();
 
+    // Preload catalog assets (FBX models, etc) before the catalog UI
+    // becomes reachable. The boot splash injected by injectUI() covers
+    // this latency; defs without `fbx`/`abilityFbx` no-op here.
+    await preloadCatalogAssets(PROJECTS);
+
     this.projectSystem = new ProjectSystem(this);
     this.projectSystem.onSceneLoaded();
 
@@ -451,6 +458,11 @@ class App {
     });
 
     this.animate();
+
+    // Hide boot splash once everything is ready. CSS transition fades
+    // it out over 240ms; remove the node 320ms later.
+    document.body.classList.add("booted");
+    setTimeout(() => document.getElementById("boot-splash")?.remove(), 320);
   }
 
   async switchScene(name) {
