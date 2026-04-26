@@ -1,10 +1,8 @@
-// Musicity — Encode AI Hackathon.
+// Musicity — Encode AI Hackathon. Voxel apartment with palette cycle.
 
 import * as THREE from "three";
 import { buildMesh } from "./build.js";
-import * as proportions from "./proportions.js";
-import * as materials from "../../builders/materials.js";
-import * as primitives from "../../builders/primitives.js";
+import { PALETTES, PALETTE_PERIOD_MS } from "./proportions.js";
 
 export default {
   id: "musicity",
@@ -20,6 +18,33 @@ export default {
   ],
   abilityLabel: "Play!",
   ability: "chord",
-  footprintOffset: 0.24,
-  buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
+  // Hitbox + footprintOffset auto-derived (§3.9).
+  buildMesh: () => buildMesh({ THREE }),
+  // Idle palette cycle. Crossfades between PALETTES every PALETTE_PERIOD_MS.
+  onSpawn(slot, ctx) {
+    const mats = ctx.mesh?.userData?.musicityMats;
+    if (!mats) return null;
+    let elapsed = 0;
+    // Working colour objects so we don't allocate per frame.
+    const tmpCol = new THREE.Color();
+    const colA = new THREE.Color();
+    const colB = new THREE.Color();
+    return {
+      tick(dtMs) {
+        elapsed += dtMs;
+        const phase = elapsed / PALETTE_PERIOD_MS;
+        const i = Math.floor(phase) % PALETTES.length;
+        const j = (i + 1) % PALETTES.length;
+        const f = phase - Math.floor(phase);
+        for (const key of ["wall", "window", "balcony"]) {
+          colA.set(PALETTES[i][key]);
+          colB.set(PALETTES[j][key]);
+          tmpCol.copy(colA).lerp(colB, f);
+          mats[key].color.copy(tmpCol);
+        }
+        return true;     // run forever (cancelled by _park)
+      },
+      cancel() { /* nothing to restore — colours don't need preserving */ },
+    };
+  },
 };
