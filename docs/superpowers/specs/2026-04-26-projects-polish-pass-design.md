@@ -214,24 +214,43 @@ for context on why the procedural detour was the wrong default.
 `C:\Users\Rex\Downloads\among-us-3D-model-cgian\among-us-3D-model-cgian\among-us-3D-model-cgian.fbx`
 (47kb, includes textures via `among-us-3D-model-cgian.mtl`). At impl
 time, copy the FBX (and any sibling texture files the loader needs)
-into `assets/models/amogus/` so it ships with the deploy.
+to `assets/models/amogus.fbx` so it ships with the deploy. The path
+in the §3.11 boot loader is `./assets/models/amogus.fbx`. If the FBX
+references external textures (verify via `among-us-3D-model-cgian.mtl`
+contents — colour-only `.mtl` means embedded materials, no external
+PNGs), copy those siblings to `assets/models/` alongside the FBX
+preserving original filenames so the loader's relative-path resolution
+works.
+
+**Skeleton check (verify at impl time).** Spec assumes the model is
+static (no rig). If load-time inspection reveals a skeleton (any
+`SkinnedMesh` in the loaded scene), swap `.clone(true)` for
+`SkeletonUtils.clone()` from `three/addons/utils/SkeletonUtils.js` so
+each spawn gets its own bone hierarchy. One-line check:
+`scene.traverse(o => { if (o.isSkinnedMesh) console.warn("rig detected"); })`.
 
 **Loader.** `three/addons/loaders/FBXLoader.js`. Loaded via the
 `__assets__` namespace in the importmap (already imports
 `three/addons/`). No new dependency, no new importmap entry.
 
 **Preload + cache pattern (see §3.11).** Load the FBX once at
-`App.init()` boot, cache the resulting `THREE.Group` in
-`app.modelCache.amogus`. Per-spawn, `buildMesh()` returns a deep
-clone of the cached scene via Three's built-in `.clone(true)`
-(no skeleton in this asset; `SkeletonUtils` not needed).
+`App.init()` boot, cache the resulting `THREE.Group` in the
+**module-level export** `modelCache` from `src/projects/assets.js`
+(NOT on the App instance — keeps the existing zero-arg
+`def.buildMesh()` call site at `src/projects/system.js:123` and
+predecessor spec `2026-04-24-project-sprite-workflow-design.md`'s DI
+bag unchanged). Per-spawn, `buildMesh()` imports the cache and
+returns a deep clone of the cached scene via Three's built-in
+`.clone(true)`.
 
-**Scale normalisation.** The Sketchfab/CGIan model exports at an
-arbitrary scale. The catalog def gains a new field `targetHeight: 0.6`
-(MJ-units). On load, compute `bbox.height = box.getSize().y`, then
-`scale = targetHeight / bbox.height`, and apply `scene.scale.setScalar(scale)`
-to the cached scene before storing it. After scale, the cloned scene
-is the correct size in every spawn — no per-spawn scale work.
+**Scale normalisation.** The CGIan model exports at an arbitrary
+scale. The catalog def declares an `fbx` block: `fbx: { url:
+"./assets/models/amogus.fbx", target: { axis: "y", value: 0.6 } }`.
+The boot loop in §3.11 iterates `PROJECTS`, finds defs with an `fbx`
+field, and preloads each one. Scale is computed from `target` —
+divide `target.value` by the bbox's size on `target.axis`, apply
+uniform `scene.scale.setScalar(k)` once. The hardcoded boot-call
+arguments are removed; preloading is **catalog-driven**.
 
 **Material fidelity.** FBXLoader maps the file's materials to
 `MeshPhongMaterial` by default. The CGIan model is flat-coloured (red
@@ -262,8 +281,19 @@ the moment the artist asset is updated.
 **Why this works.** The visor is part of the FBX; no need for the
 concentric-shell hack. The body, backpack, antenna, legs are the
 artist's silhouette — measurably better than the procedural version.
-The DI builder pattern stays intact: `build.js` returns
-`app.modelCache.amogus.clone(true)` instead of building primitives.
+The DI builder pattern stays intact: `build.js` is
+
+```js
+import { modelCache } from "../../assets.js";
+export function buildMesh() {
+  const cached = modelCache.amogus;
+  if (!cached) return new THREE.Group();  // safe fallback if preload failed
+  return cached.clone(true);
+}
+```
+
+Zero-arg call site `def.buildMesh()` at `src/projects/system.js:123`
+unchanged; `app` is not threaded through the DI bag.
 
 **Why not GLB.** Per `tasks/lessons.md` 2026-04-26 (second lesson):
 the FBX is in hand, materials are flat, payload is 47kb. Conversion
@@ -525,20 +555,36 @@ use it.
 timblewee
 (https://sketchfab.com/3d-models/bombardier-s-stock-london-underground-a6718eff2dc843c48fd54376b4c70b06).
 Download the FBX export. Verify the licence on the page (CC-BY at
-time of writing; attribution must go in the credits surface — see §6
-Risks). Save as `assets/models/bombardier-s-stock.fbx`.
+time of writing). Save as `assets/models/bombardier-s-stock.fbx`.
+
+**Attribution.** Add to `PortfolioOverlay`'s footer (lower-effort
+than a `/credits` route; lives in an already-touched UI surface). The
+attribution string is exactly:
+
+```
+Bombardier S Stock by timblewee — CC-BY 4.0 (sketchfab.com/timblewee)
+```
+
+Same line is appended to `README.md` under a "Third-party assets"
+section so the credit survives if the overlay is restyled. If the
+Amogus FBX licence requires attribution at impl time (verify the
+CGIan model's source page), add that line too.
 
 **Loader.** `FBXLoader` (same import as §3.4). Preloaded once at
-`App.init()`, cached as `app.modelCache.bombardier`. Per fire,
-`dune-worm.js` clones the cached scene via `.clone(true)` instead of
-constructing primitives.
+`App.init()` via the same catalog-driven loop as §3.4 — but the
+train is **not a sprite**, it's an ability mesh. To stay
+catalog-driven without inventing a fake project, the train preload
+declaration lives on the Olympic Way def under a new optional field
+`abilityFbx: { url: "./assets/models/bombardier-s-stock.fbx", target:
+{ axis: "z", value: 3.0 }, cacheKey: "bombardier" }`. The §3.11
+preload loop reads both `fbx` (sprite mesh) and `abilityFbx`
+(ability-only mesh), caches under `cacheKey`. Per fire,
+`dune-worm.js` does `import { modelCache } from "../../assets.js"`
+then `modelCache.bombardier.clone(true)`.
 
-**Scale normalisation.** Catalog-style constant inside `dune-worm.js`:
-`TARGET_LENGTH = 3.0` MJ-units. Compute the loaded scene's bbox
-length, scale uniformly to fit. Apply once before caching, like §3.4.
-A real S Stock train is ~130m long; without scaling, the bbox would
-extend across the entire scene and trigger constant phantom
-knockback.
+**Scale normalisation.** Handled by §3.11. A real S Stock train is
+~130m long; the `target.value = 3.0` shrinks it to playground scale,
+preventing constant phantom knockback from a giant bbox.
 
 **Dependency removed.** `three-bvh-csg` is NOT added to the importmap.
 The procedural cabin's window cuts were the only consumer; the FBX
@@ -576,20 +622,32 @@ sprite. Same pattern as `dispatch.js`. The fixed scene-edge endpoints
 spawn position — the train is a world phenomenon, not a sprite-local
 effect. Roundel sprite's actual location does not affect the trajectory.
 
-**Knockback on contact (bbox-vs-bbox).** The train has no MuJoCo
-collision geoms (it's a Three.js scratch mesh), so `data.contact` won't
-list it. Per-frame:
+**Train velocity.** Computed by **finite difference** between frames:
+keep a `prevPos: THREE.Vector3` on the ability state, update each
+tick with `trainVel = (currentPos - prevPos) / (dtMs / 1000)`. Stash
+before applying knockback. At t=0 (first tick) `prevPos === currentPos`,
+so `trainVel = (0,0,0)` and no knockback fires that frame — the
+sequence ramps up naturally as the train accelerates out of the
+emergence phase.
+
+**Knockback on contact (bbox-vs-bbox, root-only).** The train has no
+MuJoCo collision geoms (it's a Three.js scratch mesh), so
+`data.contact` won't list it. Per-frame:
 
 1. Compute the train's world-AABB once (`new THREE.Box3().setFromObject(trainGroup)`).
-2. For each tracked body (humanoid bodies + sprite slots), compute its
-   world-AABB by walking `app.bodies[bodyID]` (group with mesh
-   children) — `Box3().setFromObject(bodyGroup)`.
+2. **For the humanoid root only** (`app.bodies[torsoBodyID]` — same
+   `findBody("torso")` lookup that `stab.js` uses), and for each
+   sprite slot's group, compute world-AABB via
+   `Box3().setFromObject(bodyGroup)`.
 3. If the two AABBs intersect (`trainBox.intersectsBox(bodyBox)`),
-   apply knockback to that body.
+   apply knockback to that body's freejoint and start the cooldown.
 
-This is **bbox-vs-bbox** from the start (not a fallback) because the
-humanoid is articulated with ~14 bodies — single-point intersection
-misses limbs that aren't co-located with the body root.
+**Why root-only, not all 14 humanoid bodies.** Bbox-of-the-root walks
+the group's full subtree and includes all child meshes (head, limbs)
+in the bbox computation — so we don't miss articulated parts. Hitting
+the root once per cooldown matches the user's mental model of "the
+train hit me," and avoids the 14×-multiplied impulse that per-body
+detection would produce in a 200ms window.
 
 **Knockback impulse.** Convert the train's velocity (Three frame) to MJ
 frame using the canonical swizzle from `stab.js:28-31`:
@@ -674,6 +732,18 @@ because the slot group sits at z=-60 (parked) and includes a y-offset
 that would corrupt the bbox. We force-update the mesh's matrices in its
 local frame and read the local-frame bbox there.
 
+**FBX-loaded mesh interaction with §3.11.** For FBX-backed sprites,
+the cached scene has been recentred by §3.11 such that its bbox bottom
+is already at `y=0` and its xz centre is at origin. When `buildMesh()`
+returns `cached.clone(true)`, the clone inherits the recentred
+position. So `box.min.y` of the clone is ~0 → auto-derived
+`footprintOffset` is ~0 → no `mesh.position.y` shift needed. This is
+the correct behaviour (the FBX-loaded mesh is "pre-grounded"), and
+auto-derive falls through to a no-op for the offset. The hitbox
+half-extents come out correct because `setFromObject` walks
+descendants with their world matrices — nested transforms inside the
+FBX (groups within groups) are handled.
+
 **Override mechanism:** A def that supplies explicit `hitbox` /
 `footprintOffset` (either or both) skips auto-derive for the supplied
 field(s) only. Example: a sprite with a long antenna may want
@@ -682,10 +752,15 @@ auto-derived `footprintOffset` (correct floor placement) but a manual
 checked independently.
 
 **Cleanup pass:** After the new derive code is in and verified, delete
-the explicit `hitbox` / `footprintOffset` lines from all 11 catalog
-defs in **a single dedicated commit** (so it's easy to revert if any
-sprite misbehaves). Sprites that genuinely need a tighter hitbox than
-the bounding box keep their explicit override.
+the explicit `hitbox` / `footprintOffset` lines from the **procedural
+catalog defs not already touched by §3.4 / §3.6 / §3.7** in **a single
+dedicated commit** (so it's easy to revert if any sprite misbehaves).
+Amogus is touched by §3.4 (FBX swap); Musicity by §3.6 (apartment
+rebuild); Oliver Wyman by §3.7 (logo rebuild). The cleanup commit
+covers Arrow, Clearpath, Outreach, Peel, Peter-Network, Republic,
+Simulacra, Olympic Way (the def, not the train ability) — eight defs.
+Sprites that genuinely need a tighter hitbox than the bounding box
+keep their explicit override.
 
 **Why now:** Republic, Amogus, Olympic Way and Musicity all show signs
 of hitbox drift in the user's QA — labels floating above ground because
@@ -737,96 +812,187 @@ Lives in a new module `src/projects/assets.js` so it can be used by
 any future project that wants to swap procedural geometry for an
 artist asset.
 
+**Cache export — module-level, not on App.** The cache is a
+module-level export from `assets.js`, NOT a field on the App
+instance. This avoids threading `app` through the DI builder bag,
+which would break the established `def.buildMesh()` zero-arg call
+site at `src/projects/system.js:123` and the predecessor spec's DI
+contract.
+
 **API surface.**
 
 ```js
 // src/projects/assets.js
+import * as THREE from "three";
 import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 
 const loader = new FBXLoader();
 
+/** Module-level cache. Catalog build.js files import this directly. */
+export const modelCache = {};
+
 /**
- * Preload an FBX, scale-normalise it to a target dimension, and
- * resolve with the cached scene. The returned scene is the canonical
- * cached copy — callers should `.clone(true)` it before adding to
- * their slot group.
- *
- *   { url, target: { axis: "x"|"y"|"z", value: number } }
+ * Preload an FBX, scale-normalise it, recentre it so its bbox bottom
+ * sits at local y=0 and its xz centre is at origin. The returned
+ * scene is the canonical cached copy — callers should `.clone(true)`
+ * it before adding to their slot group.
  */
 export async function preloadFBX({ url, target }) {
   const scene = await loader.loadAsync(url);
-  // Compute current bbox, derive uniform scale factor.
+
+  // 1. Scale.
   scene.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(scene);
-  const size = box.getSize(new THREE.Vector3());
-  const current = size[target.axis];
+  const box1 = new THREE.Box3().setFromObject(scene);
+  const size1 = box1.getSize(new THREE.Vector3());
+  const current = size1[target.axis];
   if (current > 0 && Number.isFinite(current)) {
-    const k = target.value / current;
-    scene.scale.setScalar(k);
+    scene.scale.setScalar(target.value / current);
   }
-  // Re-centre on origin so .clone() copies sit at slot.group's local 0.
+
+  // 2. Recentre. After scale, recompute bbox in scaled-frame, then
+  // shift `scene.position` so the bbox bottom lands at y=0 and the
+  // bbox xz centre lands at origin. Single assignment — no two-step
+  // math that's easy to misread.
+  scene.position.set(0, 0, 0);
   scene.updateMatrixWorld(true);
   const box2 = new THREE.Box3().setFromObject(scene);
   const centre = box2.getCenter(new THREE.Vector3());
-  scene.position.sub(centre);
-  scene.position.y -= box2.min.y - centre.y;  // bottom of bbox lands at y=0
-  // Pass-through traversal for shadow flags.
+  scene.position.set(-centre.x, -box2.min.y, -centre.z);
+
+  // 3. Shadow flags.
   scene.traverse((o) => {
     if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
   });
+
   return scene;
+}
+
+/**
+ * Catalog-driven preload. Iterates the projects list, finds defs that
+ * declare an `fbx` (sprite mesh) or `abilityFbx` (ability-only mesh)
+ * field, and preloads each into modelCache under its cacheKey.
+ *
+ * Returns a Promise that resolves once all preloads settle. Per-asset
+ * errors are caught and logged; missing assets do NOT reject the boot
+ * promise — the caller's splash hides on settle, and `buildMesh`/
+ * ability-fire fall back to an empty Group on cache miss.
+ */
+export async function preloadCatalogAssets(projects) {
+  const tasks = [];
+  for (const def of projects) {
+    if (def.fbx) {
+      tasks.push(
+        preloadFBX(def.fbx)
+          .then((scene) => { modelCache[def.id] = scene; })
+          .catch((err) => console.error(`[assets] ${def.id} preload failed`, err)),
+      );
+    }
+    if (def.abilityFbx) {
+      const { cacheKey, ...rest } = def.abilityFbx;
+      tasks.push(
+        preloadFBX(rest)
+          .then((scene) => { modelCache[cacheKey] = scene; })
+          .catch((err) => console.error(`[assets] ${cacheKey} preload failed`, err)),
+      );
+    }
+  }
+  await Promise.allSettled(tasks);
 }
 ```
 
 **Boot integration in `App.init()`.**
 
 ```js
-// After Three.js scene + renderer set up, before mujoco scene load.
-this.modelCache = {};
-const [amogus, bombardier] = await Promise.all([
-  preloadFBX({ url: "./assets/models/amogus.fbx",
-               target: { axis: "y", value: 0.6 } }),
-  preloadFBX({ url: "./assets/models/bombardier-s-stock.fbx",
-               target: { axis: "z", value: 3.0 } }),  // length, not height
-]);
-this.modelCache.amogus = amogus;
-this.modelCache.bombardier = bombardier;
+import { preloadCatalogAssets } from "./projects/assets.js";
+import { PROJECTS } from "./projects/index.js";
+
+// After Three.js scene + renderer set up, before MuJoCo scene load.
+await preloadCatalogAssets(PROJECTS);
 ```
+
+The boot is **blocking** — `await` on the preload before the splash
+is hidden. No "spawn-during-load" path is needed because the splash
+covers the UI until preload resolves.
 
 **`buildMesh()` for FBX-backed projects.**
 
 ```js
 // src/projects/catalog/amogus/build.js
-export function buildMesh({ THREE, app }) {
-  const cached = app.modelCache?.amogus;
-  if (!cached) {
-    console.error("[amogus] FBX cache miss");
-    return new THREE.Group();
-  }
+import * as THREE from "three";
+import { modelCache } from "../../assets.js";
+
+export function buildMesh() {
+  const cached = modelCache.amogus;
+  if (!cached) return new THREE.Group();   // graceful fallback on load failure
   return cached.clone(true);
 }
 ```
 
-The DI builder bag gains an `app` reference so catalog defs can read
-the cache. `src/projects/index.js`'s `resolveAbility` already passes
-through; we extend the call site in `system.js` spawn flow.
+Zero-arg call site `def.buildMesh()` at `src/projects/system.js:123`
+unchanged. No DI-bag changes.
 
-**Loading splash.** The boot async work is invisible to the user
-otherwise — add a one-element splash (`<div id="boot-splash">`) that's
-visible until `App.init()` resolves, hidden via a body class on the
-animate-frame entry. Existing `injectUI()` is a fine home for the
-splash element; the body class flip happens at the bottom of `init()`.
+**Catalog def fields.** New optional fields:
 
-**Error handling.** If a preload rejects (404 on the FBX file,
-malformed binary), log to console and continue boot. Catalog defs that
-depend on a missing model render an empty Group; the project still
-appears in the list but the sprite won't show. This is a more graceful
-fallback than blocking the entire app on a missing artist asset.
+- `fbx: { url, target }` — sprite mesh; preloaded into
+  `modelCache[def.id]`.
+- `abilityFbx: { url, target, cacheKey }` — ability mesh; preloaded
+  into `modelCache[cacheKey]`. Used by Olympic Way for the Bombardier
+  train (`cacheKey: "bombardier"`). The `cacheKey` decouples the
+  cache identifier from the def id so multiple defs could share an
+  ability mesh in the future.
+
+`src/projects/index.js` validator: if `def.fbx` or `def.abilityFbx`
+present, assert `url` is a string and `target` is `{ axis, value }`.
+
+**Loading splash — concrete spec.**
+
+HTML (injected by `injectUI()` at boot):
+```html
+<div id="boot-splash" class="rex-boot-splash">
+  <div class="rex-boot-splash-spinner"></div>
+  <div class="rex-boot-splash-label">Loading playground…</div>
+</div>
+```
+
+CSS (in the existing UI stylesheet):
+```css
+.rex-boot-splash {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #05070c;
+  color: #c0c8d8;
+  font-family: ui-monospace, monospace;
+  font-size: 14px; letter-spacing: 0.02em;
+  pointer-events: all;       /* blocks clicks on canvas underneath */
+  transition: opacity 240ms ease-out;
+}
+body.booted .rex-boot-splash {
+  opacity: 0;
+  pointer-events: none;
+}
+```
+
+JS (at the bottom of `App.init()` after preload + scene load):
+```js
+document.body.classList.add("booted");
+setTimeout(() => document.getElementById("boot-splash")?.remove(), 320);
+```
+
+The splash is **opaque** (covers the renderer canvas) and **blocks
+pointer events** until the preload settles. No spawn-during-load
+race condition because no spawn UI is reachable yet.
+
+**Error handling.** Per-asset preload errors are caught inside
+`preloadCatalogAssets` and logged. Missing-from-cache fallback in
+`buildMesh()` returns an empty Group, so projects with failed assets
+still appear in the catalog (their card opens; their sprite is
+invisible). No `await` is required at the spawn site.
 
 **Why one helper, not per-loader-type plumbing in each `build.js`.**
 Five files would each want their own loader instance, scale logic, and
 recentre logic. One module = one place to look when something goes
-wrong. Adds ~50 lines, removes per-project repetition.
+wrong. Adds ~80 lines, removes per-project repetition.
 
 **Why FBX, not GLB.** See `tasks/lessons.md` 2026-04-26. The local
 Amogus FBX is in hand at 47kb; the Bombardier asset's primary export
@@ -837,14 +1003,17 @@ on Sketchfab is FBX. No conversion needed.
 | File                                          | Change                                              |
 | --------------------------------------------- | --------------------------------------------------- |
 | `index.html`                                  | unchanged (no `three-bvh-csg`; FBXLoader is in `three/addons/`) |
-| `src/main.js`                                 | Async asset preload at boot; `App.modelCache`; `frameSpawnCloseup`; G-key handling; replace `frameSpawn` call |
-| `src/projects/assets.js`                      | NEW — preload helper for FBX assets, returns scaled cached scene |
+| `src/main.js`                                 | `await preloadCatalogAssets(PROJECTS)` at boot; boot splash flip; `frameSpawnCloseup`; G-key handling; replace `frameSpawn` call |
+| `src/projects/assets.js`                      | NEW — module-level `modelCache`, `preloadFBX`, `preloadCatalogAssets` |
+| `src/projects/index.js`                       | Validator accepts optional `onSpawn`, `fbx`, `abilityFbx` |
+| `src/portfolioOverlay.js`                     | Append CC-BY attribution line for Bombardier S Stock |
+| `README.md`                                   | New "Third-party assets" section listing FBX credits |
+| `src/ui.js`                                   | Inject boot splash + CSS (`.rex-boot-splash`)        |
 | `assets/models/amogus.fbx`                    | NEW — copied from local Downloads (47kb)            |
 | `assets/models/bombardier-s-stock.fbx`        | NEW — downloaded from Sketchfab (timblewee, CC-BY)  |
 | `src/controlsPanel.js`                        | Hide-labels checkbox in Effects section             |
 | `src/grabber.js`                              | Bail early when `app._gKeyHeld`                     |
 | `src/sparks.js`                               | New public `burst(opts)` method; `enabled` semantics |
-| `src/projects/index.js`                       | Validator accepts optional `onSpawn` function       |
 | `src/projects/system.js`                      | `_deriveHitbox`, `setLabelsHidden`, `onSpawn` hook, sprite raycast click |
 | `src/projects/abilities/index.js`             | Drop `sprint`; add `roomba`, `dune-worm`            |
 | `src/projects/abilities/sprint.js`            | DELETE                                              |
@@ -852,20 +1021,21 @@ on Sketchfab is FBX. No conversion needed.
 | `src/projects/abilities/roomba.js`            | NEW                                                 |
 | `src/projects/abilities/dune-worm.js`         | NEW                                                 |
 | `src/projects/abilities/stab.js`              | Distance-calibrated speed + proportional knockback + blood spray trigger |
-| `src/projects/catalog/amogus/proportions.js`  | DELETE (or reduce to `targetHeight: 0.6`) — FBX replaces procedural geometry |
-| `src/projects/catalog/amogus/build.js`        | Replace with `app.modelCache.amogus.clone(true)` returner |
-| `src/projects/catalog/amogus/index.js`        | Add `targetHeight: 0.6`; drop explicit `hitbox`/`footprintOffset` (auto-derive) |
+| `src/projects/catalog/amogus/proportions.js`  | DELETE — FBX replaces procedural geometry           |
+| `src/projects/catalog/amogus/build.js`        | Replace with `modelCache.amogus.clone(true)` returner (imports from `../../assets.js`) |
+| `src/projects/catalog/amogus/index.js`        | Add `fbx: { url, target: { axis: "y", value: 0.6 } }`; drop explicit `hitbox`/`footprintOffset` (auto-derive) |
 | `src/projects/catalog/musicity/proportions.js`| Replace with apartment-grid + palette constants     |
 | `src/projects/catalog/musicity/build.js`      | Replace with `generateApartment()` + InstancedMesh + onSpawn cycle |
 | `src/projects/catalog/musicity/index.js`      | Add `onSpawn` hook; drop `footprintOffset`          |
 | `src/projects/catalog/oliver-wyman/proportions.js`| Replace track/dots with logo + plate constants  |
 | `src/projects/catalog/oliver-wyman/build.js`  | Replace track + scatter with extruded logo + plate  |
 | `src/projects/catalog/oliver-wyman/index.js`  | `ability: "roomba"`; drop `footprintOffset`         |
-| `src/projects/catalog/olympic-way/index.js`   | `ability: "dune-worm"`; drop `footprintOffset`      |
+| `src/projects/catalog/olympic-way/index.js`   | Add `abilityFbx: { url, target: { axis: "z", value: 3.0 }, cacheKey: "bombardier" }`; `ability: "dune-worm"`; drop `footprintOffset` |
 
 The §3.9 cleanup-pass commit additionally deletes `hitbox` /
-`footprintOffset` lines from the remaining seven catalog defs not
-listed here (they're untouched by other work).
+`footprintOffset` lines from the eight catalog defs not listed here:
+Arrow, Clearpath, Outreach, Peel, Peter-Network, Republic, Simulacra,
+Olympic Way.
 
 ## 5. Acceptance criteria
 
@@ -913,21 +1083,24 @@ listed here (they're untouched by other work).
     up within 200ms and < 4px movement) opens its card. Mousedown +
     drag starts grab and does NOT open the card. Both work whether
     labels are hidden or visible.
+12. **Boot splash:** opaque "Loading playground…" splash visible on
+    initial page load. Hides within 240ms after `preloadCatalogAssets`
+    + scene load resolve. Splash blocks pointer events on the canvas
+    underneath while visible.
 
 ## 6. Risks and unknowns
 
 - **FBX preload boot delay.** Two FBX assets load at `App.init()`
   before the catalog is usable. Combined ~150-300kb. On a fast
   connection (Vercel CDN edge), boot adds ~100ms; on a slow connection
-  it could be 1-2s. Mitigation: show a "loading playground" splash
-  during preload (already trivial — set a body-level loading class,
-  unset on `Promise.all` resolve). If the user spawns a project before
-  preload completes, the spawn flow `await`s the cache.
-- **CC-BY attribution.** The Bombardier S Stock is CC-BY (timblewee
-  on Sketchfab). Add a credits surface — either the existing
-  `PortfolioOverlay` footer or a dedicated `/credits` route — listing
-  the model author and source URL. No legal exposure for a personal
-  portfolio, but attribution is still required by the licence.
+  it could be 1-2s. Mitigated by the §3.11 blocking splash. The
+  spawn flow does NOT need an `await` because the splash hides only
+  after preload resolves — by the time UI is reachable, the cache is
+  populated.
+- **CC-BY attribution.** Spec'd in §3.8 — `PortfolioOverlay` footer
+  + `README.md` "Third-party assets" section. No legal exposure for a
+  personal portfolio, but attribution is still required by the
+  licence.
 - **FBX material parsing edge cases.** FBXLoader maps materials to
   MeshPhongMaterial/Standard with best-effort. If either model lands
   with muddy/wrong colours, the post-load traverse pass overrides
