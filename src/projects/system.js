@@ -66,6 +66,51 @@ export class ProjectSystem {
       if (e.target.closest(".rex-project-label")) return;
       this.dismissCard();
     });
+
+    // Sprite mesh click → open card. Required so labels-hidden users can
+    // still open project cards. Click vs drag gating: ≤200ms and <4px
+    // qualifies as a click. Mousedown does NOT consume the event — grab
+    // still receives its pointerdown and starts as normal; if the user
+    // drags, we fail the click test on mouseup. If the user just clicks,
+    // grab releases on mouseup with no displacement and we fire the card.
+    let downX = 0, downY = 0, downT = 0, downBtn = -1;
+    addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
+      downX = e.clientX; downY = e.clientY; downT = performance.now(); downBtn = e.button;
+    });
+    addEventListener("mouseup", (e) => {
+      if (e.button !== 0 || downBtn !== 0) return;
+      const dt = performance.now() - downT;
+      const dx = e.clientX - downX, dy = e.clientY - downY;
+      const moved = Math.hypot(dx, dy);
+      downBtn = -1;
+      if (dt > 200 || moved >= 4) return;     // drag, not click
+
+      // Skip clicks on UI surfaces — labels and the open card already
+      // handle their own clicks; the controls panel is its own subtree.
+      if (e.target.closest("#project-card")) return;
+      if (e.target.closest(".rex-project-label")) return;
+      if (e.target.closest("#rex-controls")) return;
+
+      const grabbables = this.app.getGrabbables?.() || [];
+      if (!grabbables.length) return;
+
+      // Build a Raycaster from screen-space NDC to the camera.
+      const rect = this.app.renderer.domElement.getBoundingClientRect();
+      const ndc = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(ndc, this.app.camera);
+      const hits = raycaster.intersectObjects(grabbables, false);
+      if (!hits.length) return;
+      const bodyID = hits[0].object.bodyID;
+      if (!bodyID || bodyID < 0) return;
+
+      const slot = this.slots.find((s) => s.bodyID === bodyID && s.project);
+      if (slot) this.showCard(slot);
+    });
   }
 
   // ── Lifecycle hooks ────────────────────────────────────────────────────
