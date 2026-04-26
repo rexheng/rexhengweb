@@ -6,22 +6,32 @@
 
 import * as THREE from "three";
 import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-const loader = new FBXLoader();
+const fbxLoader = new FBXLoader();
+const gltfLoader = new GLTFLoader();
 
 /** Module-level cache. Catalog build.js files import this directly. */
 export const modelCache = {};
 
 /**
- * Preload an FBX, scale-normalise it, and recentre it so its bbox bottom
- * sits at local y=0 and its xz centre is at origin. The returned scene
- * is the canonical cached copy — callers should `.clone(true)` it before
- * adding to their slot group.
+ * Preload a model (FBX or GLB/GLTF — detected by URL extension),
+ * scale-normalise it, and recentre it so its bbox bottom sits at
+ * local y=0 and its xz centre is at origin. The returned scene is
+ * the canonical cached copy — callers should `.clone(true)` it
+ * before adding to their slot group.
  *
  * @param {{ url: string, target: { axis: "x"|"y"|"z", value: number } }} cfg
  */
-export async function preloadFBX({ url, target }) {
-  const scene = await loader.loadAsync(url);
+export async function preloadModel({ url, target }) {
+  const lower = url.toLowerCase();
+  let scene;
+  if (lower.endsWith(".glb") || lower.endsWith(".gltf")) {
+    const gltf = await gltfLoader.loadAsync(url);
+    scene = gltf.scene;
+  } else {
+    scene = await fbxLoader.loadAsync(url);
+  }
 
   // 1. Scale.
   scene.updateMatrixWorld(true);
@@ -50,10 +60,14 @@ export async function preloadFBX({ url, target }) {
   return scene;
 }
 
+// Backwards-compat alias — Task 1.1 originally exposed preloadFBX.
+export const preloadFBX = preloadModel;
+
 /**
  * Catalog-driven preload. Iterates the projects list, finds defs that
  * declare an `fbx` (sprite mesh) or `abilityFbx` (ability-only mesh)
- * field, and preloads each into modelCache.
+ * field, and preloads each into modelCache. Despite the legacy field
+ * names, the loader auto-detects FBX vs GLB/GLTF from the URL extension.
  *
  * Returns a Promise that resolves once all preloads settle. Per-asset
  * errors are caught and logged; missing assets do NOT reject the boot
@@ -65,7 +79,7 @@ export async function preloadCatalogAssets(projects) {
   for (const def of projects) {
     if (def.fbx) {
       tasks.push(
-        preloadFBX(def.fbx)
+        preloadModel(def.fbx)
           .then((scene) => { modelCache[def.id] = scene; })
           .catch((err) => console.error(`[assets] ${def.id} preload failed`, err)),
       );
@@ -73,7 +87,7 @@ export async function preloadCatalogAssets(projects) {
     if (def.abilityFbx) {
       const { cacheKey, ...rest } = def.abilityFbx;
       tasks.push(
-        preloadFBX(rest)
+        preloadModel(rest)
           .then((scene) => { modelCache[cacheKey] = scene; })
           .catch((err) => console.error(`[assets] ${cacheKey} preload failed`, err)),
       );
