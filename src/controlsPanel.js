@@ -2,6 +2,7 @@
 // Sections: Scene, Physics, Camera, Effects, Projects.
 
 import { PROJECTS } from "./projects/index.js";
+import { showSpawnToast } from "./toasts.js";
 
 const GRAVITY_OPTIONS = [
   { label: "Earth", value: -9.81 },
@@ -202,7 +203,12 @@ export class ControlsPanel {
 
       tile.addEventListener("click", () => {
         const slot = this.app.projectSystem?.spawn(def.id);
-        if (!slot) console.warn(`No free project slot for ${def.id}`);
+        if (slot) {
+          showSpawnToast(`Added ${def.label} · drag to grab`);
+        } else {
+          showSpawnToast("All slots full — clear one to add another");
+          console.warn(`No free project slot for ${def.id}`);
+        }
         this._paintProjectTiles();
       });
 

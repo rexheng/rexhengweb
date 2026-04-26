@@ -18,6 +18,7 @@ import { ProjectSystem } from "./projects/system.js";
 import { ControlsPanel } from "./controlsPanel.js";
 import { PinSystem } from "./pinSystem.js";
 import { injectUI, isMobileLayout, initMobileShell } from "./ui.js";
+import { initMobileHints } from "./mobileHints.js";
 import load_mujoco from "../vendor/mujoco/mujoco_wasm.js";
 
 const SCENE_FILE = "humanoid.xml";
@@ -357,6 +358,7 @@ class App {
 
     this.controlsPanel = new ControlsPanel(this);
     initMobileShell();
+    initMobileHints();
 
     // HUD
     const hud = document.createElement("div");
@@ -716,6 +718,14 @@ class App {
       if (v !== 0) this._applyVerticalPan(v * 3.5 * dt);
     }
     this.controls.update();
+    // Floor-clip guard: never let the camera body sink below the ground plane.
+    // We clamp position only (not orbit angle) so the user can still pan up
+    // into the sky and tilt down to look at the scene from above.
+    if (this.camera.position.y < 0.15) {
+      const dy = 0.15 - this.camera.position.y;
+      this.camera.position.y = 0.15;
+      this.controls.target.y += dy;
+    }
     if (this._skyMat) this._skyMat.uniforms.uTime.value = now * 0.001;
     this.applyWind();
     this.grabber?.applyPunt();
