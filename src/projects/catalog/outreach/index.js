@@ -21,6 +21,5 @@ export default {
   ],
   abilityLabel: "Pulse need!",
   ability: "heatmap",
-  footprintOffset: 0.29,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };

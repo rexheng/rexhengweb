@@ -22,7 +22,5 @@ export default {
   ability: "launch",
   // Glass cube silhouette: 1.80D × 1.80D × 1.80D (D=0.26) centred on body
   // origin (cubeBaseY = -0.90D, half-extent 0.234 each axis).
-  hitbox: { hx: 0.234, hy: 0.234, hz: 0.234 },
-  footprintOffset: 0,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };

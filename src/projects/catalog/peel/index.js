@@ -20,6 +20,5 @@ export default {
   ],
   abilityLabel: "Settle!",
   ability: "settle",
-  footprintOffset: 0.24,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };

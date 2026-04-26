@@ -24,7 +24,5 @@ export default {
   // Block silhouette: 2.40D × 1.20D × 0.30D centred on body (D=0.26).
   // → hx 0.312, hz 0.156, hy 0.039 (very thin slab).
   // blockBaseY = -0.60D = -0.156, so meshBaseY = -0.156, hz = 0.156 → offset 0.
-  hitbox: { hx: 0.312, hy: 0.045, hz: 0.156 },
-  footprintOffset: 0,
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };
