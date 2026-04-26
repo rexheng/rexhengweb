@@ -98,6 +98,9 @@ export class Grabber {
   }
 
   onDown = (ev) => {
+    // Hold-G drag-rotate hand-off: during G-hold, OrbitControls owns
+    // LEFT click for camera orbit. Don't start a grab.
+    if (this.app._gKeyHeld) return;
     // Middle-click = GMod gravity-gun punt: instantaneous impulse along camera ray.
     // Handled standalone (no drag), so we short-circuit before the normal grab path.
     if (ev.button === 1) {

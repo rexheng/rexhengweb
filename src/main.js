@@ -495,6 +495,33 @@ class App {
       else if (e.code === "ShiftLeft" || e.code === "ShiftRight") this._arrowKeys.fall = false;
     });
 
+    // G-key: hold-to-orbit (momentary). LEFT mouse becomes ROTATE while
+    // held; grab is suppressed via app._gKeyHeld (read by Grabber.onDown).
+    // Mirrors the input-field guard from the arrow-key handlers above so
+    // typing "g" in a GUI field doesn't trigger orbit mode.
+    addEventListener("keydown", (e) => {
+      if (e.code !== "KeyG") return;
+      const tag = (e.target?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea") return;
+      if (this._gKeyHeld) return;          // already armed — ignore key-repeat
+      this._gKeyHeld = true;
+      this.controls.mouseButtons = {
+        LEFT: THREE.MOUSE.ROTATE,
+        MIDDLE: null,
+        RIGHT: THREE.MOUSE.ROTATE,
+      };
+    });
+    addEventListener("keyup", (e) => {
+      if (e.code !== "KeyG") return;
+      this._gKeyHeld = false;
+      // Restore default — see App.init() OrbitControls setup.
+      this.controls.mouseButtons = {
+        LEFT: null,
+        MIDDLE: null,
+        RIGHT: THREE.MOUSE.ROTATE,
+      };
+    });
+
     // Two-finger horizontal swipe on trackpad pans the camera.
     // We read deltaX from wheel events (trackpads emit deltaX; mice don't).
     // Suppress only horizontal swipes so vertical scroll / pinch-zoom still work.
