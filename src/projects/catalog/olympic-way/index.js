@@ -18,7 +18,16 @@ export default {
   links: [
     { label: "Source", href: "https://github.com/rexheng/london_lsoa_map" },
   ],
-  abilityLabel: "Pulse!",
-  ability: "pulse",
+  abilityLabel: "Summon Train!",
+  ability: "dune-worm",
+  // Ability mesh — Bombardier S Stock train (GLB, preloaded into
+  // modelCache.bombardier). Sprite mesh stays procedural (the roundel +
+  // plinth from build.js); only the ability uses the GLB.
+  abilityFbx: {
+    url: "./assets/models/bombardier-s-stock.glb",
+    target: { axis: "z", value: 3.0 },
+    cacheKey: "bombardier",
+  },
+  // Sprite hitbox + footprintOffset auto-derived (§3.9).
   buildMesh: () => buildMesh({ THREE, materials, primitives, proportions }),
 };

@@ -11,9 +11,11 @@ import { settle } from "./settle.js";
 import { launch } from "./launch.js";
 import { chord } from "./chord.js";
 import { roomba } from "./roomba.js";
+import { duneWorm } from "./dune-worm.js";
 
 export const ABILITIES = {
   stab, topple, pulse, swarm, cycle,
   heatmap, dispatch, settle, launch, chord,
   roomba,
+  "dune-worm": duneWorm,
 };
