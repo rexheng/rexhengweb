@@ -17,43 +17,64 @@ function ensureStyle() {
     .rex-toast {
       position: fixed;
       z-index: 80;
-      padding: 10px 14px;
-      font-family: ui-monospace, "SF Mono", Menlo, monospace;
-      font-size: 12px;
-      letter-spacing: 0.04em;
-      color: #f4ead8;
-      background: rgba(18, 22, 34, 0.78);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(212, 160, 90, 0.32);
-      border-radius: 999px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.32);
       pointer-events: none;
       opacity: 0;
       transition: opacity 220ms ease, transform 260ms cubic-bezier(.2,.8,.2,1);
+    }
+    /* Spawn toast — matches the bottom-left HUD hint typography so it
+       reads as an extension of the controls line, not a separate UI
+       chip. No pill, no border, no glassy bg. Mobile gets a subtle
+       glassy backdrop because there's no hud line beside it. */
+    .rex-toast--spawn {
+      left: 50%;
+      bottom: 22px;
+      transform: translate(-50%, 4px);
+      font-family: var(--rex-font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+      font-size: 10px;
+      color: var(--rex-ivory-3, #c0c8d8);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       white-space: nowrap;
       max-width: calc(100vw - 32px);
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .rex-toast--spawn {
-      left: 50%;
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 160px);
-      transform: translate(-50%, 8px);
-    }
     .rex-toast--spawn.is-in {
       opacity: 1;
       transform: translate(-50%, 0);
     }
+    @media (max-width: 720px) {
+      .rex-toast--spawn {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+        padding: 8px 14px;
+        background: rgba(18, 22, 34, 0.78);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(212, 160, 90, 0.24);
+        border-radius: 999px;
+      }
+    }
+    /* Hint toast — top-centre pill on mobile only, retains the glassy
+       chip treatment because it carries multi-row instructions and
+       needs visual weight. */
     .rex-toast--hint {
       left: 50%;
       top: calc(env(safe-area-inset-top, 0px) + 64px);
       transform: translate(-50%, -8px);
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      line-height: 1.45;
+      color: #f4ead8;
+      background: rgba(18, 22, 34, 0.78);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(212, 160, 90, 0.32);
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.32);
+      padding: 12px 14px;
       white-space: normal;
       max-width: min(360px, calc(100vw - 32px));
-      border-radius: 14px;
-      padding: 12px 14px;
-      line-height: 1.45;
       pointer-events: auto;
     }
     .rex-toast--hint.is-in {
