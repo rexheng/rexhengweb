@@ -522,21 +522,21 @@
     /* ─── Entry logos ─── */
     .entry-logo {
       display: block;
-      height: 32px;
+      height: 28px;
       width: auto;
       margin-top: 12px;
       filter: grayscale(1) opacity(0.55);
       transition: filter 240ms ease;
     }
     .entry:hover .entry-logo { filter: grayscale(0) opacity(1); }
+    /* Wide wordmark: needs less height to avoid dominating the meta column */
+    .entry-logo[data-logo="dbs"] { height: 24px; }
 
     /* ─── Project card logos ─── */
     .pc-logo {
       display: block;
-      height: 18px;
+      height: 20px;
       width: auto;
-      flex-shrink: 0;
-      align-self: center;
       filter: grayscale(1) opacity(0.5);
       transition: filter 220ms ease;
     }
@@ -570,7 +570,7 @@
           <div class="entry-meta">
             <span class="dates">2024 — 2027</span>
             <span class="place">London</span>
-            <img class="entry-logo" src="logos/lse.svg" alt="London School of Economics" height="32" loading="lazy">
+            <img class="entry-logo" data-logo="lse" src="logos/lse.svg" alt="London School of Economics" height="28" loading="lazy">
           </div>
           <div class="entry-body">
             <h3 class="entry-org">London School of Economics</h3>
@@ -584,7 +584,7 @@
           <div class="entry-meta">
             <span class="dates">2016 — 2021</span>
             <span class="place">Singapore</span>
-            <img class="entry-logo" src="logos/raffles.svg" alt="Raffles Institution" height="32" loading="lazy">
+            <img class="entry-logo" data-logo="raffles" src="logos/raffles.svg" alt="Raffles Institution" height="28" loading="lazy">
           </div>
           <div class="entry-body">
             <h3 class="entry-org">Raffles Institution</h3>
@@ -609,7 +609,7 @@
           <div class="entry-meta">
             <span class="dates">Jul — Sep 2025</span>
             <span class="place">Singapore</span>
-            <img class="entry-logo" src="logos/dbs.svg" alt="DBS Bank" height="32" loading="lazy">
+            <img class="entry-logo" data-logo="dbs" src="logos/dbs.svg" alt="DBS Bank" height="24" loading="lazy">
           </div>
           <div class="entry-body">
             <h3 class="entry-org">DBS Bank</h3>
@@ -622,7 +622,7 @@
           <div class="entry-meta">
             <span class="dates">Jan — Feb 2024</span>
             <span class="place">Singapore</span>
-            <img class="entry-logo" src="logos/pwc.svg" alt="PricewaterhouseCoopers" height="32" loading="lazy">
+            <img class="entry-logo" data-logo="pwc" src="logos/pwc.svg" alt="PricewaterhouseCoopers" height="28" loading="lazy">
           </div>
           <div class="entry-body">
             <h3 class="entry-org">PricewaterhouseCoopers</h3>
@@ -635,6 +635,7 @@
           <div class="entry-meta">
             <span class="dates">Oct 2024 — Present</span>
             <span class="place">Cambridge &amp; London</span>
+            <img class="entry-logo" data-logo="ccn" src="logos/ccn.png" alt="Cambridge Consulting Network" height="28" loading="lazy">
           </div>
           <div class="entry-body">
             <h3 class="entry-org"><a href="https://ccnlondon.vercel.app/" target="_blank" rel="noopener noreferrer">Cambridge Consulting Network</a></h3>
@@ -647,7 +648,7 @@
           <div class="entry-meta">
             <span class="dates">2022 — 2024</span>
             <span class="place">Singapore</span>
-            <img class="entry-logo" src="logos/saf.svg" alt="Singapore Armed Forces" height="32" loading="lazy">
+            <img class="entry-logo" data-logo="saf" src="logos/saf.svg" alt="Singapore Armed Forces" height="28" loading="lazy">
           </div>
           <div class="entry-body">
             <h3 class="entry-org">Singapore Armed Forces</h3>
@@ -660,6 +661,7 @@
           <div class="entry-meta">
             <span class="dates">May — Jul 2025</span>
             <span class="place">Southwark</span>
+            <img class="entry-logo" data-logo="blackfriars" src="logos/blackfriars.png" alt="Blackfriars Settlement" height="28" loading="lazy">
           </div>
           <div class="entry-body">
             <h3 class="entry-org">Blackfriars Settlement</h3>
@@ -683,7 +685,6 @@
 
         <article class="project-card reveal">
           <div class="pc-head">
-            <img class="pc-logo" src="logos/cursor.svg" alt="Cursor" height="18" loading="lazy">
             <h3 class="pc-title">Amogus</h3>
             <span class="pc-meta">2nd · Cursor Hack 2026</span>
           </div>
@@ -698,12 +699,12 @@
           </div>
           <div class="pc-links">
             <a class="gh" href="https://github.com/rexheng/amogus" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <img class="pc-logo" src="logos/cursor.svg" alt="Cursor" height="20" loading="lazy" style="margin-left: auto">
           </div>
         </article>
 
         <article class="project-card reveal">
           <div class="pc-head">
-            <img class="pc-logo" src="logos/hedera.svg" alt="Hedera" height="18" loading="lazy">
             <h3 class="pc-title">Peel</h3>
             <span class="pc-meta">Hedera × LSE · 2026</span>
           </div>
@@ -717,12 +718,12 @@
           </div>
           <div class="pc-links">
             <a class="gh" href="https://github.com/rexheng" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <img class="pc-logo" src="logos/hedera.svg" alt="Hedera" height="20" loading="lazy" style="margin-left: auto">
           </div>
         </article>
 
         <article class="project-card reveal">
           <div class="pc-head">
-            <img class="pc-logo" src="logos/sig.svg" alt="Susquehanna International Group" height="18" loading="lazy">
             <h3 class="pc-title">Olympic Way Interchange</h3>
             <span class="pc-meta">1st · SIG Datathon 2026</span>
           </div>
@@ -737,6 +738,7 @@
           <div class="pc-links">
             <a href="https://tfl-lsoa-visual.vercel.app" target="_blank" rel="noopener noreferrer">LSOA Explorer</a>
             <a href="https://tfl-node-sim.vercel.app" target="_blank" rel="noopener noreferrer">Network Sim</a>
+            <img class="pc-logo" src="logos/sig.svg" alt="Susquehanna International Group" height="20" loading="lazy" style="margin-left: auto">
           </div>
         </article>
 
@@ -761,7 +763,6 @@
 
         <article class="project-card reveal">
           <div class="pc-head">
-            <img class="pc-logo" src="logos/manus.svg" alt="Manus" height="18" loading="lazy">
             <h3 class="pc-title">Manusman</h3>
             <span class="pc-meta">Most Commercial · Manus 2026</span>
           </div>
@@ -775,12 +776,12 @@
           </div>
           <div class="pc-links">
             <a href="https://manusman.com" target="_blank" rel="noopener noreferrer">Live Demo</a>
+            <img class="pc-logo" src="logos/manus.png" alt="Manus" height="20" loading="lazy" style="margin-left: auto">
           </div>
         </article>
 
         <article class="project-card reveal">
           <div class="pc-head">
-            <img class="pc-logo" src="logos/claude.svg" alt="Anthropic Claude" height="18" loading="lazy">
             <h3 class="pc-title">Outreach</h3>
             <span class="pc-meta">Top 8 · Claude Imperial 2026</span>
           </div>
@@ -794,6 +795,7 @@
           </div>
           <div class="pc-links">
             <a href="https://devpost.com/software/outreach-bd6iyo" target="_blank" rel="noopener noreferrer">Devpost</a>
+            <img class="pc-logo" src="logos/claude.svg" alt="Anthropic Claude" height="20" loading="lazy" style="margin-left: auto">
           </div>
         </article>
 
@@ -812,12 +814,12 @@
           </div>
           <div class="pc-links">
             <a href="https://inform-eight.vercel.app" target="_blank" rel="noopener noreferrer">Live</a>
+            <img class="pc-logo" src="logos/nhs.png" alt="NHS" height="20" loading="lazy" style="margin-left: auto">
           </div>
         </article>
 
         <article class="project-card reveal">
           <div class="pc-head">
-            <img class="pc-logo" src="logos/phala.svg" alt="Phala Network" height="18" loading="lazy">
             <h3 class="pc-title">Arrow</h3>
             <span class="pc-meta">LSE Build 2026</span>
           </div>
@@ -831,12 +833,12 @@
           </div>
           <div class="pc-links">
             <a class="gh" href="https://github.com/rexheng" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <img class="pc-logo" src="logos/phala.png" alt="Phala Network" height="20" loading="lazy" style="margin-left: auto">
           </div>
         </article>
 
         <article class="project-card reveal">
           <div class="pc-head">
-            <img class="pc-logo" src="logos/ethereum.svg" alt="Ethereum" height="18" loading="lazy">
             <h3 class="pc-title">The Republic</h3>
             <span class="pc-meta">ETH Oxford 2026</span>
           </div>
@@ -851,6 +853,7 @@
           <div class="pc-links">
             <a href="https://the-republic-ashy.vercel.app/" target="_blank" rel="noopener noreferrer">Live</a>
             <a class="gh" href="https://github.com/rexheng/the-republic" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <img class="pc-logo" src="logos/ethereum.svg" alt="Ethereum" height="20" loading="lazy" style="margin-left: auto">
           </div>
         </article>
 
