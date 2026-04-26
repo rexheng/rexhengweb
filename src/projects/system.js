@@ -20,10 +20,22 @@ export class ProjectSystem {
     this._activeAbilities = []; // {tick, ttlMs}
     this._worldPos = new THREE.Vector3();
     this._screenVec = new THREE.Vector3();
+    this._labelsHidden = false;
 
     this._installLabelHost();
     this._installCardRoot();
     this._bindEvents();
+  }
+
+  setLabelsHidden(v) {
+    this._labelsHidden = !!v;
+    // Apply immediately so the next update() doesn't have to wait for the
+    // user to scroll/move to flush the visibility — also makes the toggle
+    // feel instant for static cameras.
+    for (const slot of this.slots) {
+      if (!slot.labelEl) continue;
+      slot.labelEl.style.display = this._labelsHidden ? "none" : "";
+    }
   }
 
   // ── DOM scaffolding ────────────────────────────────────────────────────
@@ -214,6 +226,7 @@ export class ProjectSystem {
       this.showCard(slot);
     });
     this._host.appendChild(labelEl);
+    if (this._labelsHidden) labelEl.style.display = "none";
     slot.labelEl = labelEl;
 
     return slot;
@@ -290,6 +303,7 @@ export class ProjectSystem {
 
     for (const slot of this.slots) {
       if (!slot.project || !slot.labelEl) continue;
+      if (this._labelsHidden) { slot.labelEl.style.display = "none"; continue; }
       slot.group.updateWorldMatrix(true, false);
       this._worldPos.setFromMatrixPosition(slot.group.matrixWorld);
       this._screenVec.copy(this._worldPos);

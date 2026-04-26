@@ -113,6 +113,16 @@ export class ControlsPanel {
     fx.dataset.section = "effects";
     fx.appendChild(this._row("Trajectory Trails", this._toggle("trails", (v) => { this._set("trails", v); this.app.trails?.setEnabled(v); })));
     fx.appendChild(this._row("Impact Sparks", this._toggle("sparks", (v) => { this._set("sparks", v); this.app.sparks?.setEnabled(v); })));
+    // Hide-labels: persisted in localStorage["rex-labels-hidden"].
+    // Default false. The setter guards both the per-frame loop and the
+    // append-at-spawn path inside ProjectSystem.
+    const initialHidden = (() => { try { return localStorage.getItem("rex-labels-hidden") === "1"; } catch { return false; } })();
+    if (this.app.params) this.app.params.labelsHidden = initialHidden;
+    fx.appendChild(this._row("Hide labels", this._toggle("labelsHidden", (v) => {
+      this._set("labelsHidden", v);
+      this.app.projectSystem?.setLabelsHidden(v);
+      try { localStorage.setItem("rex-labels-hidden", v ? "1" : "0"); } catch {}
+    })));
     root.appendChild(fx);
 
     // Projects — selection grid of accent-tinted monogram tiles.
@@ -516,6 +526,10 @@ export class ControlsPanel {
   }
 
   refresh() {
+    // Re-apply hide-labels from params so a scene reload preserves the state.
+    if (this.app.projectSystem && this.app.params) {
+      this.app.projectSystem.setLabelsHidden(!!this.app.params.labelsHidden);
+    }
     this._paintSegmented("gravity");
     this._paintSegmented("timescale");
     this._updateCompass();
