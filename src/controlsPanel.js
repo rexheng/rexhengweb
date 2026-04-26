@@ -1,6 +1,7 @@
 // Custom control panel — fully replaces lil-gui with the Rex UI design system.
 // Sections: Scene, Physics, Camera, Effects, Projects.
 
+import * as THREE from "three";
 import { PROJECTS } from "./projects/index.js";
 import { showSpawnToast } from "./toasts.js";
 
@@ -205,6 +206,12 @@ export class ControlsPanel {
         const slot = this.app.projectSystem?.spawn(def.id);
         if (slot) {
           showSpawnToast(`Added ${def.label} · drag to grab`);
+          // Cinematic close-up on the freshly-spawned sprite. The slot
+          // group's matrixWorld was just flushed by mj_forward in spawn().
+          slot.group.updateWorldMatrix(true, false);
+          const spawnPos = new THREE.Vector3()
+            .setFromMatrixPosition(slot.group.matrixWorld);
+          this.app.frameSpawnCloseup?.(spawnPos);
         } else {
           showSpawnToast("All slots full — clear one to add another");
           console.warn(`No free project slot for ${def.id}`);
