@@ -67,11 +67,26 @@ export async function preloadModel({ url, target }) {
       // Already PBR — leave it (GLB models come in as MeshStandardMaterial).
       if (m.isMeshStandardMaterial || m.isMeshPhysicalMaterial) return m;
       // Phong/Lambert/Basic → Standard. Preserve diffuse colour and map.
+      // FBX MTL files often have very dark Kd values (e.g. 0.33 0 0 for
+      // Amogus' red) that crush to black under ACES tonemap + exposure
+      // 0.9. Auto-boost the diffuse so the brightest channel reads ~0.9
+      // — preserves hue, lifts the mesh out of the shadow zone.
+      const c = m.color ? m.color.clone() : new THREE.Color(0xffffff);
+      const peak = Math.max(c.r, c.g, c.b);
+      if (peak > 0 && peak < 0.85) {
+        const boost = 0.85 / peak;
+        c.r = Math.min(1, c.r * boost);
+        c.g = Math.min(1, c.g * boost);
+        c.b = Math.min(1, c.b * boost);
+      }
       const next = new THREE.MeshStandardMaterial({
-        color: m.color ? m.color.clone() : new THREE.Color(0xffffff),
+        color: c,
         map: m.map || null,
-        roughness: 0.6,
+        roughness: 0.55,
         metalness: 0.0,
+        // Small emissive floor so the model reads even in low-light
+        // areas of the scene.
+        emissive: c.clone().multiplyScalar(0.08),
         transparent: !!m.transparent,
         opacity: m.opacity ?? 1,
         side: m.side ?? THREE.FrontSide,

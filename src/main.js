@@ -472,6 +472,25 @@ class App {
       this._applyHorizontalPan(e.deltaX * 0.003);
     }, { passive: false });
 
+    // Window-level capture for trackpad pinch-zoom. Browsers translate
+    // pinch-zoom to a wheel event with ctrlKey=true. By default that
+    // zooms the entire page, even if the cursor is over a UI element
+    // like a label or the controls panel — annoying and disorientating
+    // mid-camera-work. Intercept these globally, preventDefault, and
+    // forward to the camera dolly so the camera responds instead.
+    addEventListener("wheel", (e) => {
+      if (!e.ctrlKey) return;        // only intercept pinch-zoom
+      e.preventDefault();
+      // OrbitControls dollies with deltaY; positive = zoom out, negative = in.
+      // Apply a small log-shaped scale to mimic OrbitControls' wheel behaviour.
+      const delta = e.deltaY * 0.01;
+      const dir = this.camera.position.clone().sub(this.controls.target);
+      const dist = dir.length();
+      const newDist = Math.max(0.5, Math.min(40, dist * (1 + delta)));
+      dir.setLength(newDist);
+      this.camera.position.copy(this.controls.target).add(dir);
+    }, { passive: false, capture: true });
+
     this.portfolio = new PortfolioOverlay({
       name: "Rex Heng",
       tagline: "PPE at LSE · building at the intersection of finance, policy, and code.",

@@ -185,20 +185,27 @@ export class ProjectSystem {
     // Box3.setFromObject sees the correct geometry. We must read the bbox
     // BEFORE adding to slot.group — the slot sits at z=-60 (parked) and
     // would corrupt the bbox.
+    //
+    // When the body settles on the floor, slot.group's MJ-world position
+    // sits at z = hitbox.hz (the geom's half-height — the capsule centre).
+    // So slot.group's local y=0 is HALFWAY UP the body, not at the floor.
+    // To make the mesh's visible bottom land on the floor, we shift the
+    // mesh DOWN by hitbox.hz (so its bottom sits at slot-local y = -hitbox.hz,
+    // which is the floor in world space). Then we further compensate for
+    // the mesh's own bbox-min so the geometric bottom aligns.
     let hb = def.hitbox;
-    let offset = def.footprintOffset;
-    if (!hb || offset == null) {
+    let explicitOffset = def.footprintOffset;
+    let boxMinY = 0;
+    if (!hb || explicitOffset == null) {
       mesh.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(mesh);
       const size = box.getSize(new THREE.Vector3());
+      boxMinY = box.min.y;
       // Three frame: y-up. MJ frame: z-up. Mapping for half-extents:
       //   Three.x → MJ.hx (lateral)
       //   Three.z → MJ.hy (depth)
       //   Three.y → MJ.hz (vertical)
       if (!hb) hb = { hx: size.x / 2, hy: size.z / 2, hz: size.y / 2 };
-      // footprintOffset pushes the mesh DOWN by this amount (Three frame)
-      // so its lowest point sits at slot.group's local y=0.
-      if (offset == null) offset = -box.min.y;
     }
 
     // Per-project hitbox override. Each slot has a default 0.30×0.30×0.45
@@ -215,7 +222,14 @@ export class ProjectSystem {
       }
     }
 
-    if (offset !== 0) mesh.position.y = -offset;
+    // Position mesh so its bottom sits on the floor when the body settles.
+    // - Auto-derived: shift down by hitbox.hz, then up by -boxMinY.
+    // - Explicit: legacy convention preserved (mesh.position.y = -offset).
+    if (explicitOffset != null) {
+      if (explicitOffset !== 0) mesh.position.y = -explicitOffset;
+    } else if (hb) {
+      mesh.position.y = -hb.hz - boxMinY;
+    }
     slot.group.add(mesh);
     slot.meshGroup = mesh;
     slot.group.visible = true;
