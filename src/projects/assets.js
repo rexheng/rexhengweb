@@ -33,9 +33,28 @@ export async function preloadModel({ url, target }) {
     scene = await fbxLoader.loadAsync(url);
   }
 
+  // Helper: bbox over visible meshes only. FBX scenes routinely include
+  // empty helpers, lights, and "PivotNode" transforms that Box3.setFromObject
+  // happily folds into the bbox — yielding a recentre that puts the visible
+  // geometry well below local y=0 (which is what was making Amogus's legs
+  // sink below the floor). We only care about renderable mesh geometry.
+  const meshBox = (root) => {
+    const b = new THREE.Box3();
+    let any = false;
+    root.traverse((o) => {
+      if (!o.isMesh || !o.geometry) return;
+      o.updateMatrixWorld(true);
+      const child = new THREE.Box3().setFromObject(o);
+      if (Number.isFinite(child.min.x) && Number.isFinite(child.max.x)) {
+        if (any) b.union(child); else { b.copy(child); any = true; }
+      }
+    });
+    return any ? b : new THREE.Box3().setFromObject(root);  // fallback
+  };
+
   // 1. Scale.
   scene.updateMatrixWorld(true);
-  const box1 = new THREE.Box3().setFromObject(scene);
+  const box1 = meshBox(scene);
   const size1 = box1.getSize(new THREE.Vector3());
   const current = size1[target.axis];
   if (current > 0 && Number.isFinite(current)) {
@@ -48,7 +67,7 @@ export async function preloadModel({ url, target }) {
   // math that's easy to misread.
   scene.position.set(0, 0, 0);
   scene.updateMatrixWorld(true);
-  const box2 = new THREE.Box3().setFromObject(scene);
+  const box2 = meshBox(scene);
   const centre = box2.getCenter(new THREE.Vector3());
   scene.position.set(-centre.x, -box2.min.y, -centre.z);
 

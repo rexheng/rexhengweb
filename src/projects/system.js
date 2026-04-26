@@ -198,7 +198,18 @@ export class ProjectSystem {
     let boxMinY = 0;
     if (!hb || explicitOffset == null) {
       mesh.updateMatrixWorld(true);
-      const box = new THREE.Box3().setFromObject(mesh);
+      // Walk the mesh and union bboxes from rendered geometry only —
+      // FBX scenes can carry helper/empty nodes that pollute the bbox.
+      const box = new THREE.Box3();
+      let any = false;
+      mesh.traverse((o) => {
+        if (!o.isMesh || !o.geometry) return;
+        const child = new THREE.Box3().setFromObject(o);
+        if (Number.isFinite(child.min.x) && Number.isFinite(child.max.x)) {
+          if (any) box.union(child); else { box.copy(child); any = true; }
+        }
+      });
+      if (!any) box.setFromObject(mesh);
       const size = box.getSize(new THREE.Vector3());
       boxMinY = box.min.y;
       // Three frame: y-up. MJ frame: z-up. Mapping for half-extents:
