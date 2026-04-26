@@ -125,6 +125,16 @@ export function stab({ app, slot }) {
           data.qvel[torsoDof + 3] = -mjDy * 6;
           data.qvel[torsoDof + 4] =  mjDx * 6;
           data.qvel[torsoDof + 5] = (Math.random() - 0.5) * 3;
+          // Blood spray at contact point. MJ→THREE swizzle: (x, y, z)_mj
+          // → (x, z, -y)_three. Inverse of the THREE→MJ swizzle used for
+          // velocity above.
+          const contactPos = new THREE.Vector3(c.pos[0], c.pos[2], -c.pos[1]);
+          app.sparks?.burst({
+            pos: contactPos,
+            color: "#c51111",
+            count: 18,
+            ttlMs: 700,
+          });
           hit = true;
           return false;
         }
