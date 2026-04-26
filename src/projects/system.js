@@ -274,6 +274,18 @@ export class ProjectSystem {
     if (this._labelsHidden) labelEl.style.display = "none";
     slot.labelEl = labelEl;
 
+    // Idle hooks — abilities are user-fired; onSpawn is automatic. The
+    // returned tick (if any) lives in _activeAbilities with the same
+    // _slotBodyID tag _fireAbility uses, so _park can cancel it.
+    if (typeof def.onSpawn === "function") {
+      const tick = def.onSpawn(slot, { app: this.app, mesh: slot.meshGroup });
+      if (tick && typeof tick.tick === "function") {
+        tick._slotBodyID = slot.bodyID;
+        tick._isIdle = true;
+        this._activeAbilities.push(tick);
+      }
+    }
+
     return slot;
   }
 
