@@ -197,6 +197,17 @@ export class ProjectSystem {
     let explicitOffset = def.footprintOffset;
     let boxMinY = 0;
     if (!hb || explicitOffset == null) {
+      // Compute bbox in MESH-LOCAL frame. We zero mesh.position before
+      // updateMatrixWorld so children's world positions equal their
+      // mesh-local positions — i.e. box.min.y is the bbox bottom relative
+      // to the mesh's own origin, NOT relative to whatever recentre offset
+      // the cached scene came with. The y-overwrite below replaces
+      // mesh.position.y entirely, so reading boxMinY against the *current*
+      // position.y (which preloadModel set to -box.min.y for FBX recentre)
+      // would double-count that offset and sink the legs by exactly
+      // boxMinY of the original geometry.
+      const savedPos = mesh.position.clone();
+      mesh.position.set(0, 0, 0);
       mesh.updateMatrixWorld(true);
       // Walk the mesh and union bboxes from rendered geometry only —
       // FBX scenes can carry helper/empty nodes that pollute the bbox.
@@ -212,6 +223,9 @@ export class ProjectSystem {
       if (!any) box.setFromObject(mesh);
       const size = box.getSize(new THREE.Vector3());
       boxMinY = box.min.y;
+      // Restore original position; the y component is overwritten below.
+      mesh.position.copy(savedPos);
+      mesh.updateMatrixWorld(true);
       // Three frame: y-up. MJ frame: z-up. Mapping for half-extents:
       //   Three.x → MJ.hx (lateral)
       //   Three.z → MJ.hy (depth)
