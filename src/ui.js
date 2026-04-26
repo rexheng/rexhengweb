@@ -191,6 +191,31 @@ const CSS = `
   width: 14px;
   margin-left: -14px;
 }
+#rex-portfolio-overlay .rex-credits {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rex-rule);
+  font-family: var(--rex-font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--rex-ivory-2);
+  opacity: 0.55;
+}
+#rex-portfolio-overlay .rex-credits-label {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 4px;
+  opacity: 0.7;
+}
+#rex-portfolio-overlay .rex-credits a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--rex-amber);
+  text-underline-offset: 2px;
+}
+#rex-portfolio-overlay .rex-credits a:hover {
+  color: var(--rex-amber);
+}
 #rex-portfolio-overlay .rex-close {
   position: absolute;
   top: 10px;

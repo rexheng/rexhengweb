@@ -32,3 +32,8 @@ assets/scenes/            # MJCF XML
 ```
 
 Credits: MuJoCo (Google DeepMind, Apache-2.0), `mujoco-js`, `zalo/mujoco_wasm` (Apache-2.0) whose loader was ported.
+
+## Third-party assets
+
+- Bombardier S Stock London Underground by [timblewee](https://sketchfab.com/timblewee) — CC-BY 4.0 ([Sketchfab](https://sketchfab.com/3d-models/bombardier-s-stock-london-underground-a6718eff2dc843c48fd54376b4c70b06))
+
