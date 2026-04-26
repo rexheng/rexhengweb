@@ -1,14 +1,17 @@
 // Unified design system for all HUD surfaces floating on top of the MuJoCo scene.
 //
-// Aesthetic: editorial / museum placard. Instrument Serif for display + titles,
-// JetBrains Mono for values and small-caps labels. Ivory text on deep ink, with
+// Aesthetic: editorial / museum placard. Newsreader for display + titles,
+// IBM Plex Mono for values and small-caps labels. Ivory text on deep ink, with
 // a single burnt-amber accent reserved for active state.
 //
 // Exports injectCSS() which installs <link> tags for Google Fonts + a large inline
 // stylesheet covering every HUD class used across the app. Call once on boot.
 
+// Newsreader + IBM Plex Mono. Picked deliberately to avoid the Instrument
+// Serif / JetBrains Mono pairing that's become the default tell of
+// AI-generated portfolio templates (V0, Lovable, etc).
 const GOOGLE_FONTS_URL =
-  "https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;600&display=swap";
+  "https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap";
 
 const CSS = `
 :root {
@@ -22,8 +25,8 @@ const CSS = `
   --rex-amber-2: #e9b976;
   --rex-rule: rgba(214, 207, 188, 0.18);
   --rex-rule-strong: rgba(214, 207, 188, 0.42);
-  --rex-font-serif: "Instrument Serif", "Iowan Old Style", "Palatino", serif;
-  --rex-font-mono: "JetBrains Mono", "SF Mono", "Menlo", ui-monospace, monospace;
+  --rex-font-serif: "Newsreader", "Iowan Old Style", "Palatino", Georgia, serif;
+  --rex-font-mono: "IBM Plex Mono", "SF Mono", "Menlo", ui-monospace, monospace;
 }
 
 /* ─── Portfolio Overlay (left) ─────────────────────────────────────────── */
