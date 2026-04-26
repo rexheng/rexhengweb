@@ -123,26 +123,41 @@ export class ProjectSystem {
     const mesh = def.buildMesh();
     mesh.traverse((o) => { o.bodyID = slot.bodyID; });
 
+    // Auto-derive hitbox + footprintOffset if the def doesn't supply them.
+    // Mesh isn't in the scene yet; force-update its local matrices so
+    // Box3.setFromObject sees the correct geometry. We must read the bbox
+    // BEFORE adding to slot.group — the slot sits at z=-60 (parked) and
+    // would corrupt the bbox.
+    let hb = def.hitbox;
+    let offset = def.footprintOffset;
+    if (!hb || offset == null) {
+      mesh.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(mesh);
+      const size = box.getSize(new THREE.Vector3());
+      // Three frame: y-up. MJ frame: z-up. Mapping for half-extents:
+      //   Three.x → MJ.hx (lateral)
+      //   Three.z → MJ.hy (depth)
+      //   Three.y → MJ.hz (vertical)
+      if (!hb) hb = { hx: size.x / 2, hy: size.z / 2, hz: size.y / 2 };
+      // footprintOffset pushes the mesh DOWN by this amount (Three frame)
+      // so its lowest point sits at slot.group's local y=0.
+      if (offset == null) offset = -box.min.y;
+    }
+
     // Per-project hitbox override. Each slot has a default 0.30×0.30×0.45
-    // box geom (MJ half-extents); when a def supplies `hitbox: {hx, hy, hz}`
-    // we resize the geom so collision matches the actual silhouette instead
-    // of the one-size-fits-all default. axes: hx lateral, hy depth, hz vertical.
-    if (def.hitbox && this.app.model) {
+    // box geom; resize it so collision matches the actual silhouette
+    // instead of the one-size-fits-all default.
+    if (hb && this.app.model) {
       const model = this.app.model;
       const geomAdr = model.body_geomadr[slot.bodyID];
       if (geomAdr >= 0) {
         const base = geomAdr * 3;
-        model.geom_size[base + 0] = def.hitbox.hx;
-        model.geom_size[base + 1] = def.hitbox.hy;
-        model.geom_size[base + 2] = def.hitbox.hz;
+        model.geom_size[base + 0] = hb.hx;
+        model.geom_size[base + 1] = hb.hy;
+        model.geom_size[base + 2] = hb.hz;
       }
     }
 
-    // The slot box's bottom sits `hz` below the body origin. Each def's
-    // `footprintOffset` is the distance to push the mesh group DOWN so its
-    // visual base lands flush on the floor at rest. Default 0 keeps legacy
-    // builders that bake their own offset (e.g. Republic) untouched.
-    const offset = def.footprintOffset ?? 0;
     if (offset !== 0) mesh.position.y = -offset;
     slot.group.add(mesh);
     slot.meshGroup = mesh;
