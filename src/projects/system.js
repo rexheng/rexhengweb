@@ -116,8 +116,8 @@ export class ProjectSystem {
   // ── Lifecycle hooks ────────────────────────────────────────────────────
   onSceneLoaded() {
     // Cancel any active tick-based abilities — their scratch meshes may live
-    // on the scene root (dispatch) or attached to slot.group (sprint, pulse,
-    // swarm). Without this they'd leak across scene reloads.
+    // on the scene root (dispatch) or attached to slot.group (pulse, swarm).
+    // Without this they'd leak across scene reloads.
     for (const a of this._activeAbilities) a.cancel?.();
     this._activeAbilities = [];
 
