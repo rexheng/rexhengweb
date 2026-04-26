@@ -78,13 +78,62 @@ class App {
     };
   }
 
+  // Pan+zoom to include `spawnPos` (THREE.Vector3) alongside the humanoid.
+  // Keeps the current camera direction; just pulls back so both fit in frame.
+  // After `holdMs` the camera eases back to the default framing.
+  frameSpawn(spawnPos, holdMs = 1800) {
+    const humanoidTarget = new THREE.Vector3(...FRAMING.target);
+    // Mid-point between humanoid and spawn as the new look-at target.
+    const newTarget = humanoidTarget.clone().lerp(spawnPos, 0.5);
+    newTarget.y = Math.max(humanoidTarget.y, newTarget.y * 0.6); // keep grounded feel
+
+    // How far do we need to pull back so both points fit in the frustum?
+    const spread = humanoidTarget.distanceTo(spawnPos);
+    const fovRad = (this.camera.fov * Math.PI) / 180;
+    const minDist = (spread * 0.6) / Math.tan(fovRad / 2);
+    const currentDist = this.camera.position.distanceTo(this.controls.target);
+    const targetDist = Math.max(currentDist, minDist + 1.0);
+
+    // Keep the same horizontal bearing from the current camera position.
+    const dir = this.camera.position.clone().sub(this.controls.target).normalize();
+    const newPos = newTarget.clone().add(dir.multiplyScalar(targetDist));
+
+    this.camTween = {
+      t0: performance.now(),
+      dur: 700,
+      fromPos: this.camera.position.clone(),
+      toPos: newPos,
+      fromTarget: this.controls.target.clone(),
+      toTarget: newTarget.clone(),
+      // After hold, snap back to default framing.
+      returnAt: performance.now() + holdMs,
+    };
+  }
+
   updateCamTween() {
     if (!this.camTween) return;
-    const k = Math.min(1, (performance.now() - this.camTween.t0) / this.camTween.dur);
+    const now = performance.now();
+
+    // Trigger return-to-framing after hold period.
+    if (this.camTween.returnAt && now >= this.camTween.returnAt) {
+      const prev = this.camTween;
+      this.camTween = {
+        t0: now,
+        dur: 900,
+        fromPos: this.camera.position.clone(),
+        toPos: new THREE.Vector3(...FRAMING.camPos),
+        fromTarget: this.controls.target.clone(),
+        toTarget: new THREE.Vector3(...FRAMING.target),
+      };
+      // Don't re-trigger if user moved camera.
+      if (prev._userInterrupted) { this.camTween = null; return; }
+    }
+
+    const k = Math.min(1, (now - this.camTween.t0) / this.camTween.dur);
     const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
     this.camera.position.lerpVectors(this.camTween.fromPos, this.camTween.toPos, e);
     this.controls.target.lerpVectors(this.camTween.fromTarget, this.camTween.toTarget, e);
-    if (k >= 1) this.camTween = null;
+    if (k >= 1 && !this.camTween.returnAt) this.camTween = null;
   }
 
   // Cinematic orbit — rotates camera around the humanoid torso's world position.
@@ -312,6 +361,14 @@ class App {
     this.sparks = new Sparks(this);
     this.sparks.setEnabled(this.params.sparks);
     this.metricsHud = new MetricsHud(this);
+
+    // Group metrics + name HUD into a flex row so #hud tracks metrics width.
+    const hudRow = document.createElement("div");
+    hudRow.id = "hud-row";
+    document.body.appendChild(hudRow);
+    hudRow.appendChild(this.metricsHud.el);
+    hudRow.appendChild(document.getElementById("hud"));
+
     this.crosshair = new Crosshair(this);
     this.hoverHighlight = new HoverHighlight(this);
     this.replay = new Replay(this);
@@ -325,6 +382,34 @@ class App {
     this.setEnvironmentForGravity(this.params.gravityLabel);
 
     // Portfolio overlay — collapsible, left-anchored.
+    this._arrowKeys = { left: false, right: false, up: false, down: false };
+    this._arrowPanVelocity = 0;
+    addEventListener("keydown", (e) => {
+      const tag = (e.target?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea") return;
+      if (e.code === "ArrowLeft")  { this._arrowKeys.left  = true; e.preventDefault(); }
+      else if (e.code === "ArrowRight") { this._arrowKeys.right = true; e.preventDefault(); }
+      else if (e.code === "ArrowUp")    { this._arrowKeys.up    = true; e.preventDefault(); }
+      else if (e.code === "ArrowDown")  { this._arrowKeys.down  = true; e.preventDefault(); }
+    });
+    addEventListener("keyup", (e) => {
+      if (e.code === "ArrowLeft")  this._arrowKeys.left  = false;
+      else if (e.code === "ArrowRight") this._arrowKeys.right = false;
+      else if (e.code === "ArrowUp")    this._arrowKeys.up    = false;
+      else if (e.code === "ArrowDown")  this._arrowKeys.down  = false;
+    });
+
+    // Two-finger horizontal swipe on trackpad pans the camera.
+    // We read deltaX from wheel events (trackpads emit deltaX; mice don't).
+    // Suppress only horizontal swipes so vertical scroll / pinch-zoom still work.
+    this.renderer.domElement.addEventListener("wheel", (e) => {
+      const absX = Math.abs(e.deltaX);
+      const absY = Math.abs(e.deltaY);
+      if (absX < 2 || absY > absX * 1.5) return; // vertical-dominant or tiny: ignore
+      e.preventDefault();
+      this._applyHorizontalPan(e.deltaX * 0.003);
+    }, { passive: false });
+
     this.portfolio = new PortfolioOverlay({
       name: "Rex Heng",
       tagline: "PPE at LSE · building at the intersection of finance, policy, and code.",
@@ -549,6 +634,29 @@ class App {
     this._hintsEl.textContent = this._HINT_PRESETS[key];
   }
 
+  // Pan camera horizontally by `amount` world-units along the camera's right vector.
+  _applyHorizontalPan(amount) {
+    if (!this.camera || !this.controls) return;
+    const right = new THREE.Vector3();
+    right.setFromMatrixColumn(this.camera.matrix, 0);
+    right.y = 0;
+    right.normalize();
+    this.camera.position.addScaledVector(right, amount);
+    this.controls.target.addScaledVector(right, amount);
+  }
+
+  // Pan camera forward/back by `amount` world-units along the camera's look direction (y=0).
+  _applyForwardPan(amount) {
+    if (!this.camera || !this.controls) return;
+    const forward = new THREE.Vector3();
+    forward.setFromMatrixColumn(this.camera.matrix, 2); // -Z column = look direction
+    forward.y = 0;
+    forward.normalize();
+    // Column 2 is -forward, so negate to move toward the target.
+    this.camera.position.addScaledVector(forward, -amount);
+    this.controls.target.addScaledVector(forward, -amount);
+  }
+
   _updatePauseChip() {
     if (!this._pauseChip) return;
     const shouldShow = !!this.params.paused;
@@ -565,6 +673,13 @@ class App {
     this._lastFrameMs = now;
     this.updateCamTween();
     this.updateCinematicOrbit(Math.min(frameDt, 0.05));
+    if (this._arrowKeys) {
+      const dt = Math.min(frameDt, 0.05);
+      const h = (this._arrowKeys.right ? 1 : 0) - (this._arrowKeys.left ? 1 : 0);
+      const f = (this._arrowKeys.up ? 1 : 0) - (this._arrowKeys.down ? 1 : 0);
+      if (h !== 0) this._applyHorizontalPan(h * 3.5 * dt);
+      if (f !== 0) this._applyForwardPan(f * 3.5 * dt);
+    }
     this.controls.update();
     if (this._skyMat) this._skyMat.uniforms.uTime.value = now * 0.001;
     this.applyWind();

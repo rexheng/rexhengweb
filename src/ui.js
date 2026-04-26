@@ -506,10 +506,19 @@ const CSS = `
 }
 
 /* ─── HUD surfaces ─────────────────────────────────────────────────────── */
-#hud {
+#hud-row {
   position: fixed;
   bottom: 22px;
-  left: 214px;
+  left: 22px;
+  z-index: 10;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 16px;
+  pointer-events: none;
+}
+#hud-row > * { pointer-events: auto; }
+#hud {
   pointer-events: none;
   z-index: 8;
   font-family: var(--rex-font-mono);
@@ -556,10 +565,6 @@ const CSS = `
 }
 
 #metrics-hud {
-  position: fixed;
-  bottom: 22px;
-  left: 22px;
-  z-index: 10;
   font-family: var(--rex-font-mono);
   font-size: 10px;
   color: var(--rex-ivory-2);
@@ -1001,16 +1006,18 @@ canvas { touch-action: none; }
   #rex-controls .rex-panel-title-main { display: none; }
   #rex-controls .rex-panel-title-tag  { display: none; }
 
-  /* Compact HUD — title bottom-left, metrics float to the right of it. */
-  #hud {
-    left: 12px;
+  /* On mobile break the flex row apart: hud stays bottom-left,
+     metrics moves to bottom-right as its own fixed element. */
+  #hud-row {
     bottom: 12px;
-    max-width: calc(100vw - 24px);
+    left: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    /* Only #hud stays in this corner — metrics is repositioned below. */
   }
-  #hud h1 { font-size: 18px; }
-  #hud p { font-size: 9px; }
-
-  #metrics-hud {
+  #hud-row #metrics-hud {
+    position: fixed;
     bottom: 12px;
     right: 12px;
     left: auto;
@@ -1018,6 +1025,11 @@ canvas { touch-action: none; }
     padding: 8px 10px;
     font-size: 9px;
   }
+  #hud {
+    max-width: calc(100vw - 24px);
+  }
+  #hud h1 { font-size: 18px; }
+  #hud p { font-size: 9px; }
   #metrics-hud .m-head { font-size: 8px; }
   #metrics-hud .m-label { font-size: 8.5px; }
 
@@ -1067,8 +1079,8 @@ canvas { touch-action: none; }
 @supports (padding: max(0px)) {
   @media (max-width: 820px) {
     #rex-controls { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
-    #hud { left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); }
-    #metrics-hud { right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); }
+    #hud-row { left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); }
+    #hud-row #metrics-hud { right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); }
   }
 }
 
