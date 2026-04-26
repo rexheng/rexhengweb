@@ -529,8 +529,14 @@
       transition: filter 240ms ease;
     }
     .entry:hover .entry-logo { filter: grayscale(0) opacity(1); }
-    /* Wide wordmark: needs less height to avoid dominating the meta column */
-    .entry-logo[data-logo="dbs"] { height: 24px; }
+    /* Per-logo height overrides for equal visual weight (~3000px²) */
+    .entry-logo[data-logo="lse"]         { height: 32px; }
+    .entry-logo[data-logo="raffles"]     { height: 48px; }
+    .entry-logo[data-logo="dbs"]         { height: 30px; }
+    .entry-logo[data-logo="pwc"]         { height: 48px; }
+    .entry-logo[data-logo="ccn"]         { height: 48px; }
+    .entry-logo[data-logo="saf"]         { height: 48px; }
+    .entry-logo[data-logo="blackfriars"] { height: 48px; }
 
     /* ─── Project card logos ─── */
     .pc-logo {
@@ -541,6 +547,9 @@
       transition: filter 220ms ease;
     }
     .project-card:hover .pc-logo { filter: grayscale(0) opacity(1); }
+    /* Wide wordmarks: reduced height to maintain ~400px² visual weight */
+    .pc-logo[data-logo="sig"] { height: 12px; }
+    .pc-logo[data-logo="nhs"] { height: 12px; }
   </style>
 </head>
 <body>
@@ -553,8 +562,8 @@
   <div class="cv-shell">
 
     <header class="hero">
-      <h1 class="hero-name">Rex <em>Heng</em></h1>
-      <p class="hero-intro">Philosophy, Politics and Economics at <em>LSE</em> · UC Berkeley. 6× hackathon wins. Laidlaw Scholar. Prior experience at PwC, DBS, Boeing, and as a Lieutenant in the Singapore Armed Forces.</p>
+      <h1 class="hero-name">Rex Heng</h1>
+      <p class="hero-intro">Philosophy, Politics and Economics at LSE | UC Berkeley<br>6× Hackathon wins · Laidlaw Scholar<br>Experience at PwC, DBS, and Lieutenant in Singapore Armed Forces</p>
     </header>
 
     <!-- ─── Education ─── -->
@@ -738,7 +747,7 @@
           <div class="pc-links">
             <a href="https://tfl-lsoa-visual.vercel.app" target="_blank" rel="noopener noreferrer">LSOA Explorer</a>
             <a href="https://tfl-node-sim.vercel.app" target="_blank" rel="noopener noreferrer">Network Sim</a>
-            <img class="pc-logo" src="logos/sig.svg" alt="Susquehanna International Group" height="20" loading="lazy" style="margin-left: auto">
+            <img class="pc-logo" data-logo="sig" src="logos/sig.svg" alt="Susquehanna International Group" height="20" loading="lazy" style="margin-left: auto">
           </div>
         </article>
 
@@ -814,7 +823,7 @@
           </div>
           <div class="pc-links">
             <a href="https://inform-eight.vercel.app" target="_blank" rel="noopener noreferrer">Live</a>
-            <img class="pc-logo" src="logos/nhs.png" alt="NHS" height="20" loading="lazy" style="margin-left: auto">
+            <img class="pc-logo" data-logo="nhs" src="logos/nhs.png" alt="NHS" height="20" loading="lazy" style="margin-left: auto">
           </div>
         </article>
 
