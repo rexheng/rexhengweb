@@ -70,15 +70,6 @@ export class PortfolioOverlay {
     if (this.tagline) panel.appendChild(taglineEl);
     if (this.links.length) panel.appendChild(linksEl);
 
-    // Third-party asset credits — required by CC-BY licences. See spec §3.8.
-    const credits = document.createElement("div");
-    credits.className = "rex-credits";
-    credits.innerHTML = `
-      <div class="rex-credits-label">Third-party assets</div>
-      <div class="rex-credit">Bombardier S Stock by timblewee — CC-BY 4.0 (<a href="https://sketchfab.com/timblewee" target="_blank" rel="noopener noreferrer">sketchfab.com/timblewee</a>)</div>
-    `;
-    panel.appendChild(credits);
-
     const cta = document.createElement("a");
     cta.className = "rex-cta";
     cta.href = "/cv/";
