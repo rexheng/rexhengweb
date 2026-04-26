@@ -66,6 +66,29 @@ function validate(def, path) {
       return false;
     }
   }
+  if (def.onSpawn != null && typeof def.onSpawn !== "function") {
+    console.error(`[projects] ${path}: onSpawn must be a function`);
+    return false;
+  }
+  if (def.fbx != null) {
+    if (typeof def.fbx.url !== "string"
+        || !def.fbx.target
+        || typeof def.fbx.target.axis !== "string"
+        || typeof def.fbx.target.value !== "number") {
+      console.error(`[projects] ${path}: fbx must be { url: string, target: { axis: string, value: number } }`);
+      return false;
+    }
+  }
+  if (def.abilityFbx != null) {
+    if (typeof def.abilityFbx.url !== "string"
+        || !def.abilityFbx.target
+        || typeof def.abilityFbx.target.axis !== "string"
+        || typeof def.abilityFbx.target.value !== "number"
+        || typeof def.abilityFbx.cacheKey !== "string") {
+      console.error(`[projects] ${path}: abilityFbx must be { url, target: { axis, value }, cacheKey }`);
+      return false;
+    }
+  }
   return true;
 }
 
