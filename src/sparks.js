@@ -93,13 +93,68 @@ export class Sparks {
     }
   }
 
+  /**
+   * One-shot particle burst. Bypasses the contact-spike scan; writes
+   * particles directly into the SoA buffer. Runs unconditionally — it
+   * does NOT respect this.enabled, so callers like the stab blood-spray
+   * fire even when the Sparks toggle is off.
+   *
+   * Documented limitation: if the Sparks toggle is flipped OFF while a
+   * burst is in flight, those particles are wiped (setEnabled zeroes
+   * the SoA arrays). Acceptable — toggling mid-burst is rare.
+   *
+   * @param {{ pos: THREE.Vector3, color?: string, count?: number,
+   *           speedMin?: number, speedMax?: number, ttlMs?: number }} opts
+   */
+  burst({ pos, color = "#c51111", count = 18,
+          speedMin = 1.4, speedMax = 4.0, ttlMs = 700 }) {
+    // Parse once; PointsMaterial vertexColors expects 0..1 floats.
+    const tmpCol = new THREE.Color(color);
+    const r = tmpCol.r, g = tmpCol.g, b = tmpCol.b;
+    const lifeSec = ttlMs / 1000;
+
+    for (let i = 0; i < count; i++) {
+      const idx = this.cursor;
+      this.cursor = (this.cursor + 1) % MAX_PARTICLES;
+      const j = idx * 3;
+
+      // Hemisphere bias (matches _spawnHit so the visual reads consistent).
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(1 - Math.random() * 0.85);
+      const sx = Math.sin(phi) * Math.cos(theta);
+      const sy = Math.cos(phi);
+      const sz = Math.sin(phi) * Math.sin(theta);
+      const speed = speedMin + Math.random() * (speedMax - speedMin);
+
+      this.pos[j + 0] = pos.x;
+      this.pos[j + 1] = pos.y;
+      this.pos[j + 2] = pos.z;
+      this.vel[j + 0] = sx * speed;
+      this.vel[j + 1] = sy * speed;
+      this.vel[j + 2] = sz * speed;
+
+      this.col[j + 0] = r;
+      this.col[j + 1] = g;
+      this.col[j + 2] = b;
+
+      this.age[idx] = 0;
+      this.life[idx] = lifeSec;
+    }
+
+    // Make sure the points are visible and the draw range covers the
+    // full ring buffer. update() will tick them down on its own.
+    this.points.visible = true;
+    this.points.geometry.setDrawRange(0, MAX_PARTICLES);
+  }
+
   update() {
     const nowMs = performance.now();
     const dt = Math.min(0.05, (nowMs - this._lastUpdateMs) / 1000);
     this._lastUpdateMs = nowMs;
 
-    // Advance live particles
-    if (this.enabled) {
+    // Advance live particles regardless of `enabled` — burst() can spawn
+    // particles even when the toggle is off (e.g. stab blood spray).
+    {
       for (let i = 0; i < MAX_PARTICLES; i++) {
         if (this.life[i] <= 0) continue;
         const j = i * 3;
