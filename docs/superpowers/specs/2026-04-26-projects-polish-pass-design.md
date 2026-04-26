@@ -13,21 +13,21 @@ Nine discrete fixes and features against the project sprite system, batched
 into one spec because they touch overlapping surfaces (`ProjectSystem`, the
 ability registry, the catalog, controls panel, and the camera tween). Doing
 them as nine separate specs would duplicate context-loading work and miss
-the systemic chances — especially the **auto-derived hitbox** change in §10,
+the systemic chances — especially the **auto-derived hitbox** change in §3.9,
 which lets us delete every `hitbox: { hx, hy, hz }` line in the catalog
 once it's in.
 
 Three of the nine are sprite rebuilds (Musicity, Oliver Wyman, Olympic
-Way), three are ability changes (stab calibration + bleed, roomba, dune-worm
-train), and three are systemic (label toggle, spawn-focus camera, hold-G
-drag-rotate, hitbox auto-derive — the last is bundled with the ability
-work). Several are small enough that they'd be one-liners in isolation but
-need to be designed together so we don't ship three contradictory hitbox
-strategies.
+Way), three are ability changes (stab calibration + bleed, roomba,
+dune-worm train), and three are systemic (label toggle, spawn-focus
+camera, hold-G drag-rotate). Hitbox auto-derive is the cross-cutting
+tenth. Several are small enough that they'd be one-liners in isolation
+but need to be designed together so we don't ship three contradictory
+hitbox strategies.
 
-Out of scope: changing the catalog schema, refactoring `materials.js`,
-touching the MuJoCo XML, mobile-specific UX (existing mobile shell
-unchanged), CV/portfolio overlay.
+Out of scope: changing the catalog schema beyond an optional `onSpawn`,
+refactoring `materials.js`, touching the MuJoCo XML, mobile-specific UX
+(existing mobile shell unchanged), CV/portfolio overlay.
 
 ## 2. Scope of changes
 
@@ -73,22 +73,34 @@ internals.
 ### 3.2 Camera close-up on spawn
 
 **Surface:** `App.frameSpawnCloseup(spawnPos, holdMs = 1500)`. Replaces
-the call to `frameSpawn()` from the spawn flow (currently invoked from
-the catalog action handler in `controlsPanel.js` — confirm at impl time).
+the call to `frameSpawn()` from the spawn flow. The spawn flow's catalog
+action handler lives in `src/controlsPanel.js` (the project-row click
+handler that calls `app.projectSystem.spawn(id)` then triggers the
+camera move via `showSpawnToast` integration). Replace that
+`frameSpawn` call with `frameSpawnCloseup`. If the call site moves to
+`ProjectSystem.spawn()` instead, route through `app.frameSpawnCloseup`.
 
 **Tween shape:**
-1. From current camera state.
-2. To: a point ~1.4m from `spawnPos` on the camera's existing horizontal
-   bearing, looking at `spawnPos`. Camera Y is `spawnPos.y + 0.4` so the
-   sprite isn't shot directly from below.
-3. Hold `holdMs` (default 1500ms).
-4. Return to default `FRAMING.camPos`/`FRAMING.target` over 900ms (matches
-   `frameCamera()`).
+1. **Inbound** — 700ms ease from current camera state to close-up pose.
+2. **Pose** — a point `1.4m` from `spawnPos` on the camera's existing
+   horizontal bearing, looking at `spawnPos`. Camera Y is
+   `spawnPos.y + 0.4` so the sprite isn't shot directly from below.
+3. **Hold** — `holdMs` (default 1500ms) at the close-up pose.
+4. **Return** — 900ms ease back to default `FRAMING.camPos`/`FRAMING.target`
+   (matches `frameCamera()`).
 
-**User-interrupt handling:** Existing `camTween` already supports
-`returnAt`. Reuse the pattern. If the user touches the orbit controls
-during the close-up, drop the tween (existing OrbitControls behaviour will
-fight it; we already detect this elsewhere — confirm and reuse).
+Total nominal duration: 700 + 1500 + 900 = 3100ms.
+
+**User-interrupt handling.** Existing `camTween` already supports
+`returnAt`. The pattern at `src/main.js:71-137` records
+`prev._userInterrupted` if user input arrives during the return phase
+and discards the tween. Detection happens via OrbitControls' `start`
+event, which fires when the user touches mouse/touch — wire a one-shot
+listener at `frameSpawnCloseup` start that sets
+`this.camTween._userInterrupted = true`. If the listener fires during
+the **inbound** or **hold** phase, snap-cancel the tween immediately
+(set `this.camTween = null`) — the user clearly wants control back,
+don't fight them.
 
 **Why a new method, not modifying `frameSpawn`:** `frameSpawn` is the old
 "include both humanoid and sprite in frame" tween. Keep it for any future
@@ -109,6 +121,16 @@ This makes near-spawns less violent and very far spawns hit cap. The
 clamp prevents (a) zero-distance edge cases and (b) keeps the upper
 bound at the previously-tuned ceiling so we don't get cosmic
 ray-through-the-room behaviour.
+
+**Upward bias scaling.** Current code at `stab.js:60` adds `+ 2.5` to the
+lunge's z-velocity (upward bias so Amogus arcs slightly rather than
+ground-skidding). Bias must scale with `speed`, otherwise short-range
+stabs get a proportionally enormous lift. New formula:
+
+```
+const upwardBias = 2.5 * (speed / 22)   // → 0.91..2.5 over the speed range
+data.qvel[dofAdr + 2] = mjDz * speed + upwardBias
+```
 
 **Knockback proportional.** Current `KNOCK_SPEED = 7.5` becomes:
 
@@ -157,13 +179,23 @@ const contactPos = new THREE.Vector3(c.pos[0], c.pos[2], -c.pos[1]);
 app.sparks?.burst({ pos: contactPos, color: "#c51111", count: 18, ttlMs: 700 });
 ```
 
-**Why force the burst even when Sparks is disabled.** The user toggles
-"Sparks" to disable the noisy contact-driven sparks (debug visual). Blood
-spray is *narrative* — it should fire on the stab regardless of the
-Sparks toggle. So: `Sparks.burst()` runs even when `enabled === false`;
-it sets `points.visible = true` on first burst and the live-particle
-update path advances them regardless of `enabled`. Add a guard so the
-contact-spike scan still respects `enabled`.
+**Sparks visibility model — burst vs. setEnabled.** Today's
+`Sparks.setEnabled(false)` (`src/sparks.js:53-61`) is destructive: it
+zeroes `age`/`life`, sets `points.visible = false`, and resets the draw
+range. That's appropriate for the "Sparks toggle" UX intent (debug
+visual off → all visuals stop). Blood spray is narrative and must fire
+even when the toggle is off.
+
+**Resolution:** `burst()` runs unconditionally. It writes particles into
+the SoA buffer and sets `points.visible = true`. The live-particle
+update path in `update()` advances them regardless of `enabled`. The
+**contact-spike scan** at the bottom of `update()` continues to respect
+`enabled`. **Documented limitation:** if the user toggles Sparks off
+*while a blood burst is in flight*, those particles are wiped (because
+`setEnabled(false)` zeroes the SoA arrays). This is acceptable — toggling
+off mid-stab is rare, and segregating the burst into a separate buffer
+would double the particle pipeline for a corner case. Filed as a known
+limitation in §6.
 
 **Why piggyback on Sparks at all.** Avoids duplicating the SoA buffer +
 Points geometry + GPU upload pipeline. One particle system, one render
@@ -300,17 +332,46 @@ const PALETTES = [
 
 **Cycle timing:** 2.5s per palette, smooth crossfade between adjacent
 palettes. Lives in the `chord` ability? **No** — the cycle is the
-sprite's idle animation, runs always once mounted. Implementation:
-the def includes an `onSpawn(slot)` hook (new optional field — see
-catalog schema impact below) that registers a per-frame tick into
-`ProjectSystem._activeAbilities` (same lifecycle as ability ticks but
-with no TTL and a `cancel` that removes it on park).
+sprite's idle animation, runs always once mounted.
 
-The existing `chord` ability stays intact for the "Play!" button — it
-already does a chord-flash on the materials; with the cycle running, we
-let `chord` snap to its highlight colour and the cycle resumes after
-the chord ends (clean handoff: `chord` records the cycle's current
-phase, plays the highlight, then writes the phase back).
+**Implementation.** The def includes an `onSpawn(slot, ctx)` hook (new
+optional field — see catalog schema impact below). On spawn, the hook
+constructs a tick object:
+
+```js
+{
+  _slotBodyID: slot.bodyID,    // required so _park can cancel it
+  _isIdle: true,               // flag — onSceneLoaded must NOT cancel idle ticks unconditionally
+  tick(dtMs) {
+    /* advance phase, write colours into InstancedMesh materials, return true */
+  },
+  cancel() { /* nothing — colours don't need restoring */ },
+}
+```
+
+`ProjectSystem.spawn()` pushes the tick into `_activeAbilities` after
+the mesh is mounted. `_park(slot)` already filters by `_slotBodyID`
+(`src/projects/system.js:225-233`) — the cycle is cancelled when the
+slot is parked, identical to ability ticks.
+
+**Scene-reload cancellation.** `onSceneLoaded()` (`system.js:60-65`)
+currently calls `a.cancel?.()` for *every* active ability and clears
+the array. Idle ticks must follow the same path — they're cancelled,
+then re-registered when `spawn()` re-mounts the slot's project.
+**Important:** the spawn flow doesn't auto-re-spawn projects on scene
+reload (it parks all slots and the user re-spawns from controls). So
+idle ticks naturally die with their sprites; no special handoff
+needed. Document this in code so the next reader doesn't bolt on an
+"idle re-register" path that isn't required.
+
+**Chord handoff.** The existing `chord` ability flashes material
+colours then restores. With the cycle running, the restore target
+must be the cycle's *current* colour, not a stale module-level
+constant. Implementation: at flash time, `chord` reads the current
+`material.color.getHex()` of each affected InstancedMesh material,
+flashes, then restores from the captured hex. **Single mechanism** —
+colour-snapshot at flash-time, not phase-write-back. (The earlier
+"phase write-back" framing was wrong; ignore it.)
 
 **Why InstancedMesh.** 4-floor apartment has ~250 wall voxels alone;
 3 floor mesh sets = 750+ Mesh objects per sprite is a draw-call cliff.
@@ -320,15 +381,44 @@ InstancedMesh = 3 draw calls regardless of voxel count.
 ability.** Idle animation ≠ ability — abilities are user-fired; the cycle
 is automatic. Adding `onSpawn(slot)` to the def schema generalises:
 future projects could use it for hover bobs, idle particle puffs, etc.
-The existing validator in `index.js` should accept (and ignore) defs
-without it.
+
+**Catalog validator update.** `src/projects/index.js:42-70` validates each
+def. Add an entry that, if `def.onSpawn` is present, asserts it's a
+function. If absent, no-op. Defs without `onSpawn` continue to validate.
 
 ### 3.7 Oliver Wyman → extruded logo + roomba
 
-**Logo geometry:** `THREE.ExtrudeGeometry` from a manually-traced 2D
-`THREE.Shape` of the OW infinity-style mark. Trace coordinates derived
-from the SVG path of the logo image the user supplied (or the public
-brand asset). Extrude depth `0.04` MJ-units. Material:
+**Logo geometry:** `THREE.ExtrudeGeometry` from a hand-traced 2D
+`THREE.Shape`. Tracing strategy: **hand-trace by eye in code** — the OW
+mark is two stylised "V" forms meeting at a centre point, roughly an
+italic infinity. We pick 8 control points and connect with a mix of
+`lineTo` and `bezierCurveTo`. The exact path goes in
+`oliver-wyman/build.js` as a local helper `buildOWLogoShape(THREE)`:
+
+```js
+function buildOWLogoShape(THREE) {
+  const s = new THREE.Shape();
+  // Approximation — refine to match brand mark in build phase.
+  // Width 1.0, height 0.6, centred at origin in the X/Y plane.
+  s.moveTo(-0.50,  0.30);
+  s.lineTo(-0.20, -0.30);
+  s.lineTo( 0.00,  0.05);
+  s.lineTo( 0.20, -0.30);
+  s.lineTo( 0.50,  0.30);
+  s.lineTo( 0.30,  0.30);
+  s.lineTo( 0.10, -0.05);
+  s.lineTo(-0.10, -0.05);
+  s.lineTo(-0.30,  0.30);
+  s.closePath();
+  return s;
+}
+```
+
+Coordinates are sketch-quality; refine during execute phase to match
+the actual brand mark. Acceptance criterion (§5.8) only requires "reads
+as the OW mark from 3m away" — no pixel-perfect match needed.
+
+**Extrude:** depth `0.04` MJ-units. Material:
 `MeshStandardMaterial({ color: "#002554" })` (OW navy).
 
 **Backing plate:** Thin white `BoxGeometry`, ~`1.4*D × 1.0*D × 0.05*D`,
@@ -339,12 +429,6 @@ to read against from behind / oblique angles.
 `pedestalR/pedestalH` values from `proportions.js` (the running track and
 scatter dots get deleted; pedestal stays as the standee base).
 
-**Tracing the shape.** The OW logo is two lozenges meeting at a centre —
-roughly an italic "OW" infinity. We trace it in code with a few
-`moveTo`/`lineTo`/`bezierCurveTo` calls. Implementation may iterate to
-match the brand mark; the sketch goes in `oliver-wyman/build.js` as a
-local helper (`buildOWLogoShape(THREE)`).
-
 **Why ExtrudeGeometry over an SVGLoader fetch.** SVGLoader requires
 shipping or fetching an SVG file. Hard-coded shape commands keep the
 catalog 100% offline-buildable, matches the rest of the catalog's "all
@@ -354,7 +438,9 @@ by hand.
 #### 3.7a Roomba ability
 
 **Replaces:** `sprint` (delete `src/projects/abilities/sprint.js`; remove
-its export from `abilities/index.js`).
+its export from `abilities/index.js`). No other catalog def references
+`"sprint"` — Oliver Wyman is the sole consumer (verified against
+`src/projects/catalog/*/index.js`).
 
 **File:** `src/projects/abilities/roomba.js`.
 
@@ -421,21 +507,41 @@ elsewhere; just stop wiring it to Olympic Way's def).
 
 **Trajectory parented to scene root** (not slot.group) so the train
 moves through the world independently of the Olympic Way roundel
-sprite. Same pattern as `dispatch.js`.
+sprite. Same pattern as `dispatch.js`. The fixed scene-edge endpoints
+`(±4, 0)` are *world* coords, intentionally decoupled from the sprite's
+spawn position — the train is a world phenomenon, not a sprite-local
+effect. Roundel sprite's actual location does not affect the trajectory.
 
-**Knockback on contact:** Per-frame, walk `data.contact` array. Any
-contact between a train geom (we have no MuJoCo bodies for the train —
-it's pure Three.js scratch mesh) and a humanoid/sprite geom is
-impossible to detect via `data.contact`. Workaround: every frame,
-compute the train's bounding box and intersect with each tracked
-body's world position. On hit, write a strong qvel impulse to that
-body's freejoint:
+**Knockback on contact (bbox-vs-bbox).** The train has no MuJoCo
+collision geoms (it's a Three.js scratch mesh), so `data.contact` won't
+list it. Per-frame:
 
-```
-qvel[dofAdr+0] = trainVelocity.x * 0.6
-qvel[dofAdr+1] = trainVelocity.y * 0.6
-qvel[dofAdr+2] = 6.0  // upward toss
-qvel[dofAdr+3..5] = random tumble
+1. Compute the train's world-AABB once (`new THREE.Box3().setFromObject(trainGroup)`).
+2. For each tracked body (humanoid bodies + sprite slots), compute its
+   world-AABB by walking `app.bodies[bodyID]` (group with mesh
+   children) — `Box3().setFromObject(bodyGroup)`.
+3. If the two AABBs intersect (`trainBox.intersectsBox(bodyBox)`),
+   apply knockback to that body.
+
+This is **bbox-vs-bbox** from the start (not a fallback) because the
+humanoid is articulated with ~14 bodies — single-point intersection
+misses limbs that aren't co-located with the body root.
+
+**Knockback impulse.** Convert the train's velocity (Three frame) to MJ
+frame using the canonical swizzle from `stab.js:28-31`:
+
+```js
+// Three (x, y, z)_three → MJ (x, -z, y)_mj
+const mjVx = trainVel.x;
+const mjVy = -trainVel.z;
+const mjVz = trainVel.y;
+
+qvel[dofAdr + 0] = mjVx * 0.6;
+qvel[dofAdr + 1] = mjVy * 0.6;
+qvel[dofAdr + 2] = 6.0;             // upward toss in MJ +z
+qvel[dofAdr + 3] = (Math.random() - 0.5) * 8;
+qvel[dofAdr + 4] = (Math.random() - 0.5) * 8;
+qvel[dofAdr + 5] = (Math.random() - 0.5) * 8;
 ```
 
 Hit cooldown: 200ms per body so a body inside the bounding box doesn't
@@ -460,29 +566,69 @@ def's comment block — the calculation is documented but manual). Drift
 risk: any mesh tweak invalidates the hitbox values.
 
 **Replace with:** `ProjectSystem._deriveHitbox(meshGroup)` runs once at
-spawn, computes:
+spawn, **after** the mesh is added to `slot.group` and matrices are
+flushed. Order of operations in `spawn()`:
 
 ```js
-const box = new THREE.Box3().setFromObject(meshGroup);
-const size = box.getSize(new THREE.Vector3());
-const halfExtents = { hx: size.x/2, hy: size.z/2, hz: size.y/2 };
-const footprintOffset = -box.min.y;  // mesh feet sit at y=0 after offset
+// 1. Build mesh and attach.
+const mesh = def.buildMesh();
+mesh.traverse((o) => { o.bodyID = slot.bodyID; });
+
+// 2. Auto-derive hitbox (only if def doesn't override).
+let hb = def.hitbox;
+let offset = def.footprintOffset;
+if (!hb || offset == null) {
+  // Mesh isn't in the scene yet; force-update its local matrices so
+  // Box3.setFromObject sees the correct geometry.
+  mesh.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(mesh);
+  const size = box.getSize(new THREE.Vector3());
+  // Three frame: y-up. MJ frame: z-up. Mapping for half-extents:
+  //   Three.x → MJ.hx
+  //   Three.z → MJ.hy   (MJ y is what Three calls -z)
+  //   Three.y → MJ.hz   (MJ z is what Three calls y)
+  if (!hb) hb = { hx: size.x / 2, hy: size.z / 2, hz: size.y / 2 };
+  // footprintOffset pushes the mesh DOWN by this amount (Three frame)
+  // so its lowest point sits at slot.group's local y=0. box.min.y is in
+  // Three frame, so offset = -box.min.y is correct.
+  if (offset == null) offset = -box.min.y;
+}
+
+// 3. Apply offset and write to MuJoCo geom_size (existing branch).
+if (offset !== 0) mesh.position.y = -offset;
+slot.group.add(mesh);
+slot.meshGroup = mesh;
+slot.group.visible = true;
+
+if (hb && this.app.model) {
+  const model = this.app.model;
+  const geomAdr = model.body_geomadr[slot.bodyID];
+  if (geomAdr >= 0) {
+    const base = geomAdr * 3;
+    model.geom_size[base + 0] = hb.hx;
+    model.geom_size[base + 1] = hb.hy;
+    model.geom_size[base + 2] = hb.hz;
+  }
+}
 ```
 
-Note the axis swizzle: MuJoCo's `geom_size[0,1,2]` is (x, y, z) in
-MJ frame, where MJ +z is up. Three's box uses Three frame where +y is
-up. The slot loader maps MJ-z → Three-y. So Three's `size.y` becomes
-MJ's `hz`, Three's `size.z` becomes MJ's `hy`.
+The order matters: `_deriveHitbox` reads the mesh BEFORE `slot.group.add`
+because the slot group sits at z=-60 (parked) and includes a y-offset
+that would corrupt the bbox. We force-update the mesh's matrices in its
+local frame and read the local-frame bbox there.
 
-**Override mechanism:** A def may still supply explicit `hitbox` /
-`footprintOffset` values. If present, they win. So the migration is
-non-breaking: existing values stay until we delete them per-project.
+**Override mechanism:** A def that supplies explicit `hitbox` /
+`footprintOffset` (either or both) skips auto-derive for the supplied
+field(s) only. Example: a sprite with a long antenna may want
+auto-derived `footprintOffset` (correct floor placement) but a manual
+`hitbox` that excludes the antenna from the collider. Both fields are
+checked independently.
 
 **Cleanup pass:** After the new derive code is in and verified, delete
 the explicit `hitbox` / `footprintOffset` lines from all 11 catalog
-defs. Sprites that still need a tighter hitbox than the bounding box
-(rare — usually a long backpack we don't want in the collider) keep
-their explicit override.
+defs in **a single dedicated commit** (so it's easy to revert if any
+sprite misbehaves). Sprites that genuinely need a tighter hitbox than
+the bounding box keep their explicit override.
 
 **Why now:** Republic, Amogus, Olympic Way and Musicity all show signs
 of hitbox drift in the user's QA — labels floating above ground because
@@ -495,18 +641,28 @@ cohort; manual fixes would just kick the can.
 the sprite mesh has no click handler, so users can't open the card
 without un-hiding labels.
 
-**Add:** A click hit-test in the existing pointer-event pipeline.
-`HoverHighlight` already raycasts against grabbables and tracks the
-hovered body — we extend the existing left-click handler (or add one in
-`ProjectSystem`) to:
-1. On `mousedown` (left button), if no grab is active and no other UI
-   intercepts, raycast against `app.getGrabbables()`.
-2. If hit `bodyID` matches any `slot.bodyID` with `slot.project`, open
-   that slot's card.
-3. Don't suppress grab — clicking the sprite should *both* open the card
-   and start grab. If that conflicts in practice, gate card-open behind
-   "click without drag" (mouseup within 200ms of mousedown, no movement
-   > 4px).
+**Owner:** `ProjectSystem`. Extend `_bindEvents()` (currently
+`src/projects/system.js:47-57`) to bind `mousedown` and `mouseup` on
+`window` (not the renderer canvas — pointer events on canvas are
+already consumed by `Grabber`).
+
+**Click-vs-drag gating.** Mousedown captures `{x, y, t}`. Mouseup
+checks `(t_up - t_down) < 200ms` and `Math.hypot(dx, dy) < 4px`. Only
+clicks (not drags) trigger card-open. This is **required** so grab and
+card-open coexist on the same left button — without it, every grab
+would fire a card-open at release.
+
+**Raycast.** On qualifying click:
+1. Build a `Raycaster` with the screen-space click point.
+2. Raycast against `app.getGrabbables()` (existing method on `App`,
+   defined at `src/main.js:517-519`, returns all grabbable meshes
+   whose `bodyID > 0`).
+3. If the first hit's `bodyID` matches a `slot.bodyID` with
+   `slot.project`, call `this.showCard(slot)`.
+
+Don't suppress grab — grab triggers on mousedown, card-open triggers
+on a successful click-without-drag at mouseup. They use the same
+button without conflict because they're on different events.
 
 **Edge:** Hide-labels mode + click sprite = card opens. With labels
 visible, label-click and sprite-click both open the card; redundant but
@@ -525,6 +681,7 @@ effect on `ProjectSystem`. Cleaner ownership.
 | `src/controlsPanel.js`                        | Hide-labels checkbox in Effects section             |
 | `src/grabber.js`                              | Bail early when `app._gKeyHeld`                     |
 | `src/sparks.js`                               | New public `burst(opts)` method; `enabled` semantics |
+| `src/projects/index.js`                       | Validator accepts optional `onSpawn` function       |
 | `src/projects/system.js`                      | `_deriveHitbox`, `setLabelsHidden`, `onSpawn` hook, sprite raycast click |
 | `src/projects/abilities/index.js`             | Drop `sprint`; add `roomba`, `dune-worm`            |
 | `src/projects/abilities/sprint.js`            | DELETE                                              |
@@ -543,18 +700,19 @@ effect on `ProjectSystem`. Cleaner ownership.
 | `src/projects/catalog/oliver-wyman/index.js`  | `ability: "roomba"`; drop `footprintOffset`         |
 | `src/projects/catalog/olympic-way/index.js`   | `ability: "dune-worm"`; drop `footprintOffset`      |
 
-Per-project hitbox/footprintOffset deletions in §3.9 cleanup pass span
-all 11 catalog `index.js` files; only the four above are listed because
-they're already touched for other reasons.
+The §3.9 cleanup-pass commit additionally deletes `hitbox` /
+`footprintOffset` lines from the remaining seven catalog defs not
+listed here (they're untouched by other work).
 
 ## 5. Acceptance criteria
 
 1. **Hide-labels:** toggling the checkbox in Controls > Effects hides
    all visible label pills within one frame; reload preserves state.
 2. **Spawn close-up:** spawning any project from Controls > Projects
-   triggers a 700ms tween into a close-up frame, holds 1.5s, returns
-   to humanoid framing over 900ms. User-initiated camera input cancels
-   the auto-return.
+   triggers a 700ms inbound tween, holds 1.5s, returns to humanoid
+   framing over 900ms (3100ms total). Camera input during inbound or
+   hold snap-cancels the tween; input during return cancels the
+   auto-finish.
 3. **Stab calibration:** firing stab from spawn distance ≈ 1.5m takes
    ~0.5s sprite→torso. Firing from 5m+ caps at 22 m/s. Torso flies
    gentler at short range, full pinwheel at long range.
@@ -586,9 +744,10 @@ they're already touched for other reasons.
 10. **Hitbox:** every spawned project sits flush on the floor at rest
     (no float, no clip). Grab raycasts against project sprites land on
     the visible silhouette, not above/below it.
-11. **Sprite click → card:** with labels hidden, clicking any project
-    sprite opens its card. With labels visible, both label and sprite
-    clicks open the card.
+11. **Sprite click → card:** clicking a project sprite (mouse down +
+    up within 200ms and < 4px movement) opens its card. Mousedown +
+    drag starts grab and does NOT open the card. Both work whether
+    labels are hidden or visible.
 
 ## 6. Risks and unknowns
 
@@ -597,23 +756,29 @@ they're already touched for other reasons.
   startup is unacceptable, fall back to a non-CSG cabin (visible window
   *holes* via deeply-recessed `MeshBasicMaterial({color: black})` boxes
   inset into the cabin face). Decided at impl time if we hit a wall.
-- **Train hit detection without MuJoCo collision geoms.** Bounding-box
-  intersection vs body world-position is approximate. Acceptable because
-  the train arcs at high speed — exact contact resolution isn't expected.
-  If "passes through humanoid without hit" QA happens, expand the test
-  to bounding-box vs body bounding-box.
+- **Train hit detection precision.** Bbox-vs-bbox is approximate; an
+  articulated humanoid in a contorted pose may have a body whose AABB
+  extends well beyond its visible silhouette, leading to "phantom"
+  knockback. Acceptable because the train traverses the playground in
+  ~2.5s and overall feel matters more than per-body accuracy. Filed
+  for future polish if QA flags it.
+- **Sparks burst vs setEnabled mid-flight.** Toggling Sparks off while
+  a blood burst is in flight wipes those particles (because
+  `setEnabled(false)` zeroes the SoA arrays). Documented; not fixed.
+  Toggling off mid-stab is rare.
 - **Palette crossfade and `chord` collision.** Both mutate
-  `material.color`. The chord ability sets a flash colour, then restores;
-  if the cycle writes between flash-set and flash-restore, the restore
-  picks the wrong base colour. Mitigation: `chord` reads the cycle's
-  current colour at flash time and uses *that* as the restore target.
-  Spec'd in §3.6.
+  `material.color`. Chord uses the colour-snapshot mechanism (read
+  current colour at flash time, restore from snapshot) — see §3.6.
 - **Auto-hitbox vs grab raycast.** The grab system raycasts against the
   Three.js mesh, not the MuJoCo collision geom. Auto-derive aligns the
   collision hitbox to the mesh bounding box, so they should agree
   better than they do today. If a sprite has a flying part (e.g. an
   antenna) the box gets bigger than the silhouette people expect; that's
   the case for explicit overrides, not a reason to abandon auto-derive.
+- **Auto-hitbox bbox order-of-operations.** `_deriveHitbox` runs after
+  `mesh.updateMatrixWorld(true)` but BEFORE `slot.group.add(mesh)`,
+  because the slot group sits at z=-60 (parked) and would corrupt the
+  bbox if included. Documented in §3.9 code comment.
 - **Hold-G + arrow-key pan conflict.** Existing arrow-key handlers in
   `main.js` consume `ArrowLeft/Right/Up/Down` for pan. G isn't an arrow,
   so they coexist. But the input-field guard on G needs to mirror the
@@ -629,3 +794,7 @@ they're already touched for other reasons.
 - Blood pool/decal on the floor (one-shot pop only — no linger).
 - Voxel apartment door interaction or interior visibility.
 - OW logo accuracy beyond "reads as the OW mark from 3m away".
+- Splitting the Musicity voxel/cycle work into its own follow-up spec
+  (the reviewer recommended this; deferred because §3.6's complexity
+  is mostly the InstancedMesh + cycle, not interaction surface, and
+  splitting would force two PRs through the same file).
