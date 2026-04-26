@@ -26,10 +26,10 @@ export const OUTFITS = [
     emblem: "bookstack",
   },
   {
-    id: "cambridge",
-    label: "Cambridge · @cambridge.peter",
-    palette: { body: "#a3152b", accent: "#6d0e1d", head: HEAD },
-    emblem: "scroll",
+    id: "mckinsey",
+    label: "McKinsey · @mckinsey.peter",
+    palette: { body: "#003a70", accent: "#0066b3", head: HEAD },
+    emblem: "briefcase",
   },
   {
     id: "law",
@@ -44,10 +44,10 @@ export const OUTFITS = [
     emblem: "barchart",
   },
   {
-    id: "career",
-    label: "Theme · Career",
+    id: "consulting",
+    label: "Theme · Consulting",
     palette: { body: "#1b2a4a", accent: "#334d80", head: HEAD },
-    emblem: "briefcase",
+    emblem: "scroll",
   },
 ];
 
