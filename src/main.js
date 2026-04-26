@@ -209,45 +209,63 @@ class App {
           return fract((p.x + p.y) * p.z);
         }
 
-        // Procedural star field via cell-based point sampling. Roughly 120
-        // stars across the upper hemisphere; each cell on a rotated sphere
-        // has at most one star, and cells with hash below a threshold are
-        // empty so the distribution feels natural rather than grid-like.
+        // Single-cell star contribution. The cell ID is hashed for visibility +
+        // jitter; the star is placed at a jittered point inside that cell and
+        // shaded with a tight angular gaussian. We sample the 3x3x3 neighborhood
+        // in the caller so a star near a cell boundary isn't truncated into a
+        // cube — the previous "cubey" stars came from a wide gaussian getting
+        // hard-clipped at the cell edge.
+        float starInCell(vec3 cell, vec3 rdN, float scale, float threshold, float sharpness) {
+          float h = hash(cell);
+          if (h < threshold) return 0.0;
+          vec3 jitter = vec3(hash(cell + 1.3), hash(cell + 2.7), hash(cell + 4.1));
+          vec3 starDir = normalize((cell + jitter) / scale);
+          // Squared chord length on the unit sphere ≈ angular distance² for small angles.
+          // Using length² instead of (1-dot) gives a rounder, more isotropic falloff.
+          vec3 diff = rdN - starDir;
+          float d2 = dot(diff, diff);
+          float mag = pow(hash(cell + 7.7), 1.5);
+          float twinkleRate = 0.4 + 2.0 * hash(cell + 9.1);
+          float twinklePhase = hash(cell + 12.3) * 6.2831;
+          float twinkle = 0.75 + 0.25 * sin(uTime * twinkleRate + twinklePhase);
+          return exp(-d2 * sharpness) * mag * twinkle;
+        }
+
+        // Sample the cell containing rd plus its 26 neighbors so stars stay
+        // round across cell boundaries.
+        float starLayer(vec3 rd, float scale, float threshold, float sharpness) {
+          vec3 rdN = normalize(rd);
+          vec3 baseCell = floor(rd * scale);
+          float s = 0.0;
+          for (int x = -1; x <= 1; x++) {
+            for (int y = -1; y <= 1; y++) {
+              for (int z = -1; z <= 1; z++) {
+                s += starInCell(baseCell + vec3(float(x), float(y), float(z)),
+                                rdN, scale, threshold, sharpness);
+              }
+            }
+          }
+          return s;
+        }
+
         float stars(vec3 d) {
-          // Rotate the sky direction slowly around the world-up axis so stars
-          // drift across the dome. Full revolution every ~10 minutes.
           float ang = uTime * 0.0105;
           float ca = cos(ang), sa = sin(ang);
           vec3 rd = vec3(ca * d.x + sa * d.z, d.y, -sa * d.x + ca * d.z);
 
-          // Fade stars below the horizon so we don't render specks through
-          // the warm earth-colored lower hemisphere.
-          float horizonMask = smoothstep(-0.05, 0.15, rd.y);
+          // Fade stars below the horizon for Earth/Moon; full sphere for Space.
+          float horizonMask = uStarsIntensity > 2.0
+            ? smoothstep(-0.35, 0.0, rd.y)   // Space: stars wrap below horizon too
+            : smoothstep(-0.05, 0.15, rd.y);  // Earth/Moon: hide below horizon
           if (horizonMask <= 0.0) return 0.0;
 
-          // Grid the direction into cells. Higher density = more cells tested.
-          // 28 cells per axis ≈ ~120 visible stars above horizon.
-          vec3 cell = floor(rd * 28.0);
-          float h = hash(cell);
-          // 7% of cells actually host a star — keeps density natural.
-          if (h < 0.93) return 0.0;
+          // Sharpness is much higher than before so each star is a true pinpoint
+          // (a few fragments wide) — bloom turns those pinpoints into glints
+          // rather than smearing already-saturated plateaus into rectangles.
+          float s  = starLayer(rd, 32.0, 0.94, 180000.0);          // bright sparse
+          s += starLayer(rd, 70.0, 0.86, 220000.0) * 0.55;         // dim dense
 
-          // Star location within the cell — jitter so stars aren't on a grid.
-          vec3 jitter = vec3(hash(cell + 1.3), hash(cell + 2.7), hash(cell + 4.1));
-          vec3 starDir = normalize((cell + jitter) / 28.0 - 0.5);
-          float d2 = 1.0 - dot(normalize(rd), starDir);
-
-          // Per-star magnitude: some bright, most dim.
-          float mag = pow(hash(cell + 7.7), 3.0);  // skews toward dim
-          // Per-star twinkle — slow pulse at unique rate per star.
-          float twinkleRate = 0.4 + 2.0 * hash(cell + 9.1);
-          float twinklePhase = hash(cell + 12.3) * 6.2831;
-          float twinkle = 0.75 + 0.25 * sin(uTime * twinkleRate + twinklePhase);
-
-          // Star "disk" — gaussian-ish falloff. Tighten with higher exponent
-          // so stars read as hard points rather than fuzzy blobs.
-          float intensity = exp(-d2 * 9000.0) * mag * twinkle * horizonMask;
-          return intensity;
+          return s * horizonMask;
         }
 
         void main() {
@@ -257,8 +275,12 @@ class App {
             ? mix(midColor, topColor, pow(h, 0.55))
             : mix(midColor, bottomColor, pow(-h, 0.7));
           // Overlay stars (additive, pale warm-white so they blend with bloom).
+          // Soft-knee on the star value so cores stay just under bloom-clipping
+          // — bloom turns the resulting pinpoints into glints rather than
+          // smearing saturated plateaus into square shapes.
           float s = stars(normalize(vWorldPos));
-          col += vec3(1.0, 0.97, 0.92) * s * 1.6 * uStarsIntensity;
+          float sKnee = s / (1.0 + s * 0.6);
+          col += vec3(1.0, 0.97, 0.92) * sKnee * 1.4 * uStarsIntensity;
           gl_FragColor = vec4(col, 1.0);
         }`,
     });
@@ -382,21 +404,25 @@ class App {
     this.setEnvironmentForGravity(this.params.gravityLabel);
 
     // Portfolio overlay — collapsible, left-anchored.
-    this._arrowKeys = { left: false, right: false, up: false, down: false };
+    this._arrowKeys = { left: false, right: false, up: false, down: false, rise: false, fall: false };
     this._arrowPanVelocity = 0;
     addEventListener("keydown", (e) => {
       const tag = (e.target?.tagName || "").toLowerCase();
       if (tag === "input" || tag === "textarea") return;
-      if (e.code === "ArrowLeft")  { this._arrowKeys.left  = true; e.preventDefault(); }
+      if (e.code === "ArrowLeft")       { this._arrowKeys.left  = true; e.preventDefault(); }
       else if (e.code === "ArrowRight") { this._arrowKeys.right = true; e.preventDefault(); }
       else if (e.code === "ArrowUp")    { this._arrowKeys.up    = true; e.preventDefault(); }
       else if (e.code === "ArrowDown")  { this._arrowKeys.down  = true; e.preventDefault(); }
+      else if (e.code === "Space")      { this._arrowKeys.rise  = true; e.preventDefault(); }
+      else if (e.code === "ShiftLeft" || e.code === "ShiftRight") { this._arrowKeys.fall = true; }
     });
     addEventListener("keyup", (e) => {
-      if (e.code === "ArrowLeft")  this._arrowKeys.left  = false;
+      if (e.code === "ArrowLeft")       this._arrowKeys.left  = false;
       else if (e.code === "ArrowRight") this._arrowKeys.right = false;
       else if (e.code === "ArrowUp")    this._arrowKeys.up    = false;
       else if (e.code === "ArrowDown")  this._arrowKeys.down  = false;
+      else if (e.code === "Space")      this._arrowKeys.rise  = false;
+      else if (e.code === "ShiftLeft" || e.code === "ShiftRight") this._arrowKeys.fall = false;
     });
 
     // Two-finger horizontal swipe on trackpad pans the camera.
@@ -645,6 +671,13 @@ class App {
     this.controls.target.addScaledVector(right, amount);
   }
 
+  // Pan camera up/down by `amount` world-units along the world Y axis.
+  _applyVerticalPan(amount) {
+    if (!this.camera || !this.controls) return;
+    this.camera.position.y += amount;
+    this.controls.target.y += amount;
+  }
+
   // Pan camera forward/back by `amount` world-units along the camera's look direction (y=0).
   _applyForwardPan(amount) {
     if (!this.camera || !this.controls) return;
@@ -677,12 +710,15 @@ class App {
       const dt = Math.min(frameDt, 0.05);
       const h = (this._arrowKeys.right ? 1 : 0) - (this._arrowKeys.left ? 1 : 0);
       const f = (this._arrowKeys.up ? 1 : 0) - (this._arrowKeys.down ? 1 : 0);
+      const v = (this._arrowKeys.rise ? 1 : 0) - (this._arrowKeys.fall ? 1 : 0);
       if (h !== 0) this._applyHorizontalPan(h * 3.5 * dt);
       if (f !== 0) this._applyForwardPan(f * 3.5 * dt);
+      if (v !== 0) this._applyVerticalPan(v * 3.5 * dt);
     }
     this.controls.update();
     if (this._skyMat) this._skyMat.uniforms.uTime.value = now * 0.001;
     this.applyWind();
+    this.grabber?.applyPunt();
     this.grabber?.apply();
     this.pinSystem?.apply();
     this.stepPhysics();

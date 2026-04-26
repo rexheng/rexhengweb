@@ -38,6 +38,9 @@ export class Grabber {
     this._pinArmed = false;
     this._downX = 0;
     this._downY = 0;
+    // Punt impulse staged from event handler, written into xfrc_applied for
+    // one frame from applyPunt() in the render loop (see punt() comment).
+    this._pendingPunt = null;
 
     // scratch
     this._grabWorld = new THREE.Vector3();
@@ -182,22 +185,25 @@ export class Grabber {
     this.grabDist = Math.max(0.3, Math.min(30, this.grabDist * scale));
   };
 
-  // GMod gravity-gun punt: instantaneous velocity injection along camera ray.
-  // Writes directly into qvel at the body's freejoint (only freejoint bodies can
-  // be punted — articulated limbs aren't standalone enough). Force is scaled by
-  // body mass so every prop gets the same launch speed feel (~8 m/s default).
+  // GMod gravity-gun punt: one-frame xfrc_applied impulse on the clicked body.
+  // Works on any joint type (freejoint props AND articulated humanoid limbs).
+  //
+  // Critical timing: applyWind() in the render loop zeroes xfrc_applied for every
+  // body before stepPhysics(). Writing xfrc directly from this event handler
+  // would be erased before mj_step ever sees it. Instead we stash the impulse in
+  // _pendingPunt; applyPunt() is called from the render loop AFTER applyWind()
+  // and writes the impulse for exactly one frame, so mj_step integrates F·dt
+  // into the body's velocity.
+  //
+  // Impulse magnitude: F = m * SPEED / dt where dt is one physics step. After
+  // one step, Δv = F·dt/m = SPEED. The mass floor stops tiny limbs (e.g. 50g
+  // hands) from being launched at unreasonable speeds, since Δv = F_floor·dt/m
+  // for masses below the floor.
   punt(hit) {
     const bodyID = hit.object.bodyID;
     const model = this.app.model;
     const data = this.app.data;
     if (!model || !data) return;
-    const jntAdr = model.body_jntadr?.[bodyID];
-    if (jntAdr === undefined || jntAdr < 0) return;
-    const jntType = model.jnt_type?.[jntAdr];
-    // MuJoCo joint types: 0=free, 1=ball, 2=slide, 3=hinge. Only freejoints have qvel[0..5] layout we need.
-    if (jntType !== 0) return;
-    const dofAdr = model.jnt_dofadr[jntAdr];
-    if (dofAdr < 0 || !data.qvel || data.qvel.length < dofAdr + 6) return;
 
     // Camera ray direction in THREE world, swizzled to MJ world.
     const camDir = new THREE.Vector3();
@@ -206,16 +212,21 @@ export class Grabber {
     const mjDy = -camDir.z;
     const mjDz = camDir.y;
 
-    // Punt speed. GMod's gravgun punch is iconic — feels BIG. 10 m/s + a little
-    // upward bias so heavy boxes still catch air.
-    const SPEED = 10.0;
-    data.qvel[dofAdr + 0] = mjDx * SPEED;
-    data.qvel[dofAdr + 1] = mjDy * SPEED;
-    data.qvel[dofAdr + 2] = mjDz * SPEED + 2.0;
-    // Add a mild spin around up-axis for flair.
-    data.qvel[dofAdr + 3] = (Math.random() - 0.5) * 4;
-    data.qvel[dofAdr + 4] = (Math.random() - 0.5) * 4;
-    data.qvel[dofAdr + 5] = (Math.random() - 0.5) * 4;
+    const SPEED = 12.0;
+    const massFloored = Math.max(0.5, model.body_mass?.[bodyID] ?? 1.0);
+    const simDt = (model.opt?.timestep ?? 0.002) * (this.app.params?.timescale ?? 1.0);
+    const dt = Math.max(0.001, simDt);
+    const F = massFloored * SPEED / dt;
+
+    this._pendingPunt = {
+      bodyID,
+      fx: mjDx * F,
+      fy: mjDy * F,
+      fz: mjDz * F + massFloored * 30,         // upward bias so things catch air
+      tx: (Math.random() - 0.5) * F * 0.15,    // random torque for flair
+      ty: (Math.random() - 0.5) * F * 0.15,
+      tz: (Math.random() - 0.5) * F * 0.15,
+    };
 
     // Flash the grabDot briefly at hit point as visual feedback.
     this.grabDot.position.copy(hit.point);
@@ -228,6 +239,25 @@ export class Grabber {
         this.grabDot.material.color.setHex(0xff5533);
       }
     }, 120);
+  }
+
+  // Called from the render loop AFTER applyWind() (which zeroes xfrc_applied)
+  // and BEFORE stepPhysics(). Writes any pending punt impulse for exactly one
+  // frame so mj_step integrates it, then clears the pending state.
+  applyPunt() {
+    const p = this._pendingPunt;
+    if (!p) return;
+    const data = this.app.data;
+    if (data?.xfrc_applied) {
+      const off6 = p.bodyID * 6;
+      data.xfrc_applied[off6 + 0] = p.fx;
+      data.xfrc_applied[off6 + 1] = p.fy;
+      data.xfrc_applied[off6 + 2] = p.fz;
+      data.xfrc_applied[off6 + 3] = p.tx;
+      data.xfrc_applied[off6 + 4] = p.ty;
+      data.xfrc_applied[off6 + 5] = p.tz;
+    }
+    this._pendingPunt = null;
   }
 
   // Track E/Q for phys-gun rotate. Ignored unless actively grabbing.
@@ -280,10 +310,11 @@ export class Grabber {
   }
 
   // Punt whatever is under the cursor/crosshair along the camera ray. Uses
-  // the same impulse recipe as middle-click punt — only freejoint bodies
-  // can be punted (articulated limbs aren't standalone enough). NDC comes
-  // from the crosshair (which tracks the live mouse position) so this works
-  // whether or not a drag is in progress.
+  // the same impulse recipe as middle-click punt. Works on any body — the
+  // xfrc-based punt propagates through the constraint graph for articulated
+  // limbs as well as freejoint props. NDC comes from the crosshair (which
+  // tracks the live mouse position) so this works whether or not a drag is
+  // in progress.
   puntAtCrosshair() {
     if (!this.app.mujocoRoot || !this.app.data) return;
     const ndc = this.app.crosshair?._ndc ?? this.mouseNDC ?? new THREE.Vector2(0, 0);
@@ -434,26 +465,33 @@ export class Grabber {
     data.xfrc_applied[off6 + 4] = mjTy;
     data.xfrc_applied[off6 + 5] = mjTz;
 
-    // Phys-gun rotate: E/Q while grabbing spins the held body around camera-forward axis.
-    // Direct qvel write (angular, qvel[dofAdr+3..5]) for freejoint bodies only.
-    // 2.5 rad/s ≈ 24° per frame at 60 Hz — crisp but not dizzying.
+    // Phys-gun rotate: E/Q torque around body-local axes.
+    // E = body local-X axis, Q = body local-Z axis.
+    // Uses xfrc torque accumulation (adds to existing grab torque) so it
+    // coexists with the spring rather than fighting it via qvel overwrite.
+    // data.xmat is row-major 3×3 per body (9 floats), in MJ world frame:
+    //   col0 = local-X, col1 = local-Y, col2 = local-Z  (each col = 3 rows).
     if (this.rotateKey !== 0) {
-      const jntAdr = this.app.model?.body_jntadr?.[this.bodyID];
-      if (jntAdr !== undefined && jntAdr >= 0 && this.app.model.jnt_type?.[jntAdr] === 0) {
-        const dofAdr = this.app.model.jnt_dofadr[jntAdr];
-        if (dofAdr >= 0 && data.qvel && data.qvel.length >= dofAdr + 6) {
-          const camDir = new THREE.Vector3();
-          this.app.camera.getWorldDirection(camDir);
-          // Swizzle camera forward THREE→MJ. Sign flip so E rotates clockwise
-          // from the user's perspective (matches GMod's physgun rotate feel).
-          const axMx = camDir.x;
-          const axMy = -camDir.z;
-          const axMz = camDir.y;
-          const w = 2.5 * this.rotateKey;
-          data.qvel[dofAdr + 3] = axMx * w;
-          data.qvel[dofAdr + 4] = axMy * w;
-          data.qvel[dofAdr + 5] = axMz * w;
+      const xmat = data.xmat;
+      if (xmat && xmat.length >= (this.bodyID + 1) * 9) {
+        const base = this.bodyID * 9;
+        // E key → body local-X axis (column 0 of xmat).
+        // Q key → body local-Z axis (column 2 of xmat).
+        // rotateKey: +1 = E, -1 = Q.
+        let axMx, axMy, axMz;
+        if (this.rotateKey > 0) {
+          axMx = xmat[base + 0];
+          axMy = xmat[base + 3];
+          axMz = xmat[base + 6];
+        } else {
+          axMx = xmat[base + 2];
+          axMy = xmat[base + 5];
+          axMz = xmat[base + 8];
         }
+        const TORQUE = 8.0; // N·m
+        data.xfrc_applied[off6 + 3] += axMx * TORQUE;
+        data.xfrc_applied[off6 + 4] += axMy * TORQUE;
+        data.xfrc_applied[off6 + 5] += axMz * TORQUE;
       }
     }
   }

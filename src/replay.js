@@ -16,8 +16,8 @@
 // Replay only captures rigid state. Contact visualization and sparks won't be
 // "re-simulated"; that's fine — the rigid motion is the dramatic bit.
 
-const CAPACITY = 80;    // samples held
-const SAMPLE_MS = 50;   // sample cadence = 20Hz. 80 samples @ 50ms = 4s window.
+const CAPACITY = 60;    // samples held
+const SAMPLE_MS = 50;   // sample cadence = 20Hz. 60 samples @ 50ms = 3s window.
 const REPLAY_SPEED = 0.3; // 0.3× = slo-mo
 const SEPIA_CSS = "sepia(0.75) contrast(1.08) brightness(0.95) saturate(1.1)";
 
