@@ -509,7 +509,7 @@ const CSS = `
 #hud {
   position: fixed;
   bottom: 22px;
-  left: 88px;
+  left: 214px;
   pointer-events: none;
   z-index: 8;
   font-family: var(--rex-font-mono);
@@ -959,7 +959,10 @@ canvas { touch-action: none; }
   /* Drag handle visible at the top of the sheet so the user knows it pulls. */
   #rex-controls .rex-panel-title {
     cursor: grab;
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--rex-ink);
     padding-top: 18px;
     touch-action: none;
   }
