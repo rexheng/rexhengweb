@@ -37,11 +37,11 @@ refactoring `materials.js`, touching the MuJoCo XML, mobile-specific UX
 | 2 | App / camera             | New `frameSpawnCloseup(slot)` cinematic close-up tween        |
 | 3 | `abilities/stab.js`      | Distance-calibrated lunge speed; proportional knockback       |
 | 3a| `abilities/stab.js`      | One-shot red blood spray via `Sparks.burst()` on contact      |
-| 4 | `catalog/amogus/*`       | Visor rebuilt as concentric partial-sphere shell              |
+| 4 | `catalog/amogus/*`       | Replace procedural body with FBX-loaded crewmate (local file) |
 | 5 | App / OrbitControls      | Hold-G + drag = momentary orbit (yaw + pitch)                 |
 | 6 | `catalog/musicity/*`     | Replace mesh: tiny apartment via `InstancedMesh` voxel grid + idle palette cycle |
 | 7 | `catalog/oliver-wyman/*` | Replace mesh: extruded OW logo on backing plate; new `roomba` ability |
-| 8 | `catalog/olympic-way/*`  | New `dune-worm` train ability (replaces `pulse`)              |
+| 8 | `catalog/olympic-way/*`  | New `dune-worm` train ability (replaces `pulse`); train mesh from Sketchfab Bombardier S Stock FBX |
 | 9 | `projects/system.js`     | Auto-derive `hitbox` from mesh `Box3` at spawn time           |
 | 10| `projects/system.js`     | Sprite mesh raycast → open card (so labels-hidden sprites stay clickable) |
 
@@ -201,53 +201,87 @@ limitation in §6.
 Points geometry + GPU upload pipeline. One particle system, one render
 pass, two trigger paths.
 
-### 3.4 Amogus visor — concentric partial-sphere shell
+### 3.4 Amogus — FBX-loaded crewmate
 
-**Locked design (visualised in the brainstorm mock,
-`amogus-visor-mock.html`).**
+**Decision:** Replace the entire procedural Amogus mesh (body, visor,
+backpack, antenna, legs) with a loaded artist FBX. The procedural
+visor saga (v1/v2 cut through the body, v3 mocked the canonical
+concentric shell) is moot — the FBX has its own visor and we use the
+artist's silhouette wholesale. See `tasks/lessons.md` 2026-04-26 entry
+for context on why the procedural detour was the wrong default.
 
-The visor is a **partial sphere whose centre is concentric with the
-helmet dome**, with **radius slightly larger than the body radius**.
-Carved with phi/theta to expose only a band on the front face. Because
-the visor's inner surface sits *outside* the body's outer surface, it
-physically cannot intrude inward — the v1/v2 bug was caused by placing
-the visor sphere's centre at the body centre, which made one half of
-the carved strip extrude outward and the other half cut inward.
+**Source asset.** Local file at
+`C:\Users\Rex\Downloads\among-us-3D-model-cgian\among-us-3D-model-cgian\among-us-3D-model-cgian.fbx`
+(47kb, includes textures via `among-us-3D-model-cgian.mtl`). At impl
+time, copy the FBX (and any sibling texture files the loader needs)
+into `assets/models/amogus/` so it ships with the deploy.
 
-**Geometry (proportions.js values, D = 0.26):**
+**Loader.** `three/addons/loaders/FBXLoader.js`. Loaded via the
+`__assets__` namespace in the importmap (already imports
+`three/addons/`). No new dependency, no new importmap entry.
+
+**Preload + cache pattern (see §3.11).** Load the FBX once at
+`App.init()` boot, cache the resulting `THREE.Group` in
+`app.modelCache.amogus`. Per-spawn, `buildMesh()` returns a deep
+clone of the cached scene via Three's built-in `.clone(true)`
+(no skeleton in this asset; `SkeletonUtils` not needed).
+
+**Scale normalisation.** The Sketchfab/CGIan model exports at an
+arbitrary scale. The catalog def gains a new field `targetHeight: 0.6`
+(MJ-units). On load, compute `bbox.height = box.getSize().y`, then
+`scale = targetHeight / bbox.height`, and apply `scene.scale.setScalar(scale)`
+to the cached scene before storing it. After scale, the cloned scene
+is the correct size in every spawn — no per-spawn scale work.
+
+**Material fidelity.** FBXLoader maps the file's materials to
+`MeshPhongMaterial` by default. The CGIan model is flat-coloured (red
+body, cyan visor, dark grey legs/pack) — no PBR maps to lose. After
+load, walk the scene and confirm material colours read correctly
+against the playground lighting; if any mesh comes through with a
+muddy default, override its material in the post-load pass:
+
+```js
+loadedScene.traverse((o) => {
+  if (!o.isMesh) return;
+  o.castShadow = true;
+  o.receiveShadow = true;
+  // Optional: override specific material if FBX import muddies it.
+  // e.g. if the visor reads grey instead of cyan:
+  //   if (o.name === "visor") o.material.color.set("#7fd6e6");
+});
+```
+
+The optional override only fires if visual QA reveals a mismatch.
+
+**Hitbox.** `def.hitbox` and `def.footprintOffset` are NOT supplied
+in the def — the auto-derive path in §3.9 reads the loaded scene's
+`Box3` and produces the correct collider half-extents. This is the
+**required** path for FBX-loaded sprites; manual values would drift
+the moment the artist asset is updated.
+
+**Why this works.** The visor is part of the FBX; no need for the
+concentric-shell hack. The body, backpack, antenna, legs are the
+artist's silhouette — measurably better than the procedural version.
+The DI builder pattern stays intact: `build.js` returns
+`app.modelCache.amogus.clone(true)` instead of building primitives.
+
+**Why not GLB.** Per `tasks/lessons.md` 2026-04-26 (second lesson):
+the FBX is in hand, materials are flat, payload is 47kb. Conversion
+to GLB is pedantry that solves no concrete problem. Use the FBX.
+
+**Why keep the procedural fallback in version control.** The
+checkpoint commit (`fbba32c`, tag `spec/projects-polish-procedural-checkpoint`)
+preserves the procedural-only spec. If the FBX integration produces a
+blocker (say the model uses Maya-specific FBX features that
+FBXLoader can't parse), revert via:
 
 ```
-visorCentreY        = bodyDomeCentreY  // = bodyBaseY + bodyCylHeight
-bandThetaStart      = 58° (from +Y north pole, in radians)
-bandThetaLength     = 40°
-bandPhiLength       = 120°
-bandPhiStart        = π/2 - bandPhiLength/2     // centres carve on +Z
-RIM_R               = bodyRadius + 0.020 * D
-GLASS_R             = bodyRadius + 0.028 * D
-HL_R                = bodyRadius + 0.035 * D
+git checkout spec/projects-polish-procedural-checkpoint -- docs/superpowers/specs/2026-04-26-projects-polish-pass-design.md
 ```
 
-Three meshes, all concentric, all `side: THREE.DoubleSide`:
-1. **Rim** — white `#ffffff`, slightly *wider* phi/theta carve than glass
-   (extends 6° each side horizontally, 4° each side vertically) so a
-   white border frames the cyan glass.
-2. **Glass** — `#7fd6e6` (canon Among Us cyan), `emissive #1a4f5a`,
-   `emissiveIntensity 0.45`, `roughness 0.18`, `metalness 0.45`.
-3. **Highlight** — small white patch (~18% × 32% of glass carve), upper-left,
-   `emissive #a9e8f4`, `transparent true`, `opacity 0.85`. Reads as visor
-   glint.
-
-Backpack, antenna, legs, body, rim band — **unchanged**. Delete the
-existing visor block (`visorWidth`/`visorHeight`/`visorDepth`/`glassInset`
-constants in `proportions.js`; the BoxGeometry frame + clipped sphere
-glass + plane highlight in `build.js`). Replace with the three new meshes
-and the seven new `proportions` constants.
-
-**Why partial sphere over a separate primitive.** A `visor()` primitive
-in `primitives.js` is over-fit — only Amogus has this shape and the maths
-is six lines. Adding it as a primitive would require parameter-naming
-that's hostile to other consumers ("which sphere centre?"). Keep it
-inline in `amogus/build.js`.
+Brainstorm mock at `amogus-visor-mock.html` is preserved as a
+historical reference for the procedural visor design that was
+short-circuited by the FBX swap.
 
 ### 3.5 Hold-G drag-rotate camera
 
@@ -478,19 +512,49 @@ elsewhere; just stop wiring it to Olympic Way's def).
 
 **File:** `src/projects/abilities/dune-worm.js`.
 
-**Train mesh — `TrainEntity` (Group):**
-- **Chassis** — `BoxGeometry(0.4, 0.3, 1.6)` (W × H × L). Material: TfL
-  red `#dc241f`.
-- **Boiler** — `CylinderGeometry(0.18, 0.18, 1.0, 24)` rotated to lie
-  along Z, positioned at front of chassis. Material: dark grey `#3a3a3a`.
-- **Front cap** — `CapsuleGeometry(0.18, 0.05, 8, 16)` rotated and
-  positioned at the front tip of the boiler. Same dark grey.
-- **Cabin** — `BoxGeometry(0.4, 0.4, 0.5)` at rear of chassis. Window
-  holes cut via `three-bvh-csg` (subtract two small BoxGeometries on each
-  side). Material: TfL red.
-- **Wheels** — 6× `CylinderGeometry(0.12, 0.12, 0.06, 16)`, rotated 90°
-  on the Z-axis (so they sit like wheels). 3 per side, evenly spaced
-  along the chassis length. Material: black `#0a0a0a`.
+**Train mesh — Bombardier S Stock FBX.**
+
+**Decision:** Replace the procedural `TrainEntity` (chassis + boiler +
+CSG cabin + wheels) with a loaded artist FBX of the actual current
+Underground rolling stock. The procedural version would have looked
+like a child's drawing of a steam locomotive; the artist asset is the
+real silhouette. Same reasoning as §3.4 — when a real model exists,
+use it.
+
+**Source asset.** Sketchfab "Bombardier S Stock London Underground" by
+timblewee
+(https://sketchfab.com/3d-models/bombardier-s-stock-london-underground-a6718eff2dc843c48fd54376b4c70b06).
+Download the FBX export. Verify the licence on the page (CC-BY at
+time of writing; attribution must go in the credits surface — see §6
+Risks). Save as `assets/models/bombardier-s-stock.fbx`.
+
+**Loader.** `FBXLoader` (same import as §3.4). Preloaded once at
+`App.init()`, cached as `app.modelCache.bombardier`. Per fire,
+`dune-worm.js` clones the cached scene via `.clone(true)` instead of
+constructing primitives.
+
+**Scale normalisation.** Catalog-style constant inside `dune-worm.js`:
+`TARGET_LENGTH = 3.0` MJ-units. Compute the loaded scene's bbox
+length, scale uniformly to fit. Apply once before caching, like §3.4.
+A real S Stock train is ~130m long; without scaling, the bbox would
+extend across the entire scene and trigger constant phantom
+knockback.
+
+**Dependency removed.** `three-bvh-csg` is NOT added to the importmap.
+The procedural cabin's window cuts were the only consumer; the FBX
+already has window cutouts modelled. Drop the entry from `index.html`,
+drop the §3.8 "Dependency" subsection.
+
+**Materials.** Trust the artist's textures. No post-load material
+override unless visual QA reveals an issue (S Stock's body is grey-
+silver, not the iconic red — TfL red is on the doors and accent strip
+only). The "TfL red" framing in earlier spec drafts was wrong; the S
+Stock is in the accurate London livery (silver body, blue doors, red
+trim). Acceptance criterion §5.9 updated to read "looks like a London
+Underground S Stock" rather than "TfL red".
+
+**Why not GLB.** Same as §3.4: pedantry. The Sketchfab page exposes an
+FBX export by default; that's what we use.
 
 **Dune-worm motion (3.5s total):**
 - t=0 → 0.5s: train rises from `y = -1.0` (subterranean) to `y = +0.4`
@@ -547,16 +611,9 @@ qvel[dofAdr + 5] = (Math.random() - 0.5) * 8;
 Hit cooldown: 200ms per body so a body inside the bounding box doesn't
 get punched every frame.
 
-**Dependency:** Add `three-bvh-csg` to the importmap in `index.html`.
-The library resolves cleanly via `esm.sh`:
-
-```
-"three-bvh-csg": "https://esm.sh/three-bvh-csg@0.0.17"
-```
-
-Pin the version. Used only inside `dune-worm.js` for the cabin window
-cuts; the cabin geometry is computed once at module load and cached, so
-the CSG cost is paid once per session, not per fire.
+**No `three-bvh-csg` dependency.** Removed from §3.8 — the FBX has
+modelled windows already, no CSG cabin cuts needed. `index.html`
+importmap unchanged.
 
 ### 3.9 Auto-derived hitbox
 
@@ -672,12 +729,118 @@ harmless.
 HoverHighlight is read-only (paints a colour). Card open is a side
 effect on `ProjectSystem`. Cleaner ownership.
 
+### 3.11 Asset loading — preload, cache, scale-normalise
+
+**Added by the FBX integration.** This is the cross-cutting plumbing
+that §3.4 (Amogus) and §3.8 (Bombardier S Stock train) both depend on.
+Lives in a new module `src/projects/assets.js` so it can be used by
+any future project that wants to swap procedural geometry for an
+artist asset.
+
+**API surface.**
+
+```js
+// src/projects/assets.js
+import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
+
+const loader = new FBXLoader();
+
+/**
+ * Preload an FBX, scale-normalise it to a target dimension, and
+ * resolve with the cached scene. The returned scene is the canonical
+ * cached copy — callers should `.clone(true)` it before adding to
+ * their slot group.
+ *
+ *   { url, target: { axis: "x"|"y"|"z", value: number } }
+ */
+export async function preloadFBX({ url, target }) {
+  const scene = await loader.loadAsync(url);
+  // Compute current bbox, derive uniform scale factor.
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene);
+  const size = box.getSize(new THREE.Vector3());
+  const current = size[target.axis];
+  if (current > 0 && Number.isFinite(current)) {
+    const k = target.value / current;
+    scene.scale.setScalar(k);
+  }
+  // Re-centre on origin so .clone() copies sit at slot.group's local 0.
+  scene.updateMatrixWorld(true);
+  const box2 = new THREE.Box3().setFromObject(scene);
+  const centre = box2.getCenter(new THREE.Vector3());
+  scene.position.sub(centre);
+  scene.position.y -= box2.min.y - centre.y;  // bottom of bbox lands at y=0
+  // Pass-through traversal for shadow flags.
+  scene.traverse((o) => {
+    if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+  });
+  return scene;
+}
+```
+
+**Boot integration in `App.init()`.**
+
+```js
+// After Three.js scene + renderer set up, before mujoco scene load.
+this.modelCache = {};
+const [amogus, bombardier] = await Promise.all([
+  preloadFBX({ url: "./assets/models/amogus.fbx",
+               target: { axis: "y", value: 0.6 } }),
+  preloadFBX({ url: "./assets/models/bombardier-s-stock.fbx",
+               target: { axis: "z", value: 3.0 } }),  // length, not height
+]);
+this.modelCache.amogus = amogus;
+this.modelCache.bombardier = bombardier;
+```
+
+**`buildMesh()` for FBX-backed projects.**
+
+```js
+// src/projects/catalog/amogus/build.js
+export function buildMesh({ THREE, app }) {
+  const cached = app.modelCache?.amogus;
+  if (!cached) {
+    console.error("[amogus] FBX cache miss");
+    return new THREE.Group();
+  }
+  return cached.clone(true);
+}
+```
+
+The DI builder bag gains an `app` reference so catalog defs can read
+the cache. `src/projects/index.js`'s `resolveAbility` already passes
+through; we extend the call site in `system.js` spawn flow.
+
+**Loading splash.** The boot async work is invisible to the user
+otherwise — add a one-element splash (`<div id="boot-splash">`) that's
+visible until `App.init()` resolves, hidden via a body class on the
+animate-frame entry. Existing `injectUI()` is a fine home for the
+splash element; the body class flip happens at the bottom of `init()`.
+
+**Error handling.** If a preload rejects (404 on the FBX file,
+malformed binary), log to console and continue boot. Catalog defs that
+depend on a missing model render an empty Group; the project still
+appears in the list but the sprite won't show. This is a more graceful
+fallback than blocking the entire app on a missing artist asset.
+
+**Why one helper, not per-loader-type plumbing in each `build.js`.**
+Five files would each want their own loader instance, scale logic, and
+recentre logic. One module = one place to look when something goes
+wrong. Adds ~50 lines, removes per-project repetition.
+
+**Why FBX, not GLB.** See `tasks/lessons.md` 2026-04-26. The local
+Amogus FBX is in hand at 47kb; the Bombardier asset's primary export
+on Sketchfab is FBX. No conversion needed.
+
 ## 4. Touched files
 
 | File                                          | Change                                              |
 | --------------------------------------------- | --------------------------------------------------- |
-| `index.html`                                  | Add `three-bvh-csg` to importmap                    |
-| `src/main.js`                                 | New `frameSpawnCloseup`; G-key handling; replace `frameSpawn` call |
+| `index.html`                                  | unchanged (no `three-bvh-csg`; FBXLoader is in `three/addons/`) |
+| `src/main.js`                                 | Async asset preload at boot; `App.modelCache`; `frameSpawnCloseup`; G-key handling; replace `frameSpawn` call |
+| `src/projects/assets.js`                      | NEW — preload helper for FBX assets, returns scaled cached scene |
+| `assets/models/amogus.fbx`                    | NEW — copied from local Downloads (47kb)            |
+| `assets/models/bombardier-s-stock.fbx`        | NEW — downloaded from Sketchfab (timblewee, CC-BY)  |
 | `src/controlsPanel.js`                        | Hide-labels checkbox in Effects section             |
 | `src/grabber.js`                              | Bail early when `app._gKeyHeld`                     |
 | `src/sparks.js`                               | New public `burst(opts)` method; `enabled` semantics |
@@ -689,9 +852,9 @@ effect on `ProjectSystem`. Cleaner ownership.
 | `src/projects/abilities/roomba.js`            | NEW                                                 |
 | `src/projects/abilities/dune-worm.js`         | NEW                                                 |
 | `src/projects/abilities/stab.js`              | Distance-calibrated speed + proportional knockback + blood spray trigger |
-| `src/projects/catalog/amogus/proportions.js`  | Replace visor constants                             |
-| `src/projects/catalog/amogus/build.js`        | Rebuild visor as concentric shell                   |
-| `src/projects/catalog/amogus/index.js`        | Drop explicit `hitbox`/`footprintOffset` (auto-derive) |
+| `src/projects/catalog/amogus/proportions.js`  | DELETE (or reduce to `targetHeight: 0.6`) — FBX replaces procedural geometry |
+| `src/projects/catalog/amogus/build.js`        | Replace with `app.modelCache.amogus.clone(true)` returner |
+| `src/projects/catalog/amogus/index.js`        | Add `targetHeight: 0.6`; drop explicit `hitbox`/`footprintOffset` (auto-derive) |
 | `src/projects/catalog/musicity/proportions.js`| Replace with apartment-grid + palette constants     |
 | `src/projects/catalog/musicity/build.js`      | Replace with `generateApartment()` + InstancedMesh + onSpawn cycle |
 | `src/projects/catalog/musicity/index.js`      | Add `onSpawn` hook; drop `footprintOffset`          |
@@ -719,10 +882,10 @@ listed here (they're untouched by other work).
 4. **Blood spray:** every successful contact (humanoid hit) spawns 18
    red `#c51111` particles at the contact point with a 700ms TTL. Fires
    regardless of Sparks toggle state.
-5. **Visor:** Amogus visor reads as a white-rimmed cyan band on the
-   front of the helmet from every camera angle — never cuts through the
-   body, never appears as a flat plate stuck on, never reveals interior
-   geometry.
+5. **Amogus mesh:** Sprite reads as a recognisable Among Us crewmate
+   (FBX-loaded). Visor, backpack, antenna, legs all render correctly.
+   Materials read with their intended colours under playground lighting.
+   No floating, no clipping into the floor, no scale distortion.
 6. **Hold-G drag-rotate:** holding G while left-dragging orbits the
    camera around `controls.target`. Releasing G restores grab as the
    default left-click action. Pressing G while typing in any input does
@@ -737,10 +900,12 @@ listed here (they're untouched by other work).
    behaviour: 2.5s of skidding around the floor, smooth turns, sprite
    stays grounded.
 9. **Olympic Way:** sprite (roundel + plinth) unchanged. "Pulse!"
-   button renamed "Summon Train!"; firing it spawns a train that
-   bursts up from one scene edge, arcs through the playground, dives
-   back into the ground at the opposite edge, knocking down anything in
-   its path. Train despawns cleanly within 3.5s.
+   button renamed "Summon Train!"; firing it spawns a train (FBX-loaded
+   Bombardier S Stock, scaled to ~3m length) that bursts up from one
+   scene edge, arcs through the playground, dives back into the ground
+   at the opposite edge, knocking down anything in its path. Train
+   despawns cleanly within 3.5s. Train reads as a London Underground S
+   Stock (silver body, blue doors, red trim — not all-red).
 10. **Hitbox:** every spawned project sits flush on the floor at rest
     (no float, no clip). Grab raycasts against project sprites land on
     the visible silhouette, not above/below it.
@@ -751,11 +916,22 @@ listed here (they're untouched by other work).
 
 ## 6. Risks and unknowns
 
-- **`three-bvh-csg` startup cost.** First import is ~80kb gzipped from
-  esm.sh. Mitigated by static module load + cached cabin geometry. If
-  startup is unacceptable, fall back to a non-CSG cabin (visible window
-  *holes* via deeply-recessed `MeshBasicMaterial({color: black})` boxes
-  inset into the cabin face). Decided at impl time if we hit a wall.
+- **FBX preload boot delay.** Two FBX assets load at `App.init()`
+  before the catalog is usable. Combined ~150-300kb. On a fast
+  connection (Vercel CDN edge), boot adds ~100ms; on a slow connection
+  it could be 1-2s. Mitigation: show a "loading playground" splash
+  during preload (already trivial — set a body-level loading class,
+  unset on `Promise.all` resolve). If the user spawns a project before
+  preload completes, the spawn flow `await`s the cache.
+- **CC-BY attribution.** The Bombardier S Stock is CC-BY (timblewee
+  on Sketchfab). Add a credits surface — either the existing
+  `PortfolioOverlay` footer or a dedicated `/credits` route — listing
+  the model author and source URL. No legal exposure for a personal
+  portfolio, but attribution is still required by the licence.
+- **FBX material parsing edge cases.** FBXLoader maps materials to
+  MeshPhongMaterial/Standard with best-effort. If either model lands
+  with muddy/wrong colours, the post-load traverse pass overrides
+  per-mesh. Known fallback path; not a blocker.
 - **Train hit detection precision.** Bbox-vs-bbox is approximate; an
   articulated humanoid in a contorted pose may have a body whose AABB
   extends well beyond its visible silhouette, leading to "phantom"

@@ -36,3 +36,26 @@ library swap, alternative implementation):
 2. Don't dress preferences as architecture.
 3. Don't lead with "this isn't how the project works." Lead with the
    actual tradeoffs.
+
+## 2026-04-26 — Don't reflexively recommend GLB conversion when FBX is in hand
+
+**Mistake.** Same session as the lesson above, made the same error in
+miniature. After Rex confirmed FBX was viable, I still listed
+"FBX→GLB conversion" as a parallel option and nudged toward GLB on
+"industry direction" / "smaller payload" grounds. Rex pushed back: "do
+a frank evaluation; threejs imports fbx so isn't this good enough?"
+
+**Reality.** For a 47kb FBX with flat-colour materials, GLB conversion
+is pure pedantry. Total first-load is ~127kb (loader + asset). The GLB
+saves ~70kb but costs a Blender export step and a new file to manage.
+The time spent talking about the conversion already exceeded the time
+the conversion itself would save.
+
+**Rule.** When format X is in hand and works, don't recommend
+converting to format Y unless format Y solves an actual problem
+(broken materials, payload too big to ship, animations that don't
+load). "Better in general" is not a reason to convert.
+
+**How to apply.** Before recommending an asset-pipeline change, name
+the *specific* problem it solves with the user's *specific* asset. If
+the answer is "no problem, but Y is more modern," the answer is keep X.
