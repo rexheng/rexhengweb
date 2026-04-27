@@ -11,39 +11,62 @@
 
 import * as THREE from "three";
 import { findBody } from "./impulse.js";
+import {
+  computeBallisticLunge,
+  shouldTriggerNearContact,
+} from "./stabPhysics.mjs";
+
+const TARGET_BODY_OFFSET_Y = 0.06;
+const STAB_TIMEOUT_MS = 1500;
+
+function threeToMjPos(v) {
+  return { x: v.x, y: -v.z, z: v.y };
+}
+
+function mjToThreePos(p) {
+  return new THREE.Vector3(p.x, p.z, -p.y);
+}
 
 export function stab({ app, slot }) {
   const torso = findBody(app, "torso");
   if (!torso) return { tick() { return false; } };
 
   const torsoPos = new THREE.Vector3();
+  const targetPos = new THREE.Vector3();
   torso.updateWorldMatrix(true, false);
   torsoPos.setFromMatrixPosition(torso.matrixWorld);
+  targetPos.copy(torsoPos);
+  targetPos.y += TARGET_BODY_OFFSET_Y;
 
   const slotPos = new THREE.Vector3();
   slot.group.updateWorldMatrix(true, false);
   slotPos.setFromMatrixPosition(slot.group.matrixWorld);
-
-  // Direction from slot → torso in THREE world, swizzled to MJ world.
-  // THREE → MJ: (x, y, z)_three → (x, -z, y)_mj.
-  const dirT = torsoPos.clone().sub(slotPos).normalize();
-  const mjDx = dirT.x;
-  const mjDy = -dirT.z;
-  const mjDz = dirT.y;
 
   const model = app.model, data = app.data;
   const jntAdr = model.body_jntadr[slot.bodyID];
   const qposAdr = model.jnt_qposadr[jntAdr];
   const dofAdr = model.jnt_dofadr[jntAdr];
 
+  const slotMj = threeToMjPos(slotPos);
+  const targetMj = threeToMjPos(targetPos);
+  const lunge = computeBallisticLunge({
+    from: slotMj,
+    to: targetMj,
+    gravityZ: model.opt?.gravity?.[2] ?? -9.81,
+  });
+  const horizontalMag = Math.hypot(lunge.vx, lunge.vy) || 1;
+  const mjDx = lunge.vx / horizontalMag;
+  const mjDy = lunge.vy / horizontalMag;
+
   // Rotate sprite to face the torso BEFORE the lunge fires. The mesh was
   // built in Three.js with the visor at local +z; the MuJoCo loader
   // swizzles such that local-MJ +y maps to local-THREE +z. So "visor
-  // forward" in the body's MJ-local frame is +y. We need a quaternion
-  // that rotates MJ-local +y onto the MJ-world target direction.
+  // forward" in the body's MJ-local frame is +y. Rotate toward the initial
+  // ballistic velocity so the visor follows the arc instead of a flat ray.
+  const flightDir = new THREE.Vector3(lunge.vx, lunge.vy, lunge.vz).normalize();
   const qTurn = new THREE.Quaternion().setFromUnitVectors(
     new THREE.Vector3(0, 1, 0),
-    new THREE.Vector3(mjDx, mjDy, mjDz),
+    flightDir,
   );
   // Three stores (x, y, z, w); MJ qpos stores (w, x, y, z). Convert.
   data.qpos[qposAdr + 3] = qTurn.w;
@@ -51,24 +74,14 @@ export function stab({ app, slot }) {
   data.qpos[qposAdr + 5] = qTurn.y;
   data.qpos[qposAdr + 6] = qTurn.z;
 
-  // Distance-calibrated lunge: stays in flight ~0.5s regardless of range.
-  // Constant velocity made near-spawns feel like teleports; constant time
-  // keeps the visual moment consistent. Clamp 8..22 m/s.
-  const dist = torsoPos.distanceTo(slotPos);
-  const TARGET_TIME = 0.5;
-  const speed = Math.max(8, Math.min(22, dist / TARGET_TIME));
-
-  // Upward bias scales with speed — short stabs don't get a giant lift.
-  const upwardBias = 2.5 * (speed / 22);
-
-  data.qvel[dofAdr + 0] = mjDx * speed;
-  data.qvel[dofAdr + 1] = mjDy * speed;
-  data.qvel[dofAdr + 2] = mjDz * speed + upwardBias;
+  data.qvel[dofAdr + 0] = lunge.vx;
+  data.qvel[dofAdr + 1] = lunge.vy;
+  data.qvel[dofAdr + 2] = lunge.vz;
   // Forward tumble: spin axis perpendicular to lunge direction.
   const perpAxisX = -mjDy;
   const perpAxisY = mjDx;
-  data.qvel[dofAdr + 3] = perpAxisX * 18;
-  data.qvel[dofAdr + 4] = perpAxisY * 18;
+  data.qvel[dofAdr + 3] = perpAxisX * 14;
+  data.qvel[dofAdr + 4] = perpAxisY * 14;
   data.qvel[dofAdr + 5] = (Math.random() - 0.5) * 6;
 
   // Flush the qpos write so mj_step sees the new orientation THIS frame.
@@ -99,46 +112,77 @@ export function stab({ app, slot }) {
   const torsoIsFree = torsoJnt >= 0 && model.jnt_type[torsoJnt] === 0;
 
   let hit = false;
-  let timeoutMs = 1500;
+  let timeoutMs = STAB_TIMEOUT_MS;
+  let elapsedMs = 0;
+
+  function readCurrentTargetMj() {
+    torso.updateWorldMatrix(true, false);
+    torsoPos.setFromMatrixPosition(torso.matrixWorld);
+    targetPos.copy(torsoPos);
+    targetPos.y += TARGET_BODY_OFFSET_Y;
+    return threeToMjPos(targetPos);
+  }
+
+  function readCurrentSlotMj() {
+    slot.group.updateWorldMatrix(true, false);
+    slotPos.setFromMatrixPosition(slot.group.matrixWorld);
+    return threeToMjPos(slotPos);
+  }
+
+  function applyHit(hitPosThree) {
+    const power = Math.max(0, Math.min(1, (lunge.horizontalSpeed - 5) / 9));
+    const knockSpeed = 3.2 + power * 3.8;
+    data.qvel[torsoDof + 0] = mjDx * knockSpeed;
+    data.qvel[torsoDof + 1] = mjDy * knockSpeed;
+    data.qvel[torsoDof + 2] = 2.4 + power * 1.2;
+    data.qvel[torsoDof + 3] = -mjDy * 5;
+    data.qvel[torsoDof + 4] =  mjDx * 5;
+    data.qvel[torsoDof + 5] = (Math.random() - 0.5) * 2.4;
+    app.sparks?.burst({
+      pos: hitPosThree,
+      color: "#c51111",
+      count: 18,
+      ttlMs: 700,
+    });
+    hit = true;
+    return false;
+  }
 
   return {
     tick(dt) {
       if (hit) return false;
+      elapsedMs += dt;
       timeoutMs -= dt;
       if (timeoutMs <= 0) return false;
       if (!torsoIsFree || torsoDof < 0) return false;
 
       const ncon = data.ncon;
-      if (!ncon) return true;
-      for (let i = 0; i < ncon; i++) {
-        const c = data.contact.get(i);
-        const g1 = c.geom1, g2 = c.geom2;
-        const a1 = amogusGeoms.has(g1), h2 = humanoidGeoms.has(g2);
-        const a2 = amogusGeoms.has(g2), h1 = humanoidGeoms.has(g1);
-        if ((a1 && h2) || (a2 && h1)) {
-          // Proportional to lunge speed so short-range stabs don't pinwheel
-          // the humanoid as hard as long-range ones.
-          const KNOCK_SPEED = 3.0 + (speed / 22) * 4.5;   // → 3.0..7.5
-          data.qvel[torsoDof + 0] = mjDx * KNOCK_SPEED;
-          data.qvel[torsoDof + 1] = mjDy * KNOCK_SPEED;
-          data.qvel[torsoDof + 2] = mjDz * KNOCK_SPEED + 3.0;
-          data.qvel[torsoDof + 3] = -mjDy * 6;
-          data.qvel[torsoDof + 4] =  mjDx * 6;
-          data.qvel[torsoDof + 5] = (Math.random() - 0.5) * 3;
-          // Blood spray at contact point. MJ→THREE swizzle: (x, y, z)_mj
-          // → (x, z, -y)_three. Inverse of the THREE→MJ swizzle used for
-          // velocity above.
-          const contactPos = new THREE.Vector3(c.pos[0], c.pos[2], -c.pos[1]);
-          app.sparks?.burst({
-            pos: contactPos,
-            color: "#c51111",
-            count: 18,
-            ttlMs: 700,
-          });
-          hit = true;
-          return false;
+      if (ncon) {
+        for (let i = 0; i < ncon; i++) {
+          const c = data.contact.get(i);
+          const g1 = c.geom1, g2 = c.geom2;
+          const a1 = amogusGeoms.has(g1), h2 = humanoidGeoms.has(g2);
+          const a2 = amogusGeoms.has(g2), h1 = humanoidGeoms.has(g1);
+          if ((a1 && h2) || (a2 && h1)) {
+            // Blood spray at contact point. MJ→THREE swizzle: (x, y, z)_mj
+            // → (x, z, -y)_three. Inverse of the THREE→MJ swizzle used for
+            // velocity above.
+            const contactPos = new THREE.Vector3(c.pos[0], c.pos[2], -c.pos[1]);
+            return applyHit(contactPos);
+          }
         }
       }
+
+      const currentTargetMj = readCurrentTargetMj();
+      const currentSlotMj = readCurrentSlotMj();
+      if (shouldTriggerNearContact({
+        elapsedMs,
+        slotPos: currentSlotMj,
+        targetPos: currentTargetMj,
+      })) {
+        return applyHit(mjToThreePos(currentSlotMj));
+      }
+
       return true;
     },
   };
