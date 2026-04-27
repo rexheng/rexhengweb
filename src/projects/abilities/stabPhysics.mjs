@@ -5,11 +5,30 @@ const DEFAULTS = {
   minHorizontalSpeed: 5.0,
   maxHorizontalSpeed: 14.0,
   minNearContactMs: 120,
-  nearContactRadius: 0.34,
+  nearContactRadius: 0.44,
 };
 
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
+}
+
+export function bodyPosFromXpos(data, bodyID) {
+  const base = bodyID * 3;
+  return {
+    x: data.xpos[base + 0],
+    y: data.xpos[base + 1],
+    z: data.xpos[base + 2],
+  };
+}
+
+export function subtreeComFromData(data, bodyID) {
+  if (!data.subtree_com) return bodyPosFromXpos(data, bodyID);
+  const base = bodyID * 3;
+  return {
+    x: data.subtree_com[base + 0],
+    y: data.subtree_com[base + 1],
+    z: data.subtree_com[base + 2],
+  };
 }
 
 export function computeBallisticLunge({

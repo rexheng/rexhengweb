@@ -653,6 +653,7 @@ class App {
     const stepMs = timestep * 1000;
     const simStart = performance.now();
     while (this._simAccumMs >= stepMs) {
+      this.projectSystem?.prePhysicsUpdate();
       this.mujoco.mj_step(this.model, this.data);
       this._simAccumMs -= stepMs;
       if (performance.now() - simStart > 30) {
@@ -660,6 +661,7 @@ class App {
         break;
       }
     }
+    this.projectSystem?.postPhysicsUpdate();
   }
 
   syncMeshes() {

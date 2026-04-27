@@ -1,0 +1,10 @@
+---
+description: Read the in-game browser testing guide before testing the MuJoCo portfolio app
+alwaysApply: true
+---
+
+# In-Game Browser Testing
+
+Before testing `index.html`, `src/main.js`, UI controls, project spawning, or in-game abilities in a browser, read `docs/IN_GAME_TESTING.md`.
+
+Use that guide for Cursor Browser and Playwright runs. It documents the desktop controls panel, the mobile swipe-up bottom sheet, stale refs, coordinate-click rules, and the project-card flow needed to fire abilities such as `Stab!`.

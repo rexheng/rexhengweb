@@ -12,16 +12,14 @@
 import * as THREE from "three";
 import { findBody } from "./impulse.js";
 import {
+  bodyPosFromXpos,
   computeBallisticLunge,
   shouldTriggerNearContact,
+  subtreeComFromData,
 } from "./stabPhysics.mjs";
 
-const TARGET_BODY_OFFSET_Y = 0.06;
+const TARGET_BODY_OFFSET_Z = 0.12;
 const STAB_TIMEOUT_MS = 1500;
-
-function threeToMjPos(v) {
-  return { x: v.x, y: -v.z, z: v.y };
-}
 
 function mjToThreePos(p) {
   return new THREE.Vector3(p.x, p.z, -p.y);
@@ -31,24 +29,24 @@ export function stab({ app, slot }) {
   const torso = findBody(app, "torso");
   if (!torso) return { tick() { return false; } };
 
-  const torsoPos = new THREE.Vector3();
-  const targetPos = new THREE.Vector3();
-  torso.updateWorldMatrix(true, false);
-  torsoPos.setFromMatrixPosition(torso.matrixWorld);
-  targetPos.copy(torsoPos);
-  targetPos.y += TARGET_BODY_OFFSET_Y;
-
-  const slotPos = new THREE.Vector3();
-  slot.group.updateWorldMatrix(true, false);
-  slotPos.setFromMatrixPosition(slot.group.matrixWorld);
-
   const model = app.model, data = app.data;
   const jntAdr = model.body_jntadr[slot.bodyID];
   const qposAdr = model.jnt_qposadr[jntAdr];
   const dofAdr = model.jnt_dofadr[jntAdr];
 
-  const slotMj = threeToMjPos(slotPos);
-  const targetMj = threeToMjPos(targetPos);
+  const torsoBodyID = torso.bodyID ?? Object.entries(app.bodies || {})
+    .find(([, g]) => g?.name === "torso")?.[0];
+  if (torsoBodyID == null) return { tick() { return false; } };
+  const torsoID = Number(torsoBodyID);
+
+  // MuJoCo docs: body world positions are derived fields in `data.xpos`,
+  // updated by `mj_forward`/`mj_step`. Use them as the source of truth for
+  // physics; Three transforms are just the rendered copy after swizzling.
+  // The humanoid target uses subtree_com so prone/supine poses aim at the
+  // ragdoll's actual centre instead of the torso frame's current endpoint.
+  const slotMj = bodyPosFromXpos(data, slot.bodyID);
+  const targetMj = subtreeComFromData(data, torsoID);
+  targetMj.z += TARGET_BODY_OFFSET_Z;
   const lunge = computeBallisticLunge({
     from: slotMj,
     to: targetMj,
@@ -102,12 +100,7 @@ export function stab({ app, slot }) {
     }
   }
 
-  let torsoBodyID = -1;
-  for (const [id, g] of Object.entries(app.bodies || {})) {
-    if (g?.name === "torso") { torsoBodyID = Number(id); break; }
-  }
-  if (torsoBodyID < 0) return { tick() { return false; } };
-  const torsoJnt = model.body_jntadr[torsoBodyID];
+  const torsoJnt = model.body_jntadr[torsoID];
   const torsoDof = torsoJnt >= 0 ? model.jnt_dofadr[torsoJnt] : -1;
   const torsoIsFree = torsoJnt >= 0 && model.jnt_type[torsoJnt] === 0;
 
@@ -116,17 +109,13 @@ export function stab({ app, slot }) {
   let elapsedMs = 0;
 
   function readCurrentTargetMj() {
-    torso.updateWorldMatrix(true, false);
-    torsoPos.setFromMatrixPosition(torso.matrixWorld);
-    targetPos.copy(torsoPos);
-    targetPos.y += TARGET_BODY_OFFSET_Y;
-    return threeToMjPos(targetPos);
+    const p = subtreeComFromData(data, torsoID);
+    p.z += TARGET_BODY_OFFSET_Z;
+    return p;
   }
 
   function readCurrentSlotMj() {
-    slot.group.updateWorldMatrix(true, false);
-    slotPos.setFromMatrixPosition(slot.group.matrixWorld);
-    return threeToMjPos(slotPos);
+    return bodyPosFromXpos(data, slot.bodyID);
   }
 
   function applyHit(hitPosThree) {

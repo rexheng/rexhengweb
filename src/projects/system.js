@@ -4,9 +4,10 @@
 import * as THREE from "three";
 import { PROJECTS } from "./index.js";
 import { findBody } from "./abilities/impulse.js";
+import { parkSlotBody, setBodyCollision } from "./slotParking.mjs";
 
 const SLOT_COUNT = 8;
-const PARKED_Z = -60;                 // matches the XML park position
+const PARKED_Z = 60;                  // matches the XML park position
 const SPAWN_RING_MIN = 1.2;           // nearest radius (MJ) from humanoid
 const SPAWN_RING_MAX = 2.4;           // farthest radius (MJ)
 const SPAWN_HEIGHT = 0.9;             // drop height above ground so they land naturally
@@ -145,6 +146,7 @@ export class ProjectSystem {
             bodyID: Number(id),
             name: wantName,
             group: g,
+            parkedZ: PARKED_Z + i * 0.5,
             project: null,
             meshGroup: null,
             labelEl: null,
@@ -153,6 +155,15 @@ export class ProjectSystem {
         }
       }
     }
+    this._parkInactiveSlots();
+  }
+
+  prePhysicsUpdate() {
+    this._parkInactiveSlots();
+  }
+
+  postPhysicsUpdate() {
+    this._parkInactiveSlots();
   }
 
   /**
@@ -283,6 +294,7 @@ export class ProjectSystem {
     const jntAdr = model.body_jntadr[slot.bodyID];
     const qposAdr = model.jnt_qposadr[jntAdr];
     const dofAdr = model.jnt_dofadr[jntAdr];
+    setBodyCollision(model, slot.bodyID, { contype: 2, conaffinity: 1 });
     data.qpos[qposAdr + 0] = mjX;
     data.qpos[qposAdr + 1] = mjY;
     data.qpos[qposAdr + 2] = mjZ;
@@ -365,18 +377,17 @@ export class ProjectSystem {
 
     // Teleport the body back far below the floor.
     const model = this.app.model, data = this.app.data;
-    const jntAdr = model.body_jntadr[slot.bodyID];
-    const qposAdr = model.jnt_qposadr[jntAdr];
-    const dofAdr = model.jnt_dofadr[jntAdr];
-    data.qpos[qposAdr + 0] = 0;
-    data.qpos[qposAdr + 1] = 0;
-    data.qpos[qposAdr + 2] = PARKED_Z - slot.bodyID * 0.5;
-    data.qpos[qposAdr + 3] = 1;
-    data.qpos[qposAdr + 4] = 0;
-    data.qpos[qposAdr + 5] = 0;
-    data.qpos[qposAdr + 6] = 0;
-    for (let k = 0; k < 6; k++) data.qvel[dofAdr + k] = 0;
+    parkSlotBody(model, data, slot.bodyID, slot.parkedZ);
     this.app.mujoco.mj_forward(model, data);
+  }
+
+  _parkInactiveSlots() {
+    const model = this.app.model, data = this.app.data;
+    if (!model || !data) return;
+    for (const slot of this.slots) {
+      if (slot.project) continue;
+      parkSlotBody(model, data, slot.bodyID, slot.parkedZ);
+    }
   }
 
   // ── Per-frame ──────────────────────────────────────────────────────────

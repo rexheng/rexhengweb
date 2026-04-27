@@ -5,7 +5,7 @@
 // Idempotent — running twice produces byte-identical output.
 //
 // The per-slot z offset uses integer values for even i and half-step decimals
-// for odd i ("-60", "-60.5", "-61", "-61.5", …) to match the current hand-
+// for odd i ("60", "60.5", "61", "61.5", …) to match the current hand-
 // written block byte-for-byte. The initial run against the pre-marker XML
 // must produce no diff.
 //
@@ -24,21 +24,15 @@ const END = "<!-- SLOT_BLOCK_END -->";
 const INDENT = "    ";
 
 function slotZ(i) {
-  // i=0 → "-60", i=1 → "-60.5", i=2 → "-61", i=3 → "-61.5", …
-  return i % 2 === 0 ? String(-60 - i * 0.5) : (-60 - i * 0.5).toFixed(1);
+  // i=0 → "60", i=1 → "60.5", i=2 → "61", i=3 → "61.5", …
+  return i % 2 === 0 ? String(60 + i * 0.5) : (60 + i * 0.5).toFixed(1);
 }
 
 function slotLine(i) {
-  // contype=2 conaffinity=1 is the physics-agent's static collision filter
-  // (commit 010a20b on mujoco-portfolio). Pairwise rule: (a.contype &
-  // b.conaff) | (b.contype & a.conaff). Slot-slot = 0, slot-floor = 1,
-  // slot-humanoid = 1. Parked slots never inter-penetrate but live slots
-  // still collide with floor and ragdoll. NO runtime toggle needed —
-  // DO NOT CHANGE these attributes.
   return (
     `${INDENT}<body name="project_slot_${i}" pos="0 0 ${slotZ(i)}">` +
     `<freejoint/>` +
-    `<geom type="capsule" fromto="0 0 -0.22 0 0 0.22" size="0.26" ` +
+    `<geom type="box" size="0.30 0.30 0.45" ` +
     `rgba="0.85 0.18 0.20 1" mass="2.5" friction="1.0 0.05 0.002" ` +
     `contype="2" conaffinity="1"/>` +
     `</body>`
@@ -71,20 +65,11 @@ function main() {
   // same indent level as the bodies.
   const lines = [];
   lines.push(`${INDENT}${BEGIN}`);
-  lines.push(`${INDENT}<!-- Portfolio project slot pool. Eight dormant freejoint capsules parked`);
-  lines.push(`${INDENT}     well below the floor. Collision mask trick: slot geoms have`);
-  lines.push(`${INDENT}     contype=2 conaffinity=1. Floor + humanoid default to contype=1`);
-  lines.push(`${INDENT}     conaffinity=1. Pairwise collision requires (a.contype & b.conaff)`);
-  lines.push(`${INDENT}     OR (b.contype & a.conaff):`);
-  lines.push(`${INDENT}       slot-floor : (2 & 1) | (1 & 1) = 0 | 1 = 1 → collide ✓`);
-  lines.push(`${INDENT}       slot-slot  : (2 & 1) | (2 & 1) = 0 | 0 = 0 → no collide ✓`);
-  lines.push(`${INDENT}       slot-torso : (2 & 1) | (1 & 1) = 0 | 1 = 1 → collide ✓`);
-  lines.push(`${INDENT}     So parked slots can stack on the same axis without generating`);
-  lines.push(`${INDENT}     dozens of inter-penetrating contacts (which otherwise explodes the`);
-  lines.push(`${INDENT}     sim to NaN on frame 1 and the humanoid launches), but spawned`);
-  lines.push(`${INDENT}     projects still land on the floor and interact with the ragdoll.`);
-  lines.push(`${INDENT}     NO runtime toggle needed — the mask is correct for both states.`);
-  lines.push(`${INDENT}     **DO NOT CHANGE contype/conaffinity ON THESE GEOMS.** -->`);
+  lines.push(`${INDENT}<!-- Portfolio project slot pool. Eight dormant freejoint boxes parked`);
+  lines.push(`${INDENT}     high above the floor. Slots compile with collision enabled because`);
+  lines.push(`${INDENT}     MuJoCo does not reliably rebuild contact eligibility if geoms start`);
+  lines.push(`${INDENT}     fully disabled. Runtime code keeps inactive slots parked and zeroed`);
+  lines.push(`${INDENT}     every substep, then spawns active slots near the humanoid. -->`);
   for (let i = 0; i < SLOT_COUNT; i++) lines.push(slotLine(i));
   lines.push(`${INDENT}${END}`);
   const block = lines.join(eol);

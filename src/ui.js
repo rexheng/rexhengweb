@@ -13,6 +13,8 @@
 const GOOGLE_FONTS_URL =
   "https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap";
 
+const MOBILE_MEDIA_QUERY = "(max-width: 820px) and (pointer: coarse)";
+
 const CSS = `
 :root {
   --rex-ink: #0b0e16;
@@ -940,7 +942,7 @@ const CSS = `
 canvas { touch-action: none; }
 
 /* ─── Mobile / tablet — single-column, bottom-sheet controls ───────────── */
-@media (max-width: 820px) {
+@media ${MOBILE_MEDIA_QUERY} {
   /* Portfolio overlay collapses by default; CTA hidden, only the toggle. */
   #rex-portfolio-overlay { left: 12px; top: 12px; gap: 6px; }
   #rex-portfolio-overlay .rex-cta { display: none; }
@@ -1080,7 +1082,7 @@ canvas { touch-action: none; }
 
 /* iOS / Safari safe-area: pad for the home-indicator. */
 @supports (padding: max(0px)) {
-  @media (max-width: 820px) {
+  @media ${MOBILE_MEDIA_QUERY} {
     #rex-controls { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
     #hud-row { left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); }
     #hud-row #metrics-hud { right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); }
@@ -1126,7 +1128,7 @@ body.booted .rex-boot-splash {
  */
 export function isMobileLayout() {
   if (typeof window === "undefined") return false;
-  return window.matchMedia("(max-width: 820px)").matches;
+  return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
 }
 
 /**
