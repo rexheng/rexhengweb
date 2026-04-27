@@ -92,10 +92,22 @@ export class MetricsHud {
 
     let maxDepth = 0;
     const nc = data.ncon ?? 0;
-    for (let i = 0; i < nc; i++) {
-      const c = data.contact.get(i);
-      const depth = Math.max(0, -c.dist);
-      if (depth > maxDepth) maxDepth = depth;
+    if (nc > 0) {
+      // Two leaks compounded here. (1) `data.contact` is a property getter
+      // that allocates a fresh MjContactVec wrapper on every read; reading
+      // it inside the loop leaks one wrapper per iteration. (2) `vec.get(i)`
+      // returns an Embind handle owning a copy of the mjContact on the WASM
+      // heap. Both have to be .delete()-d explicitly. The combined leak ran
+      // ~5 MB/s on a humanoid and tripped the 2 GB WASM cap inside the
+      // demangler, taking the page down with `RuntimeError: Aborted`.
+      const contactVec = data.contact;
+      for (let i = 0; i < nc; i++) {
+        const c = contactVec.get(i);
+        const depth = Math.max(0, -c.dist);
+        c.delete();
+        if (depth > maxDepth) maxDepth = depth;
+      }
+      contactVec.delete();
     }
 
     const decay = Math.exp(-DECAY_PER_SEC * dt);

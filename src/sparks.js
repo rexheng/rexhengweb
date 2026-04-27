@@ -188,11 +188,20 @@ export class Sparks {
     const d = this.app.data;
     const n = d.ncon;
     const seen = new Set();
+    // `d.contact` is a getter that allocates a fresh MjContactVec wrapper
+    // per access, and `vec.get(i)` allocates a fresh mjContact copy. Cache
+    // the vec, copy fields off each contact wrapper before deleting it
+    // (c.pos is a Float64Array view backed by the WASM-side copy), and
+    // finally delete the vec. See metricsHud for the leak this avoids.
+    const contactVec = d.contact;
     for (let i = 0; i < n; i++) {
-      const c = d.contact.get(i);
-      const key = c.geom1 + "_" + c.geom2;
-      seen.add(key);
+      const c = contactVec.get(i);
+      const g1 = c.geom1, g2 = c.geom2;
       const depth = Math.max(0, -c.dist);
+      const px = c.pos[0], py = c.pos[1], pz = c.pos[2];
+      c.delete();
+      const key = g1 + "_" + g2;
+      seen.add(key);
       const prev = this.prevDepths.get(key) ?? 0;
       const delta = depth - prev;
       this.prevDepths.set(key, depth);
@@ -200,11 +209,12 @@ export class Sparks {
       if (delta > SPIKE_THRESHOLD && nowMs - last > MIN_GAP_MS) {
         this.lastHit.set(key, nowMs);
         // MJ→THREE swizzle for contact position
-        const p = new THREE.Vector3(c.pos[0], c.pos[2], -c.pos[1]);
+        const p = new THREE.Vector3(px, pz, -py);
         const strength = Math.min(1, depth * 300);
         this._spawnHit(p, 0.3 + strength);
       }
     }
+    contactVec.delete();
     for (const k of this.prevDepths.keys()) if (!seen.has(k)) this.prevDepths.delete(k);
   }
 }

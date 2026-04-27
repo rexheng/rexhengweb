@@ -147,19 +147,31 @@ export function stab({ app, slot }) {
 
       const ncon = data.ncon;
       if (ncon) {
+        // `data.contact` is a getter that allocates a fresh MjContactVec
+        // wrapper per read, and `vec.get(i)` allocates a fresh mjContact
+        // copy. Cache the vec, copy fields off each contact wrapper before
+        // deleting it (c.pos is a Float64Array view backed by the WASM-side
+        // copy), and finally delete the vec. See metricsHud for the leak
+        // this avoids.
+        const contactVec = data.contact;
+        let hitContactPos = null;
         for (let i = 0; i < ncon; i++) {
-          const c = data.contact.get(i);
+          const c = contactVec.get(i);
           const g1 = c.geom1, g2 = c.geom2;
+          const px = c.pos[0], py = c.pos[1], pz = c.pos[2];
+          c.delete();
           const a1 = amogusGeoms.has(g1), h2 = humanoidGeoms.has(g2);
           const a2 = amogusGeoms.has(g2), h1 = humanoidGeoms.has(g1);
           if ((a1 && h2) || (a2 && h1)) {
             // Blood spray at contact point. MJ→THREE swizzle: (x, y, z)_mj
             // → (x, z, -y)_three. Inverse of the THREE→MJ swizzle used for
             // velocity above.
-            const contactPos = new THREE.Vector3(c.pos[0], c.pos[2], -c.pos[1]);
-            return applyHit(contactPos);
+            hitContactPos = new THREE.Vector3(px, pz, -py);
+            break;
           }
         }
+        contactVec.delete();
+        if (hitContactPos) return applyHit(hitContactPos);
       }
 
       const currentTargetMj = readCurrentTargetMj();
