@@ -61,6 +61,81 @@ export function ringBand(THREE, { radius, tubeRadius, material, y = 0, segments 
 }
 
 /**
+ * Low-poly bee — ellipsoid body, dark head/stinger, simple bands and wings.
+ *
+ *   { bodyR, bodyLength, stripeW, wingW, wingL, bodyMat, stripeMat, headMat,
+ *     wingMat }
+ *
+ * The bee faces local +Z so callers can steer it by rotating around Y.
+ */
+export function lowPolyBee(THREE, {
+  bodyR,
+  bodyLength,
+  stripeW,
+  wingW,
+  wingL,
+  bodyMat,
+  stripeMat,
+  headMat,
+  wingMat,
+}) {
+  const group = new THREE.Group();
+  group.name = "low_poly_bee";
+
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(bodyR, 10, 8),
+    bodyMat,
+  );
+  body.scale.set(0.78, 0.66, bodyLength / (bodyR * 2));
+  body.castShadow = true;
+  body.receiveShadow = true;
+  group.add(body);
+
+  for (const z of [-bodyLength * 0.18, bodyLength * 0.18]) {
+    const band = new THREE.Mesh(
+      new THREE.CylinderGeometry(bodyR * 0.78, bodyR * 0.78, stripeW, 8, 1, false),
+      stripeMat,
+    );
+    band.rotation.x = Math.PI / 2;
+    band.position.z = z;
+    band.castShadow = true;
+    group.add(band);
+  }
+
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(bodyR * 0.62, 8, 6),
+    headMat,
+  );
+  head.scale.set(0.82, 0.78, 0.9);
+  head.position.z = bodyLength * 0.58;
+  head.castShadow = true;
+  group.add(head);
+
+  const stinger = new THREE.Mesh(
+    new THREE.ConeGeometry(bodyR * 0.28, bodyR * 0.62, 6),
+    stripeMat,
+  );
+  stinger.rotation.x = -Math.PI / 2;
+  stinger.position.z = -bodyLength * 0.66;
+  stinger.castShadow = true;
+  group.add(stinger);
+
+  for (const sign of [-1, 1]) {
+    const wing = new THREE.Mesh(
+      new THREE.CircleGeometry(1, 6),
+      wingMat,
+    );
+    wing.scale.set(wingW, wingL, 1);
+    wing.rotation.x = -Math.PI / 2;
+    wing.rotation.z = sign * 0.38;
+    wing.position.set(sign * bodyR * 0.72, bodyR * 0.52, -bodyLength * 0.05);
+    group.add(wing);
+  }
+
+  return group;
+}
+
+/**
  * Short upright cylinder — used for Amogus's stub legs.
  *
  *   { radius, height, material, baseY = 0, segments = 24 }
