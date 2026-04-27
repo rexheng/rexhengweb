@@ -139,6 +139,43 @@ async (page) => {
 
 Why this is more reliable: it uses `projectSystem` APIs to spawn and the real card ability control, so it avoids stale label refs. Keep a short post-spawn wait so world positions used by the ability have settled. This checks ability meshes and cleanup, not the full manual tile/label path.
 
+## Playwright DOM Shortcut (Peter Network)
+
+Scenario: verify Peter spawn, label/cycle changes, and card `Cycle` when GUI refs or scroll make normal clicks brittle.
+
+1. Start the app and open Playwright against your server port.
+2. Wait for load, then click the `NUS · @nus.peter` tile (or use `querySelector` on `button` text containing `NUS` and `@nus.peter`).
+
+```js
+await page.evaluate(() => {
+  const button = [...document.querySelectorAll("button")].find(
+    (el) => el.textContent.includes("NUS") && el.textContent.includes("@nus.peter"),
+  );
+  button?.click();
+});
+```
+
+3. Read visible persona labels on floating chrome:
+
+```js
+await page.evaluate(() =>
+  [...document.querySelectorAll(".rex-project-label-text")].map((el) => el.textContent),
+);
+```
+
+4. Open the card and fire `Cycle` with the same DOM path the UI uses:
+
+```js
+await page.evaluate(() => {
+  document.querySelector(".rex-project-label")?.click();
+  document.querySelector(".rex-ui-card-ability")?.click();
+});
+```
+
+Auto-rotation on spawn is time-based: allow several seconds to observe outfit changes without clicking `Cycle`. Pair with screenshots for visual-only checks.
+
+**Caveats:** Exercises DOM-driven behavior, not only layout/scroll. Refresh snapshots if you switch to ref-based browser tools mid-flow.
+
 ## Cursor Browser Tab Isolation
 
 Scenario: multiple local servers or issue worktrees are open in Cursor Browser, and actions can accidentally continue on a stale tab or a different port.
@@ -149,8 +186,9 @@ Tested sequence:
 2. Lock the returned `viewId`.
 3. Pass the same `viewId` to every browser action.
 4. Take a fresh snapshot and confirm the page URL matches the intended port before clicking project tiles or ability buttons.
+5. If you are verifying a Simulacra worker build, open `http://127.0.0.1:<port>/src/projects/catalog/simulacra/build.js?probe=1` in that same server session and confirm the served source includes `lowPolyBee` (or your expected symbol). That catches a stale static server on another worktree.
 
-Why this is more reliable: it prevents a previous tab on another local port from receiving interactions. Caveats: this is Cursor Browser MCP-specific and it does not replace the stale-ref rule. Refresh the snapshot after spawn, card open, ability click, resize, or wait.
+Why this is more reliable: it prevents a previous tab on another local port from receiving interactions and can catch a stale server before visual checks. Caveats: this is Cursor Browser MCP-specific and it does not replace the stale-ref rule. Refresh the snapshot after spawn, card open, ability click, resize, or wait.
 
 ## Known Testing Traps
 
