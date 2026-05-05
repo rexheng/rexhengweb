@@ -297,15 +297,33 @@ const CSS = `
   color: var(--rex-ivory-3);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  transition: color 160ms ease;
 }
-.rex-section-head::before {
-  content: "";
-  display: block;
-  width: 8px;
-  height: 1px;
-  background: var(--rex-amber);
+.rex-section-head:hover { color: var(--rex-amber); }
+.rex-section-head:focus-visible { outline: 1px solid var(--rex-amber); outline-offset: -2px; }
+.rex-section-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-family: ui-monospace, monospace;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--rex-amber);
+  flex: 0 0 auto;
 }
+.rex-section-label { flex: 1 1 auto; }
+.rex-section.is-collapsed > :not(.rex-section-head) { display: none; }
+.rex-section.is-collapsed .rex-section-head { padding-bottom: 14px; }
 
 .rex-row {
   padding: 7px 18px;

@@ -137,21 +137,46 @@ export class ControlsPanel {
   }
 
   _section(headLabel, children) {
-    const section = document.createElement("div");
-    section.className = "rex-section";
-    const h = document.createElement("div");
-    h.className = "rex-section-head";
-    h.textContent = headLabel;
-    section.appendChild(h);
+    const section = this._sectionShell(headLabel);
     for (const c of children) section.appendChild(c);
     return section;
   }
   _sectionShell(headLabel) {
     const section = document.createElement("div");
     section.className = "rex-section";
-    const h = document.createElement("div");
+
+    const h = document.createElement("button");
+    h.type = "button";
     h.className = "rex-section-head";
-    h.textContent = headLabel;
+    h.setAttribute("aria-expanded", "true");
+
+    const toggle = document.createElement("span");
+    toggle.className = "rex-section-toggle";
+    toggle.textContent = "−";
+    toggle.setAttribute("aria-hidden", "true");
+    h.appendChild(toggle);
+
+    const label = document.createElement("span");
+    label.className = "rex-section-label";
+    label.textContent = headLabel;
+    h.appendChild(label);
+
+    const storageKey = `rex-section-collapsed:${headLabel.toLowerCase()}`;
+    let collapsed = false;
+    try { collapsed = localStorage.getItem(storageKey) === "1"; } catch {}
+    if (collapsed) {
+      section.classList.add("is-collapsed");
+      h.setAttribute("aria-expanded", "false");
+      toggle.textContent = "+";
+    }
+
+    h.addEventListener("click", () => {
+      const isCollapsed = section.classList.toggle("is-collapsed");
+      h.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
+      toggle.textContent = isCollapsed ? "+" : "−";
+      try { localStorage.setItem(storageKey, isCollapsed ? "1" : "0"); } catch {}
+    });
+
     section.appendChild(h);
     return section;
   }
