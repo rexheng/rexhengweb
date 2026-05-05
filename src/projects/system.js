@@ -68,31 +68,12 @@ export class ProjectSystem {
       this.dismissCard();
     });
 
-    // Sprite mesh click → open card; double-click → fire ability directly.
-    // Click vs drag gating: ≤200ms and <4px qualifies as a click. Mousedown
-    // does NOT consume the event — grab still receives its pointerdown and
-    // starts as normal; if the user drags, we fail the click test on mouseup.
-    // If the user just clicks, grab releases on mouseup with no displacement
-    // and we hand off to the click/dblclick disambiguator below.
-    //
-    // Click vs dblclick: a single click opens the card, but a second click on
-    // the same body within DBLCLICK_MS fires the ability directly. The card
-    // open is delayed by DBLCLICK_MS so a fast second click can cancel it
-    // before the card flashes. Different body on the second click resets the
-    // pending timer rather than counting as a dblclick.
-    const DBLCLICK_MS = 280;
-    let pendingSlot = null;
-    let pendingTimer = 0;
-
-    const clearPending = () => {
-      if (pendingTimer) {
-        clearTimeout(pendingTimer);
-        pendingTimer = 0;
-      }
-      pendingSlot = null;
-    };
-    this._cancelPendingCardOpen = clearPending;
-
+    // Sprite mesh click → open card. Required so labels-hidden users can
+    // still open project cards. Click vs drag gating: ≤200ms and <4px
+    // qualifies as a click. Mousedown does NOT consume the event — grab
+    // still receives its pointerdown and starts as normal; if the user
+    // drags, we fail the click test on mouseup. If the user just clicks,
+    // grab releases on mouseup with no displacement and we fire the card.
     let downX = 0, downY = 0, downT = 0, downBtn = -1;
     addEventListener("mousedown", (e) => {
       if (e.button !== 0) return;
@@ -129,24 +110,7 @@ export class ProjectSystem {
       if (!bodyID || bodyID < 0) return;
 
       const slot = this.slots.find((s) => s.bodyID === bodyID && s.project);
-      if (!slot) return;
-
-      // Second click on the same body within the window → fire ability.
-      if (pendingSlot && pendingSlot.bodyID === slot.bodyID) {
-        clearPending();
-        this._fireAbility(slot);
-        return;
-      }
-      // First click (or click on a different body) → delay-open the card so
-      // a follow-up click can cancel it.
-      clearPending();
-      pendingSlot = slot;
-      pendingTimer = setTimeout(() => {
-        pendingTimer = 0;
-        const s = pendingSlot;
-        pendingSlot = null;
-        if (s) this.showCard(s);
-      }, DBLCLICK_MS);
+      if (slot) this.showCard(slot);
     });
   }
 
@@ -155,7 +119,6 @@ export class ProjectSystem {
     // Cancel any active tick-based abilities — their scratch meshes may live
     // on the scene root (dispatch) or attached to slot.group (pulse, swarm).
     // Without this they'd leak across scene reloads.
-    this._cancelPendingCardOpen?.();
     for (const a of this._activeAbilities) a.cancel?.();
     this._activeAbilities = [];
 
@@ -384,7 +347,6 @@ export class ProjectSystem {
 
   /** Remove every mounted project and park all slots. */
   clearAll() {
-    this._cancelPendingCardOpen?.();
     for (const slot of this.slots) {
       if (!slot.project) continue;
       this._park(slot);
