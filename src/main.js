@@ -19,6 +19,7 @@ import { ControlsPanel } from "./controlsPanel.js";
 import { PinSystem } from "./pinSystem.js";
 import { injectUI, isMobileLayout, initMobileShell } from "./ui.js";
 import { initMobileHints } from "./mobileHints.js";
+import { initDesktopHints } from "./desktopHints.js";
 import { preloadCatalogAssets } from "./projects/assets.js";
 import { PROJECTS } from "./projects/index.js";
 import load_mujoco from "../vendor/mujoco/mujoco_wasm.js";
@@ -502,6 +503,10 @@ class App {
         { label: "Resume", href: "/cv/" },
       ],
     });
+
+    // First-run desktop hints. Mounted after PortfolioOverlay so the hint that
+    // anchors to the Professional CTA can resolve its target on first show.
+    initDesktopHints();
 
     this.animate();
 
