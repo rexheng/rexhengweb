@@ -127,12 +127,34 @@
       gap: 6px;
     }
     .cv-back:hover { color: var(--rex-amber); border-color: var(--rex-amber); padding-left: 14px; }
+    .cv-topnav-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 18px;
+    }
     .cv-topnav-mark {
       font-family: var(--rex-font-serif);
       font-style: italic;
       font-size: 18px;
       color: var(--rex-ivory);
       letter-spacing: 0.02em;
+    }
+    .cv-social {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      color: var(--rex-ivory-2);
+      border: 1px solid var(--rex-rule-strong);
+      background: rgba(255, 255, 255, 0.6);
+      transition: color 180ms ease, border-color 180ms ease, background 180ms ease, transform 220ms cubic-bezier(.2,.8,.2,1);
+    }
+    .cv-social svg { display: block; }
+    .cv-social:hover {
+      color: var(--rex-amber);
+      border-color: var(--rex-amber);
+      transform: translateY(-1px);
     }
 
     /* ─── Shell ─── */
@@ -216,7 +238,23 @@
     }
 
     /* ─── Entry list (Education, Work) ─── */
-    .entries { display: flex; flex-direction: column; }
+    .entries { display: flex; flex-direction: column; position: relative; }
+    /* Timeline rail spanning the work-history column boundary */
+    .entries.entries--timeline::before {
+      content: "";
+      position: absolute;
+      left: 220px;
+      top: 26px;
+      bottom: 26px;
+      width: 1px;
+      background: linear-gradient(to bottom,
+        transparent 0,
+        var(--rex-rule) 24px,
+        var(--rex-rule) calc(100% - 24px),
+        transparent 100%);
+      z-index: 0;
+      pointer-events: none;
+    }
     .entry {
       display: grid;
       grid-template-columns: 200px 1fr;
@@ -225,6 +263,25 @@
       border-top: 1px solid var(--rex-rule);
       position: relative;
       transition: background 240ms ease;
+    }
+    /* Timeline dot — only inside .entries--timeline blocks */
+    .entries--timeline .entry::after {
+      content: "";
+      position: absolute;
+      left: 220px;
+      top: 36px;
+      width: 9px;
+      height: 9px;
+      margin-left: -4px;
+      border-radius: 50%;
+      background: var(--rex-ink);
+      border: 1.5px solid var(--rex-amber);
+      z-index: 2;
+      transition: transform 240ms ease, box-shadow 240ms ease;
+    }
+    .entries--timeline .entry:hover::after {
+      transform: scale(1.25);
+      box-shadow: 0 0 0 4px rgba(176, 122, 42, 0.18);
     }
     .entry:last-child { border-bottom: 1px solid var(--rex-rule); }
     .entry:hover { background: rgba(176, 122, 42, 0.06); }
@@ -288,6 +345,81 @@
       margin: 8px 0 0;
       max-width: 640px;
     }
+
+    /* Capability tag chips beneath the role line */
+    .entry-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 4px 0 0;
+    }
+    .entry-tag {
+      font-family: var(--rex-font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--rex-ivory-3);
+      padding: 4px 9px;
+      border: 1px solid var(--rex-rule);
+      transition: color 220ms ease, border-color 220ms ease, background 220ms ease;
+    }
+    .entry:hover .entry-tag {
+      color: var(--rex-ivory-2);
+      border-color: var(--rex-rule-strong);
+      background: rgba(176, 122, 42, 0.04);
+    }
+
+    .entry-extension {
+      position: relative;
+      margin: 22px 0 0 18px;
+      padding: 14px 0 0 18px;
+      border-left: 1px solid var(--rex-rule);
+      max-width: 640px;
+    }
+    .entry-extension::before {
+      content: "";
+      position: absolute;
+      left: -1px;
+      top: 14px;
+      width: 12px;
+      height: 1px;
+      background: var(--rex-rule);
+    }
+    .entry-extension-label {
+      font-family: var(--rex-font-mono);
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--rex-amber);
+      margin: 0 0 8px;
+      opacity: 0.85;
+    }
+    .entry-extension-title {
+      font-family: var(--rex-font-serif);
+      font-weight: 400;
+      font-size: 19px;
+      line-height: 1.2;
+      color: var(--rex-ivory);
+      margin: 0 0 4px;
+    }
+    .entry-extension-abbr {
+      font-family: var(--rex-font-mono);
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      color: var(--rex-ivory-3);
+      font-weight: 400;
+    }
+    .entry-extension-role {
+      font-family: var(--rex-font-mono);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      color: var(--rex-ivory-2);
+      margin: 0;
+    }
+    .entry-extension-role .sep { color: var(--rex-ivory-3); margin: 0 8px; opacity: 0.5; }
+    .entry-extension .entry-text { margin-top: 8px; }
 
     /* ─── Project cards ─── */
     .project-grid {
@@ -419,13 +551,21 @@
       padding: 24px 26px;
       background: var(--rex-ink);
     }
+    .hobby-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 0 0 10px;
+    }
     .hobby-title {
       font-family: var(--rex-font-serif);
       font-weight: 400;
       font-size: 22px;
       line-height: 1.15;
       color: var(--rex-ivory);
-      margin: 0 0 4px;
+      margin: 0;
+      flex: 0 1 auto;
     }
     .hobby-sub {
       font-family: var(--rex-font-mono);
@@ -433,7 +573,11 @@
       letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--rex-amber);
-      margin: 0 0 10px;
+      margin: 0;
+      text-align: right;
+      flex: 0 1 auto;
+      align-self: baseline;
+      padding-top: 6px;
     }
     .hobby-desc {
       font-family: var(--rex-font-mono);
@@ -484,6 +628,8 @@
       .entry { grid-template-columns: 1fr; gap: 12px; padding: 22px 0; }
       .entry-meta { padding-top: 0; }
       .entry-org { font-size: 22px; }
+      .entries.entries--timeline::before,
+      .entries--timeline .entry::after { display: none; }
       .project-grid { grid-template-columns: 1fr; }
       .hobbies { grid-template-columns: 1fr; }
       .hobby { padding: 20px 22px; }
@@ -516,6 +662,9 @@
       .hobby-title { color: #000; }
       .hobby-desc { color: #000; font-size: 9.5pt; }
       .entry::before, .project-card::before { display: none; }
+      .entries.entries--timeline::before,
+      .entries--timeline .entry::after { display: none; }
+      .entry-tag { color: #333; border-color: #999; padding: 2pt 6pt; font-size: 7.5pt; }
       .entry-logo, .pc-logo { filter: none; }
     }
 
@@ -556,7 +705,16 @@
 
   <nav class="cv-topnav" aria-label="Primary">
     <a href="/" class="cv-back">← Playground</a>
-    <span class="cv-topnav-mark">Rex Heng</span>
+    <div class="cv-topnav-right">
+      <span class="cv-topnav-mark">Rex Heng</span>
+      <a class="cv-social" href="https://linkedin.com/in/rexheng" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn — Rex Heng">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/>
+          <rect x="2" y="9" width="4" height="12"/>
+          <circle cx="4" cy="4" r="2"/>
+        </svg>
+      </a>
+    </div>
   </nav>
 
   <div class="cv-shell">
@@ -613,7 +771,7 @@
         <span class="block-rule"></span>
       </div>
 
-      <div class="entries">
+      <div class="entries entries--timeline">
         <article class="entry reveal">
           <div class="entry-meta">
             <span class="dates">Jul — Sep 2025</span>
@@ -623,7 +781,13 @@
           <div class="entry-body">
             <h3 class="entry-org">DBS Bank</h3>
             <p class="entry-role">ESG Risk Specialist <span class="sep">·</span> Risk Management Group</p>
-            <p class="entry-text">Conducted sector deep-dives across automotive, animal husbandry, and data centres, producing benchmarks and reference cases reviewed by regional credit committees. Evaluated generative-AI ESG reporting workflows deployed to relationship managers across the region, with emphasis on retrieval accuracy, hallucination risk, and the audit-trail requirements needed to operationalise such tools within a regulated bank.</p>
+            <div class="entry-tags">
+              <span class="entry-tag">Sector benchmarking</span>
+              <span class="entry-tag">Climate risk</span>
+              <span class="entry-tag">Credit committee review</span>
+              <span class="entry-tag">APAC</span>
+            </div>
+            <p class="entry-text">Conducted sector deep-dives across automotive, animal husbandry, and data centres, producing benchmarks and reference cases reviewed by regional credit committees.</p>
           </div>
         </article>
 
@@ -636,7 +800,13 @@
           <div class="entry-body">
             <h3 class="entry-org">PricewaterhouseCoopers</h3>
             <p class="entry-role">ESG Asset &amp; Wealth Management <span class="sep">·</span> Financial Services</p>
-            <p class="entry-text">Co-authored the annual sustainability report for a $2B fund, aligning disclosures to GRI, SASB, and TCFD frameworks. Developed materiality matrices for the Consumer Discretionary and Consumer Staples sectors, mapping physical and transition climate risk onto revenue and supply-chain exposures. Supported the Monetary Authority of Singapore's Environmental Risk Management seminar and contributed to PwC's post-COP28 ESG masterclass curriculum.</p>
+            <div class="entry-tags">
+              <span class="entry-tag">GRI · SASB · TCFD</span>
+              <span class="entry-tag">Materiality assessment</span>
+              <span class="entry-tag">Climate risk</span>
+              <span class="entry-tag">$2B fund report</span>
+            </div>
+            <p class="entry-text">Co-authored the annual sustainability report for a $2B fund, aligning disclosures to GRI, SASB, and TCFD frameworks. Developed materiality matrices for the Consumer Discretionary and Consumer Staples sectors, mapping physical and transition climate risk onto revenue and supply-chain exposures.</p>
           </div>
         </article>
 
@@ -649,7 +819,20 @@
           <div class="entry-body">
             <h3 class="entry-org"><a href="https://ccnlondon.vercel.app/" target="_blank" rel="noopener noreferrer">Cambridge Consulting Network</a></h3>
             <p class="entry-role">Vice President <span class="sep">·</span> Client Acquisition</p>
-            <p class="entry-text">Lead client acquisition and engagement delivery. Expanded the active client base 6× (2 to 12+) across AI, biotechnology, and not-for-profit sectors, generating engagement revenue of approximately $45K. Directed five concurrent advisory projects with 25+ consultants and C-suite counterparts, including market-entry strategy for an oat-milk producer and an eight-week operational advisory for a refugee-services charity. Concurrently co-founded the London Intervarsity Case Competition (LICC) — London's first AI-focused case competition — alongside Richard Min, scaling it from inception to 250+ registrants and 60+ teams across LSE, Imperial, UCL, and KCL.</p>
+            <div class="entry-tags">
+              <span class="entry-tag">Client acquisition</span>
+              <span class="entry-tag">Advisory delivery</span>
+              <span class="entry-tag">6× pipeline growth</span>
+              <span class="entry-tag">Multi-project ops</span>
+            </div>
+            <p class="entry-text">Lead client acquisition and engagement delivery. Expanded the active client base 6× (2 to 12+) across AI, biotechnology, and not-for-profit sectors, generating engagement revenue of approximately $45K. Directed five concurrent advisory projects with 25+ consultants and C-suite counterparts, including market-entry strategy for an oat-milk producer and an eight-week operational advisory for a refugee-services charity.</p>
+
+            <div class="entry-extension">
+              <p class="entry-extension-label">↳ Spin-off initiative</p>
+              <h4 class="entry-extension-title">London Intervarsity Case Competition <span class="entry-extension-abbr">(LICC)</span></h4>
+              <p class="entry-extension-role">Co-founder <span class="sep">·</span> with Richard Min</p>
+              <p class="entry-text">Co-founded London's first AI-focused intervarsity case competition, incubated under the CCN platform. Scaled the inaugural edition from concept to 250+ registrants and 60+ teams across LSE, Imperial, UCL, and KCL, with judging panels and sponsors drawn from CCN's client and alumni network.</p>
+            </div>
           </div>
         </article>
 
@@ -662,7 +845,13 @@
           <div class="entry-body">
             <h3 class="entry-org">Singapore Armed Forces</h3>
             <p class="entry-role">Lieutenant <span class="sep">·</span> Motorised Transport Officer</p>
-            <p class="entry-text">Sole platoon commander overseeing four platoons and the welfare, training, and operational readiness of approximately 100 servicemen. Discharged monthly secretarial duties and authored formal incident reports for command review, developing the discipline of communicating clearly under operational pressure and assuming responsibility for issues outside immediate scope.</p>
+            <div class="entry-tags">
+              <span class="entry-tag">Operational command</span>
+              <span class="entry-tag">Anti-terrorist response</span>
+              <span class="entry-tag">100+ servicemen</span>
+              <span class="entry-tag">Incident reporting</span>
+            </div>
+            <p class="entry-text">Oversaw operational readiness of over 100 men as sole platoon commander across four platoons. First anti-terrorist deployment force for the operationally tagged unit. Discharged monthly secretarial duties and authored formal incident reports for command review.</p>
           </div>
         </article>
 
@@ -675,7 +864,13 @@
           <div class="entry-body">
             <h3 class="entry-org">Blackfriars Settlement</h3>
             <p class="entry-role">Income Development Volunteer <span class="sep">·</span> Community charity</p>
-            <p class="entry-text">Rebuilt the corporate partnerships page on Elementor and designed a three-tier sponsorship framework ($5K–$25K) covering venue hire, CSR programmes, and community packages. Conducted outbound engagement with 150+ corporate prospects, converting 22 into active volunteering partners across four months.</p>
+            <div class="entry-tags">
+              <span class="entry-tag">Fundraising strategy</span>
+              <span class="entry-tag">Corporate partnerships</span>
+              <span class="entry-tag">Sponsorship design</span>
+              <span class="entry-tag">Outbound BD</span>
+            </div>
+            <p class="entry-text">Rebuilt the corporate partnerships page and designed a three-tier sponsorship framework ($5K–$25K) covering venue hire, CSR programmes, and community packages, equipping the charity with a structured fundraising pipeline pitched to corporate donors. Conducted outbound engagement with 150+ corporate prospects and recruited 10 volunteers over four months.</p>
           </div>
         </article>
       </div>
@@ -694,6 +889,25 @@
 
         <article class="project-card reveal">
           <div class="pc-head">
+            <h3 class="pc-title">Manusman</h3>
+            <span class="pc-meta">Most Commercial · Manus 2026</span>
+          </div>
+          <p class="pc-subtitle">AI meeting-preparation platform</p>
+          <p class="pc-desc">Six-stage workflow compressing approximately 30 minutes of pre-call research into a single briefing. Three parallel research agents streamed over Server-Sent Events generate company, contact, and industry analyses; a Google Meet-style overlay surfaces MEDDPICC, BANT, and SPIN qualification cards in real time during the call.</p>
+          <div class="pc-tags">
+            <span class="pc-tag">React</span>
+            <span class="pc-tag">Manus AI</span>
+            <span class="pc-tag">Apollo.io</span>
+            <span class="pc-tag">Express</span>
+          </div>
+          <div class="pc-links">
+            <a href="https://manusman.manus.space" target="_blank" rel="noopener noreferrer">Live Demo</a>
+            <img class="pc-logo" src="logos/manus.png" alt="Manus" height="20" loading="lazy" style="margin-left: auto">
+          </div>
+        </article>
+
+        <article class="project-card reveal">
+          <div class="pc-head">
             <h3 class="pc-title">Amogus</h3>
             <span class="pc-meta">2nd · Cursor Hack 2026</span>
           </div>
@@ -709,25 +923,6 @@
           <div class="pc-links">
             <a class="gh" href="https://github.com/rexheng/amogus" target="_blank" rel="noopener noreferrer">GitHub</a>
             <img class="pc-logo" src="logos/cursor.svg" alt="Cursor" height="20" loading="lazy" style="margin-left: auto">
-          </div>
-        </article>
-
-        <article class="project-card reveal">
-          <div class="pc-head">
-            <h3 class="pc-title">Peel</h3>
-            <span class="pc-meta">Hedera × LSE · 2026</span>
-          </div>
-          <p class="pc-subtitle">Tokenised food-waste marketplace</p>
-          <p class="pc-desc">Autonomous AI kitchen agents negotiate surplus-inventory trades over the Hedera Consensus Service and settle on the Hedera Token Service across four tokenised commodities. Sole technical lead within a team of five. A three-panel live viewer streams agent reasoning and on-chain settlement in real time.</p>
-          <div class="pc-tags">
-            <span class="pc-tag">TypeScript</span>
-            <span class="pc-tag">hedera-agent-kit</span>
-            <span class="pc-tag">LangChain</span>
-            <span class="pc-tag">HCS / HTS</span>
-          </div>
-          <div class="pc-links">
-            <a class="gh" href="https://github.com/rexheng" target="_blank" rel="noopener noreferrer">GitHub</a>
-            <img class="pc-logo" src="logos/hedera.svg" alt="Hedera" height="20" loading="lazy" style="margin-left: auto">
           </div>
         </article>
 
@@ -753,44 +948,6 @@
 
         <article class="project-card reveal">
           <div class="pc-head">
-            <h3 class="pc-title">Landmark</h3>
-            <span class="pc-meta">Hack London 2026</span>
-          </div>
-          <p class="pc-subtitle">Soil &amp; water infrastructure dashboard</p>
-          <p class="pc-desc">Fuses NASA GIBS satellite imagery with IoT sensor telemetry to monitor soil and water conditions across Sub-Saharan Africa, South Asia, and Southeast Asia. Paired a $30 per-unit STM32 and LoRaWAN sensor concept with a Solana-anchored audit trail, providing policymakers with tamper-evident telemetry suitable for grant attestation.</p>
-          <div class="pc-tags">
-            <span class="pc-tag">Next.js 16</span>
-            <span class="pc-tag">Mapbox GL</span>
-            <span class="pc-tag">Zustand</span>
-            <span class="pc-tag">TanStack Query</span>
-          </div>
-          <div class="pc-links">
-            <a href="https://the-delta-ten.vercel.app/" target="_blank" rel="noopener noreferrer">Live</a>
-            <a class="gh" href="https://github.com/rexheng/landmark-vercel" target="_blank" rel="noopener noreferrer">GitHub</a>
-          </div>
-        </article>
-
-        <article class="project-card reveal">
-          <div class="pc-head">
-            <h3 class="pc-title">Manusman</h3>
-            <span class="pc-meta">Most Commercial · Manus 2026</span>
-          </div>
-          <p class="pc-subtitle">AI meeting-preparation platform</p>
-          <p class="pc-desc">Six-stage workflow compressing approximately 30 minutes of pre-call research into a single briefing. Three parallel research agents streamed over Server-Sent Events generate company, contact, and industry analyses; a Google Meet-style overlay surfaces MEDDPICC, BANT, and SPIN qualification cards in real time during the call.</p>
-          <div class="pc-tags">
-            <span class="pc-tag">React</span>
-            <span class="pc-tag">Manus AI</span>
-            <span class="pc-tag">Apollo.io</span>
-            <span class="pc-tag">Express</span>
-          </div>
-          <div class="pc-links">
-            <a href="https://manusman.com" target="_blank" rel="noopener noreferrer">Live Demo</a>
-            <img class="pc-logo" src="logos/manus.png" alt="Manus" height="20" loading="lazy" style="margin-left: auto">
-          </div>
-        </article>
-
-        <article class="project-card reveal">
-          <div class="pc-head">
             <h3 class="pc-title">Outreach</h3>
             <span class="pc-meta">Top 8 · Claude Imperial 2026</span>
           </div>
@@ -803,6 +960,7 @@
             <span class="pc-tag">Claude / Groq</span>
           </div>
           <div class="pc-links">
+            <a href="https://outreach-london.vercel.app/" target="_blank" rel="noopener noreferrer">Live</a>
             <a href="https://devpost.com/software/outreach-bd6iyo" target="_blank" rel="noopener noreferrer">Devpost</a>
             <img class="pc-logo" src="logos/claude.svg" alt="Anthropic Claude" height="20" loading="lazy" style="margin-left: auto">
           </div>
@@ -822,8 +980,47 @@
             <span class="pc-tag">Tailwind 4</span>
           </div>
           <div class="pc-links">
-            <a href="https://inform-eight.vercel.app" target="_blank" rel="noopener noreferrer">Live</a>
+            <a href="https://arrow-solver.lovable.app/about" target="_blank" rel="noopener noreferrer">Live</a>
             <img class="pc-logo" data-logo="nhs" src="logos/nhs.png" alt="NHS" height="20" loading="lazy" style="margin-left: auto">
+          </div>
+        </article>
+
+        <article class="project-card reveal">
+          <div class="pc-head">
+            <h3 class="pc-title">Peel</h3>
+            <span class="pc-meta">Hedera × LSE · 2026</span>
+          </div>
+          <p class="pc-subtitle">Tokenised food-waste marketplace</p>
+          <p class="pc-desc">Autonomous AI kitchen agents negotiate surplus-inventory trades over the Hedera Consensus Service and settle on the Hedera Token Service across four tokenised commodities. Sole technical lead within a team of five. A three-panel live viewer streams agent reasoning and on-chain settlement in real time.</p>
+          <div class="pc-tags">
+            <span class="pc-tag">TypeScript</span>
+            <span class="pc-tag">hedera-agent-kit</span>
+            <span class="pc-tag">LangChain</span>
+            <span class="pc-tag">HCS / HTS</span>
+          </div>
+          <div class="pc-links">
+            <a href="https://peel-market.vercel.app/" target="_blank" rel="noopener noreferrer">Live</a>
+            <a class="gh" href="https://github.com/rexheng" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <img class="pc-logo" src="logos/hedera.svg" alt="Hedera" height="20" loading="lazy" style="margin-left: auto">
+          </div>
+        </article>
+
+        <article class="project-card reveal">
+          <div class="pc-head">
+            <h3 class="pc-title">Landmark</h3>
+            <span class="pc-meta">Hack London 2026</span>
+          </div>
+          <p class="pc-subtitle">Soil &amp; water infrastructure dashboard</p>
+          <p class="pc-desc">Fuses NASA GIBS satellite imagery with IoT sensor telemetry to monitor soil and water conditions across Sub-Saharan Africa, South Asia, and Southeast Asia. Paired a $30 per-unit STM32 and LoRaWAN sensor concept with a Solana-anchored audit trail, providing policymakers with tamper-evident telemetry suitable for grant attestation.</p>
+          <div class="pc-tags">
+            <span class="pc-tag">Next.js 16</span>
+            <span class="pc-tag">Mapbox GL</span>
+            <span class="pc-tag">Zustand</span>
+            <span class="pc-tag">TanStack Query</span>
+          </div>
+          <div class="pc-links">
+            <a href="https://the-delta-ten.vercel.app/" target="_blank" rel="noopener noreferrer">Live</a>
+            <a class="gh" href="https://github.com/rexheng/landmark-vercel" target="_blank" rel="noopener noreferrer">GitHub</a>
           </div>
         </article>
 
@@ -886,7 +1083,7 @@
         <article class="project-card reveal">
           <div class="pc-head">
             <h3 class="pc-title">MusiCity</h3>
-            <span class="pc-meta">Creative project</span>
+            <span class="pc-meta">Encode AI Hackathon 2026</span>
           </div>
           <p class="pc-subtitle">MIDI-driven procedural city</p>
           <p class="pc-desc">Real-time procedural cityscape driven by live MIDI input. Chord events spawn buildings, melodic content enriches them through spectral analysis, and interval distance governs the placement of connective infrastructure. GLTF asset pipelines support Jazz, Christmas, and Rock palettes.</p>
@@ -897,7 +1094,9 @@
             <span class="pc-tag">Meyda</span>
           </div>
           <div class="pc-links">
+            <a href="https://musicity.dev" target="_blank" rel="noopener noreferrer">Live</a>
             <a class="gh" href="https://github.com/rexheng" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <img class="pc-logo" data-logo="encode" src="logos/encode.png" alt="Encode Club" height="20" loading="lazy" style="margin-left: auto">
           </div>
         </article>
 
@@ -931,34 +1130,46 @@
 
       <div class="hobbies">
         <div class="hobby reveal">
-          <h3 class="hobby-title">Mountaineering</h3>
-          <p class="hobby-sub">Annapurna Circuit &amp; longer treks</p>
-          <p class="hobby-desc">Completed the Annapurna Circuit in Nepal and several extended high-altitude treks. Sustained exposure above 4,000m provides a useful re-baselining of risk and effort.</p>
+          <div class="hobby-head">
+            <h3 class="hobby-title">Mountaineering</h3>
+            <p class="hobby-sub">Annapurna · 5,416m</p>
+          </div>
+          <p class="hobby-desc">Annapurna Circuit completed, maximum altitude of 5,416m.</p>
         </div>
         <div class="hobby reveal">
-          <h3 class="hobby-title">Music</h3>
-          <p class="hobby-sub">Keyboardist · Attic</p>
-          <p class="hobby-desc">Keyboardist for Attic, a London-based rock band; five live performances to date. Band site available <a href="https://attictheband.com" target="_blank" rel="noopener noreferrer">here</a>.</p>
+          <div class="hobby-head">
+            <h3 class="hobby-title">Music</h3>
+            <p class="hobby-sub">Keyboardist &amp; Bandleader · Attic</p>
+          </div>
+          <p class="hobby-desc">Keyboardist for <a href="https://attictheband.com" target="_blank" rel="noopener noreferrer">attictheband.com</a>.</p>
         </div>
         <div class="hobby reveal">
-          <h3 class="hobby-title">Bouldering</h3>
-          <p class="hobby-sub">V4 — V6</p>
-          <p class="hobby-desc">Trains several sessions per week, predominantly indoors. A discipline that rewards iteration and tolerance for repeated failure.</p>
+          <div class="hobby-head">
+            <h3 class="hobby-title">Bouldering</h3>
+            <p class="hobby-sub">V4 — V6</p>
+          </div>
+          <p class="hobby-desc">Trains several sessions per week, predominantly indoors.</p>
         </div>
         <div class="hobby reveal">
-          <h3 class="hobby-title">Chess</h3>
-          <p class="hobby-sub">~1900 online</p>
-          <p class="hobby-desc">Primarily bullet format. Jobava London as White; French Defence as Black. A long-standing practice in sustained focus.</p>
+          <div class="hobby-head">
+            <h3 class="hobby-title">Chess</h3>
+            <p class="hobby-sub">~1900 online</p>
+          </div>
+          <p class="hobby-desc">I enjoy bullet chess. I play Jobava and French Defence.</p>
         </div>
         <div class="hobby reveal">
-          <h3 class="hobby-title">Squash</h3>
-          <p class="hobby-sub">School team</p>
+          <div class="hobby-head">
+            <h3 class="hobby-title">Squash</h3>
+            <p class="hobby-sub">School team</p>
+          </div>
           <p class="hobby-desc">Represented school at competitive level; continues to play recreationally during term.</p>
         </div>
         <div class="hobby reveal">
-          <h3 class="hobby-title">Calisthenics</h3>
-          <p class="hobby-sub">Front lever · One-arm pull-up</p>
-          <p class="hobby-desc">Working progressions toward the front lever (~85% complete) and the one-arm pull-up (~50%). A long-horizon strength practice.</p>
+          <div class="hobby-head">
+            <h3 class="hobby-title">Calisthenics</h3>
+            <p class="hobby-sub">One-arm pull-up · Front lever</p>
+          </div>
+          <p class="hobby-desc">One-arm pull-up done. Currently training the front lever.</p>
         </div>
       </div>
     </section>
