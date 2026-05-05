@@ -65,14 +65,6 @@ export class ControlsPanel {
       }
     } catch {}
 
-    // Scene section
-    const scene = this._section("Scene", [
-      this._button("Reset", () => this.app.resetSim()),
-      this._button("Random Perturb", () => this.app.randomPerturb()),
-    ]);
-    scene.dataset.section = "scene";
-    root.appendChild(scene);
-
     // Physics section — toggles + segmented controls + sliders + compass.
     const phys = this._sectionShell("Physics");
     phys.dataset.section = "physics";
@@ -100,6 +92,13 @@ export class ControlsPanel {
 
     root.appendChild(phys);
 
+    // Projects — selection grid of accent-tinted monogram tiles.
+    // Each tile spawns its project; the footer shows slot usage + Clear.
+    const projSection = this._sectionShell("Projects");
+    projSection.dataset.section = "projects";
+    projSection.appendChild(this._projectGrid());
+    root.appendChild(projSection);
+
     // Camera
     const cam = this._sectionShell("Camera");
     cam.dataset.section = "camera";
@@ -124,12 +123,14 @@ export class ControlsPanel {
     })));
     root.appendChild(fx);
 
-    // Projects — selection grid of accent-tinted monogram tiles.
-    // Each tile spawns its project; the footer shows slot usage + Clear.
-    const projSection = this._sectionShell("Projects");
-    projSection.dataset.section = "projects";
-    projSection.appendChild(this._projectGrid());
-    root.appendChild(projSection);
+    // Scene section — sits at the bottom so destructive actions
+    // (Reset, Random Perturb) are out of the way of normal browsing.
+    const scene = this._section("Scene", [
+      this._button("Reset", () => this.app.resetSim()),
+      this._button("Random Perturb", () => this.app.randomPerturb()),
+    ]);
+    scene.dataset.section = "scene";
+    root.appendChild(scene);
 
     document.body.appendChild(root);
     this.el = root;

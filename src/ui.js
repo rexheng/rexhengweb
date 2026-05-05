@@ -999,10 +999,10 @@ canvas { touch-action: none; }
      the finger 1:1 instead of easing on every pointermove. */
   #rex-controls.is-dragging { transition: none; }
 
-  /* Mobile section order: Projects → Physics → Camera → Effects → Scene */
+  /* Mobile section order: Physics → Projects → Camera → Effects → Scene */
   #rex-controls header.rex-panel-title { order: 0; }
-  #rex-controls [data-section="projects"] { order: 1; }
-  #rex-controls [data-section="physics"]  { order: 2; }
+  #rex-controls [data-section="physics"]  { order: 1; }
+  #rex-controls [data-section="projects"] { order: 2; }
   #rex-controls [data-section="camera"]   { order: 3; }
   #rex-controls [data-section="effects"]  { order: 4; }
   #rex-controls [data-section="scene"]    { order: 5; }
