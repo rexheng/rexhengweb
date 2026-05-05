@@ -112,6 +112,30 @@ export class ProjectSystem {
       const slot = this.slots.find((s) => s.bodyID === bodyID && s.project);
       if (slot) this.showCard(slot);
     });
+
+    // Sprite mesh double-click → fire the project's ability directly. Reuses
+    // the same raycast-against-grabbables pattern as the single-click path.
+    // Native dblclick fires after the OS double-click time, so any card the
+    // first click opened is dismissed by _fireAbility on the way through.
+    addEventListener("dblclick", (e) => {
+      if (e.target.closest("#project-card")) return;
+      if (e.target.closest(".rex-project-label")) return;
+      if (e.target.closest("#rex-controls")) return;
+      const grabbables = this.app.getGrabbables?.() || [];
+      if (!grabbables.length) return;
+      const rect = this.app.renderer.domElement.getBoundingClientRect();
+      const ndc = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(ndc, this.app.camera);
+      const hits = raycaster.intersectObjects(grabbables, false);
+      if (!hits.length) return;
+      const bodyID = hits[0].object.bodyID;
+      const slot = this.slots.find((s) => s.bodyID === bodyID && s.project);
+      if (slot) this._fireAbility(slot);
+    });
   }
 
   // ── Lifecycle hooks ────────────────────────────────────────────────────
