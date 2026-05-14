@@ -1100,6 +1100,27 @@ canvas { touch-action: none; }
 
   /* Compass smaller. */
   .rex-compass { width: 96px; height: 96px; margin: 4px auto 8px; }
+
+  /* ─── Scroll-vs-control disambiguation ─────────────────────────────── */
+  /* Sliders only claim horizontal motion; vertical pan scrolls the panel. */
+  #rex-controls .rex-slider input[type="range"] { touch-action: pan-y; }
+  /* Tap-only controls let drags bubble to the scroller. manipulation also
+     suppresses iOS's 300ms double-tap-zoom delay on these targets. */
+  #rex-controls .rex-toggle-switch,
+  #rex-controls .rex-segmented button,
+  #rex-controls .rex-btn,
+  #rex-controls .rex-project-tile,
+  #rex-controls .rex-section-head { touch-action: manipulation; }
+  /* While the panel is actively scrolling (or just settled within ~120ms),
+     block interactive children so a finger landing mid-flick can't
+     accidentally grab a slider or fire a button. JS in initMobileShell
+     toggles .is-scrolling on scroll events. */
+  #rex-controls.is-scrolling .rex-slider input,
+  #rex-controls.is-scrolling .rex-toggle-switch,
+  #rex-controls.is-scrolling .rex-segmented button,
+  #rex-controls.is-scrolling .rex-btn,
+  #rex-controls.is-scrolling .rex-project-tile,
+  #rex-controls.is-scrolling .rex-compass .cardinal { pointer-events: none; }
 }
 
 /* iOS / Safari safe-area: pad for the home-indicator. */
@@ -1233,6 +1254,20 @@ export function initMobileShell() {
   title.addEventListener("pointermove", onPointerMove);
   title.addEventListener("pointerup", onPointerUp);
   title.addEventListener("pointercancel", onPointerUp);
+
+  // Scroll-lock window: while the user is scrolling the panel — or for
+  // ~120ms after their last scroll tick — disable interactive children so a
+  // finger that lands mid-flick can't accidentally grab a slider. CSS rule
+  // `#rex-controls.is-scrolling …` blocks pointer events on sliders, toggles,
+  // segmented buttons, project tiles, and compass cardinals.
+  let scrollTimer = 0;
+  root.addEventListener("scroll", () => {
+    root.classList.add("is-scrolling");
+    if (scrollTimer) clearTimeout(scrollTimer);
+    scrollTimer = window.setTimeout(() => {
+      root.classList.remove("is-scrolling");
+    }, 120);
+  }, { passive: true });
 
   // Tap outside the controls (on the canvas) closes the sheet so the user
   // can interact with the scene without it covering content.
