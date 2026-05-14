@@ -967,17 +967,16 @@ canvas { touch-action: none; }
   #rex-portfolio-overlay .rex-toggle { width: 44px; height: 44px; font-size: 18px; }
   #rex-portfolio-overlay .rex-panel { width: min(280px, calc(100vw - 24px)); }
 
-  /* Controls panel becomes a bottom sheet that the user pulls up. */
+  /* Controls panel becomes a bottom-right pull-up pill — not a full-width
+     sheet — so it doesn't dominate the viewport. The user drags the title
+     handle up to reveal sections. */
   #rex-controls {
-    right: 0;
-    left: 0;
+    right: 12px;
+    left: auto;
     top: auto;
-    bottom: 0;
-    width: 100%;
+    bottom: 12px;
+    width: min(280px, calc(100vw - 24px));
     max-height: 56vh;
-    border-left: 0;
-    border-right: 0;
-    border-bottom: 0;
     transform: translateY(calc(100% - 44px));
     transition: transform 280ms cubic-bezier(.2,.8,.2,1);
     box-shadow: 0 -8px 24px rgba(0,0,0,0.45);
@@ -1029,32 +1028,20 @@ canvas { touch-action: none; }
   #rex-controls .rex-panel-title-main { display: none; }
   #rex-controls .rex-panel-title-tag  { display: none; }
 
-  /* On mobile break the flex row apart: hud stays bottom-left,
-     metrics moves to bottom-right as its own fixed element. */
+  /* On mobile the metrics overlay is hidden entirely — too noisy on a phone. */
   #hud-row {
     bottom: 12px;
     left: 12px;
     flex-direction: column;
     align-items: flex-start;
     gap: 0;
-    /* Only #hud stays in this corner — metrics is repositioned below. */
   }
-  #hud-row #metrics-hud {
-    position: fixed;
-    bottom: 12px;
-    right: 12px;
-    left: auto;
-    width: 140px;
-    padding: 8px 10px;
-    font-size: 9px;
-  }
+  #hud-row #metrics-hud { display: none; }
   #hud {
     max-width: calc(100vw - 24px);
   }
-  #hud h1 { font-size: 18px; }
-  #hud p { font-size: 9px; }
-  #metrics-hud .m-head { font-size: 8px; }
-  #metrics-hud .m-label { font-size: 8.5px; }
+  #hud h1 { font-size: 13px; }
+  #hud p { font-size: 8.5px; }
 
   /* Pause chip moves above the controls handle. */
   #pause-chip { right: 12px; bottom: 56px; }
@@ -1101,9 +1088,12 @@ canvas { touch-action: none; }
 /* iOS / Safari safe-area: pad for the home-indicator. */
 @supports (padding: max(0px)) {
   @media ${MOBILE_MEDIA_QUERY} {
-    #rex-controls { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+    #rex-controls {
+      padding-bottom: max(0px, env(safe-area-inset-bottom));
+      right: max(12px, env(safe-area-inset-right));
+      bottom: max(12px, env(safe-area-inset-bottom));
+    }
     #hud-row { left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); }
-    #hud-row #metrics-hud { right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); }
   }
 }
 

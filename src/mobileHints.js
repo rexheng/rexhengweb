@@ -10,8 +10,8 @@ const STYLE_ID = "rex-mobile-hints-style";
 const BUTTON_ID = "rex-hints-button";
 
 const HINT_ROWS = [
-  { key: "Drag",            desc: "look around" },
-  { key: "Two-finger drag", desc: "pan the camera" },
+  { key: "Drag",            desc: "pan the camera" },
+  { key: "Two-finger drag", desc: "rotate the view" },
   { key: "Pinch",           desc: "zoom in / out" },
   { key: "Tap a project",   desc: "drop it into the scene" },
 ];

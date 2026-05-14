@@ -323,6 +323,10 @@ class App {
     this.controls.minDistance = 1.2;
     this.controls.maxDistance = 30;
     this.controls.mouseButtons = { LEFT: null, MIDDLE: null, RIGHT: THREE.MOUSE.ROTATE };
+    // Mobile touch mapping: one finger pans, two fingers rotate the orbit
+    // (with pinch-zoom along the dolly axis). Inverted from the OrbitControls
+    // defaults so a single drag scrolls the scene rather than spinning it.
+    this.controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
 
     // Lighting
     const key = new THREE.DirectionalLight(0xfff1d8, 1.3);
