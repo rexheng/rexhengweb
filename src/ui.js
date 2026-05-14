@@ -87,6 +87,7 @@ const CSS = `
   justify-content: center;
   cursor: pointer;
   padding: 0;
+  text-decoration: none;
   transition: background 220ms ease, transform 220ms ease, border-color 220ms ease;
   position: relative;
 }
@@ -967,17 +968,20 @@ canvas { touch-action: none; }
   #rex-portfolio-overlay .rex-toggle { width: 44px; height: 44px; font-size: 18px; }
   #rex-portfolio-overlay .rex-panel { width: min(280px, calc(100vw - 24px)); }
 
-  /* Controls panel becomes a bottom-right pull-up pill — not a full-width
-     sheet — so it doesn't dominate the viewport. The user drags the title
-     handle up to reveal sections. */
+  /* Controls panel becomes a full-width bottom sheet. The resting peek is
+     intentionally slim (24px) — just enough to show the drag handle — so
+     the sheet doesn't dominate the scene until the user pulls it up. */
   #rex-controls {
-    right: 12px;
-    left: auto;
+    right: 0;
+    left: 0;
     top: auto;
-    bottom: 12px;
-    width: min(280px, calc(100vw - 24px));
+    bottom: 0;
+    width: 100%;
     max-height: 56vh;
-    transform: translateY(calc(100% - 44px));
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    transform: translateY(calc(100% - 24px));
     transition: transform 280ms cubic-bezier(.2,.8,.2,1);
     box-shadow: 0 -8px 24px rgba(0,0,0,0.45);
   }
@@ -990,14 +994,14 @@ canvas { touch-action: none; }
     top: 0;
     z-index: 1;
     background: var(--rex-ink);
-    padding-top: 18px;
+    padding: 10px 18px 8px;
     touch-action: none;
   }
   #rex-controls .rex-panel-title:active { cursor: grabbing; }
   #rex-controls .rex-panel-title::before {
     content: "";
     position: absolute;
-    top: 6px;
+    top: 5px;
     left: 50%;
     transform: translateX(-50%);
     width: 36px;
@@ -1044,7 +1048,7 @@ canvas { touch-action: none; }
   #hud p { font-size: 8.5px; }
 
   /* Pause chip moves above the controls handle. */
-  #pause-chip { right: 12px; bottom: 56px; }
+  #pause-chip { right: 12px; bottom: 36px; }
 
   /* Wind compass HUD hides on mobile to save room. */
   #wind-compass-hud { display: none; }
@@ -1088,11 +1092,7 @@ canvas { touch-action: none; }
 /* iOS / Safari safe-area: pad for the home-indicator. */
 @supports (padding: max(0px)) {
   @media ${MOBILE_MEDIA_QUERY} {
-    #rex-controls {
-      padding-bottom: max(0px, env(safe-area-inset-bottom));
-      right: max(12px, env(safe-area-inset-right));
-      bottom: max(12px, env(safe-area-inset-bottom));
-    }
+    #rex-controls { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
     #hud-row { left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); }
   }
 }
@@ -1152,10 +1152,10 @@ export function initMobileShell() {
   const title = root.querySelector(".rex-panel-title");
   if (!title) return;
 
-  // Sheet geometry. CSS sets transform: translateY(calc(100% - 44px)) when
+  // Sheet geometry. CSS sets transform: translateY(calc(100% - 24px)) when
   // closed and translateY(0) when .is-open. We compute the closed offset in
   // px so pointermove can interpolate between the two.
-  const closedOffsetPx = () => Math.max(0, root.offsetHeight - 44);
+  const closedOffsetPx = () => Math.max(0, root.offsetHeight - 24);
 
   let dragState = null;
   const TAP_THRESHOLD_PX = 6;
