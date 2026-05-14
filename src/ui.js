@@ -977,7 +977,7 @@ canvas { touch-action: none; }
     top: auto;
     bottom: 0;
     width: 100%;
-    max-height: 56vh;
+    max-height: 33vh;
     border-left: 0;
     border-right: 0;
     border-bottom: 0;
@@ -1071,11 +1071,24 @@ canvas { touch-action: none; }
   .rex-ui-card-body { padding: 14px 18px 16px; }
   .rex-ui-card-body p { font-size: 11.5px; }
 
-  /* Project grid — 2 columns on phones for bigger touch targets. */
-  .rex-project-grid { grid-template-columns: repeat(2, 1fr); }
-  .rex-project-tile { padding: 10px 6px; }
-  .rex-project-tile .rex-tile-swatch { width: 34px; height: 34px; }
-  .rex-project-tile .rex-tile-name { font-size: 9px; }
+  /* Project grid — 3 columns on phones with auto-height tiles. The base
+     1:1 aspect-ratio makes 11 projects overflow the slim 33vh sheet, so
+     we let tiles size to content (swatch + 2-line name). */
+  .rex-project-grid { grid-template-columns: repeat(3, 1fr); }
+  .rex-project-tile {
+    aspect-ratio: auto;
+    padding: 6px 4px;
+  }
+  .rex-project-tile .rex-tile-swatch {
+    width: 22px;
+    height: 22px;
+    margin-bottom: 4px;
+    font-size: 9px;
+  }
+  .rex-project-tile .rex-tile-name {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+  }
 
   /* Bigger toggle / segmented hit areas for fingers. */
   .rex-toggle-switch { width: 40px; height: 22px; }
