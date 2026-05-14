@@ -981,7 +981,7 @@ canvas { touch-action: none; }
     border-left: 0;
     border-right: 0;
     border-bottom: 0;
-    transform: translateY(calc(100% - 24px));
+    transform: translateY(calc(100% - 40px));
     transition: transform 280ms cubic-bezier(.2,.8,.2,1);
     box-shadow: 0 -8px 24px rgba(0,0,0,0.45);
   }
@@ -994,14 +994,14 @@ canvas { touch-action: none; }
     top: 0;
     z-index: 1;
     background: var(--rex-ink);
-    padding: 10px 18px 8px;
+    padding: 18px 18px 14px;
     touch-action: none;
   }
   #rex-controls .rex-panel-title:active { cursor: grabbing; }
   #rex-controls .rex-panel-title::before {
     content: "";
     position: absolute;
-    top: 5px;
+    top: 9px;
     left: 50%;
     transform: translateX(-50%);
     width: 36px;
@@ -1048,7 +1048,7 @@ canvas { touch-action: none; }
   #hud p { font-size: 8.5px; }
 
   /* Pause chip moves above the controls handle. */
-  #pause-chip { right: 12px; bottom: 36px; }
+  #pause-chip { right: 12px; bottom: 52px; }
 
   /* Wind compass HUD hides on mobile to save room. */
   #wind-compass-hud { display: none; }
@@ -1152,10 +1152,11 @@ export function initMobileShell() {
   const title = root.querySelector(".rex-panel-title");
   if (!title) return;
 
-  // Sheet geometry. CSS sets transform: translateY(calc(100% - 24px)) when
+  // Sheet geometry. CSS sets transform: translateY(calc(100% - 40px)) when
   // closed and translateY(0) when .is-open. We compute the closed offset in
-  // px so pointermove can interpolate between the two.
-  const closedOffsetPx = () => Math.max(0, root.offsetHeight - 24);
+  // px so pointermove can interpolate between the two. The 40px peek is sized
+  // to sit above iOS home-indicator / Android nav-gesture zones.
+  const closedOffsetPx = () => Math.max(0, root.offsetHeight - 40);
 
   let dragState = null;
   const TAP_THRESHOLD_PX = 6;
