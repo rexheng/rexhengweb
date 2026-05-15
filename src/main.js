@@ -374,11 +374,19 @@ class App {
     document.body.appendChild(hud);
     this._hintsEl = hud.querySelector("#hud-hints");
     this._currentHintKey = "";
+    // Hover-scan cache: the project-vs-plain-body test in _updateHints only
+    // needs to run when the hovered body changes, not every frame.
+    this._lastHoverId = -1;
+    this._lastHoverOnProject = false;
+    const ARROWS = `<kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd>`;
+    const MOVE = `${ARROWS}<span class="rex-kbd-sep">/</span>Drag move · <kbd>Space</kbd> Up · <kbd>Shift</kbd> Down`;
+    const GRAB = `<kbd>Drag</kbd> Grab`;
     this._HINT_PRESETS = {
-      idle:    `Left-drag grab · F pin · P punt · R replay`,
-      hover:   `Left-drag to grab · F pin · P punt`,
-      grab:    `Wheel push/pull · E/Q rotate · F toggle pin · Release to let go`,
-      replay:  `◉ Slo-mo replay — press R again to return to live`,
+      idle:         MOVE,
+      hover:        `${GRAB} · <kbd>F</kbd> Freeze · <kbd>P</kbd> Punt`,
+      hoverProject: `${GRAB} · <kbd>Click</kbd> x2 Ability · <kbd>F</kbd> Freeze · <kbd>P</kbd> Punt`,
+      grab:         `Wheel push/pull · <kbd>E</kbd><kbd>Q</kbd> rotate · <kbd>F</kbd> Freeze · <kbd>P</kbd> Punt`,
+      replay:       `◉ Slo-mo replay`,
     };
     this._updateHints();
 
@@ -393,12 +401,12 @@ class App {
     this.sparks.setEnabled(this.params.sparks);
     this.metricsHud = new MetricsHud(this);
 
-    // Group metrics + name HUD into a flex row so #hud tracks metrics width.
+    // Metrics sits bottom-left; #hud is positioned independently at top-middle
+    // (see CSS in ui.js), so it stays out of this row.
     const hudRow = document.createElement("div");
     hudRow.id = "hud-row";
     document.body.appendChild(hudRow);
     hudRow.appendChild(this.metricsHud.el);
-    hudRow.appendChild(document.getElementById("hud"));
 
     this.crosshair = new Crosshair(this);
     this.hoverHighlight = new HoverHighlight(this);
@@ -496,20 +504,10 @@ class App {
       this.camera.position.copy(this.controls.target).add(dir);
     }, { passive: false, capture: true });
 
-    this.portfolio = new PortfolioOverlay({
-      name: "Rex Heng",
-      tagline: "PPE at LSE · building at the intersection of finance, policy, and code.",
-      initials: "RH",
-      links: [
-        { label: "Email", href: "mailto:rexheng@gmail.com" },
-        { label: "LinkedIn", href: "https://www.linkedin.com/in/rexheng/" },
-        { label: "GitHub", href: "https://github.com/rexheng" },
-        { label: "Resume", href: "/cv/" },
-      ],
-    });
+    this.portfolio = new PortfolioOverlay({ name: "Rex Heng", initials: "RH" });
 
-    // First-run desktop hints. Mounted after PortfolioOverlay so the hint that
-    // anchors to the Professional CTA can resolve its target on first show.
+    // First-run desktop hints. Mounted after PortfolioOverlay so hints that
+    // anchor to overlay elements (RH CV link) can resolve their target.
     initDesktopHints();
 
     this.animate();
@@ -567,6 +565,8 @@ class App {
     // pin springs snap bodies back to their pre-reset world pose for the
     // next frame.
     this.pinSystem?.clearAll();
+    // Despawn every mounted project so Reset returns to a clean scene.
+    this.projectSystem?.clearAll();
     this.mujoco.mj_resetData(this.model, this.data);
     this.mujoco.mj_forward(this.model, this.data);
     this._orbitCenter = null;
@@ -725,10 +725,23 @@ class App {
     let key = "idle";
     if (this.replay?.active) key = "replay";
     else if (g?.active) key = "grab";
-    else if ((this.crosshair?.hoveredBodyID ?? -1) > 0) key = "hover";
+    else if ((this.crosshair?.hoveredBodyID ?? -1) > 0) {
+      const id = this.crosshair.hoveredBodyID;
+      // Only rescan slots when the hovered body actually changes. Every
+      // mutator of slot.project (spawn / park / clearAll) runs with the
+      // cursor on the panel, never on a 3D body, so the hovered id always
+      // changes before the project state under it could matter.
+      if (id !== this._lastHoverId) {
+        this._lastHoverId = id;
+        this._lastHoverOnProject = !!this.projectSystem?.slots?.some(
+          (s) => s.bodyID === id && s.project,
+        );
+      }
+      key = this._lastHoverOnProject ? "hoverProject" : "hover";
+    }
     if (key === this._currentHintKey) return;
     this._currentHintKey = key;
-    this._hintsEl.textContent = this._HINT_PRESETS[key];
+    this._hintsEl.innerHTML = this._HINT_PRESETS[key];
   }
 
   // Pan camera horizontally by `amount` world-units along the camera's right vector.

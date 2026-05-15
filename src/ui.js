@@ -44,34 +44,6 @@ const CSS = `
   gap: 10px;
   align-items: flex-start;
 }
-#rex-portfolio-overlay .rex-cta {
-  display: inline-flex;
-  align-items: center;
-  height: 52px;
-  padding: 0 18px;
-  background: var(--rex-ink-2);
-  border: 1px solid var(--rex-rule-strong);
-  color: var(--rex-ivory);
-  font-family: var(--rex-font-mono);
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 220ms ease, border-color 220ms ease, color 220ms ease;
-  white-space: nowrap;
-}
-#rex-portfolio-overlay .rex-cta::after {
-  content: " →";
-  margin-left: 8px;
-  color: var(--rex-amber);
-  letter-spacing: 0;
-}
-#rex-portfolio-overlay .rex-cta:hover {
-  background: var(--rex-ink-3);
-  border-color: var(--rex-amber);
-  color: var(--rex-amber);
-}
 #rex-portfolio-overlay .rex-toggle {
   width: 52px;
   height: 52px;
@@ -103,115 +75,6 @@ const CSS = `
   border-color: var(--rex-amber);
   color: var(--rex-amber);
 }
-#rex-portfolio-overlay .rex-panel {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 296px;
-  background: var(--rex-ink);
-  border: 1px solid var(--rex-rule-strong);
-  padding: 20px 22px 18px;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(-6px);
-  transition: opacity 220ms ease, transform 220ms ease;
-}
-#rex-portfolio-overlay.expanded .rex-panel {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateX(0);
-}
-#rex-portfolio-overlay.expanded .rex-toggle {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(-10px);
-}
-#rex-portfolio-overlay .rex-eyebrow {
-  font-family: var(--rex-font-mono);
-  font-size: 9.5px;
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--rex-amber);
-  margin: 0 0 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-#rex-portfolio-overlay .rex-eyebrow::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--rex-rule);
-}
-#rex-portfolio-overlay .rex-name {
-  font-family: var(--rex-font-serif);
-  font-style: italic;
-  font-weight: 400;
-  font-size: 32px;
-  letter-spacing: -0.01em;
-  line-height: 1;
-  margin: 0 0 8px;
-  color: var(--rex-ivory);
-}
-#rex-portfolio-overlay .rex-tagline {
-  font-family: var(--rex-font-mono);
-  font-size: 11px;
-  line-height: 1.55;
-  color: var(--rex-ivory-2);
-  margin: 0 0 18px;
-  letter-spacing: 0.01em;
-}
-#rex-portfolio-overlay .rex-links {
-  border-top: 1px solid var(--rex-rule);
-  margin-top: 8px;
-}
-#rex-portfolio-overlay .rex-links a {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--rex-rule);
-  color: var(--rex-ivory-2);
-  text-decoration: none;
-  font-family: var(--rex-font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  transition: color 160ms ease, padding-left 220ms cubic-bezier(.2,.8,.2,1);
-}
-#rex-portfolio-overlay .rex-links a::before {
-  content: "→";
-  color: var(--rex-amber);
-  opacity: 0;
-  width: 0;
-  overflow: hidden;
-  transition: opacity 180ms ease, width 220ms cubic-bezier(.2,.8,.2,1);
-}
-#rex-portfolio-overlay .rex-links a:hover {
-  color: var(--rex-amber);
-  padding-left: 14px;
-}
-#rex-portfolio-overlay .rex-links a:hover::before {
-  opacity: 1;
-  width: 14px;
-  margin-left: -14px;
-}
-#rex-portfolio-overlay .rex-close {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  width: 22px;
-  height: 22px;
-  line-height: 18px;
-  text-align: center;
-  cursor: pointer;
-  color: var(--rex-ivory-3);
-  font-family: var(--rex-font-mono);
-  font-size: 16px;
-  transition: color 140ms ease;
-}
-#rex-portfolio-overlay .rex-close:hover { color: var(--rex-amber); }
 
 /* ─── Control Panel (right) ────────────────────────────────────────────── */
 #rex-controls {
@@ -249,30 +112,19 @@ const CSS = `
   font-size: 18px;
   color: var(--rex-ivory);
 }
-.rex-panel-title-tag {
-  font-family: var(--rex-font-mono);
-  font-size: 9px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--rex-amber);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 130px;
-  margin-left: auto;
-}
 .rex-panel-collapse {
   background: transparent;
   border: 1px solid var(--rex-rule-strong);
-  color: var(--rex-ivory-2);
-  width: 22px;
+  color: var(--rex-ivory);
+  min-width: 34px;
   height: 22px;
   margin-left: 10px;
   font-family: var(--rex-font-mono);
-  font-size: 14px;
+  font-size: 11px;
   line-height: 18px;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  padding: 0;
+  padding: 0 4px;
   transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
 }
 .rex-panel-collapse:hover {
@@ -283,7 +135,6 @@ const CSS = `
 #rex-controls.is-collapsed { width: auto; }
 #rex-controls.is-collapsed .rex-section { display: none; }
 #rex-controls.is-collapsed .rex-panel-title { border-bottom: 0; }
-#rex-controls.is-collapsed .rex-panel-title-tag { display: none; }
 
 .rex-section {
   border-bottom: 1px solid var(--rex-rule);
@@ -543,12 +394,17 @@ const CSS = `
 }
 #hud-row > * { pointer-events: auto; }
 #hud {
+  position: fixed;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
   pointer-events: none;
   z-index: 8;
   font-family: var(--rex-font-mono);
 }
 #hud h1 {
-  margin: 0 0 4px;
+  margin: 0 0 6px;
   font-family: var(--rex-font-serif);
   font-style: italic;
   font-weight: 400;
@@ -556,13 +412,42 @@ const CSS = `
   color: var(--rex-ivory);
   letter-spacing: -0.01em;
   line-height: 1;
+  text-shadow: 0 1px 8px rgba(5, 7, 12, 0.85), 0 0 18px rgba(5, 7, 12, 0.5);
 }
 #hud p {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 10px;
-  color: var(--rex-ivory-3);
-  letter-spacing: 0.08em;
+  color: var(--rex-ivory);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  background: rgba(5, 7, 12, 0.58);
+  border: 1px solid var(--rex-rule);
+  padding: 5px 10px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+#hud kbd {
+  display: inline-block;
+  min-width: 14px;
+  padding: 2px 5px;
+  margin: 0 1px;
+  border: 1px solid var(--rex-rule-strong);
+  background: rgba(17, 22, 34, 0.85);
+  color: var(--rex-ivory);
+  font-family: var(--rex-font-mono);
+  font-size: 9.5px;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  vertical-align: 1px;
+  text-shadow: none;
+}
+#hud .rex-kbd-sep {
+  margin: 0 2px;
+  color: var(--rex-ivory-3);
 }
 
 #pause-chip {
@@ -962,11 +847,9 @@ canvas { touch-action: none; }
 
 /* ─── Mobile / tablet — single-column, bottom-sheet controls ───────────── */
 @media ${MOBILE_MEDIA_QUERY} {
-  /* Portfolio overlay collapses by default; CTA hidden, only the toggle. */
+  /* RH switch button compacts on mobile. */
   #rex-portfolio-overlay { left: 12px; top: 12px; gap: 6px; }
-  #rex-portfolio-overlay .rex-cta { display: none; }
   #rex-portfolio-overlay .rex-toggle { width: 44px; height: 44px; font-size: 18px; }
-  #rex-portfolio-overlay .rex-panel { width: min(280px, calc(100vw - 24px)); }
 
   /* Controls panel becomes a full-width bottom sheet. The resting peek is
      intentionally slim (24px) — just enough to show the drag handle — so
@@ -1020,17 +903,17 @@ canvas { touch-action: none; }
      the finger 1:1 instead of easing on every pointermove. */
   #rex-controls.is-dragging { transition: none; }
 
-  /* Mobile section order: Physics → Projects → Camera → Effects → Scene */
+  /* Mobile section order: Physics → Projects → Camera → Effects → Scene → Wind */
   #rex-controls header.rex-panel-title { order: 0; }
   #rex-controls [data-section="physics"]  { order: 1; }
   #rex-controls [data-section="projects"] { order: 2; }
   #rex-controls [data-section="camera"]   { order: 3; }
   #rex-controls [data-section="effects"]  { order: 4; }
   #rex-controls [data-section="scene"]    { order: 5; }
+  #rex-controls [data-section="wind"]     { order: 6; }
 
-  /* Hide "Controls" title text and subtitle — handle already communicates it. */
+  /* Hide "Controls" title text — the handle already communicates it. */
   #rex-controls .rex-panel-title-main { display: none; }
-  #rex-controls .rex-panel-title-tag  { display: none; }
 
   /* On mobile the metrics overlay is hidden entirely — too noisy on a phone. */
   #hud-row {
@@ -1042,6 +925,7 @@ canvas { touch-action: none; }
   }
   #hud-row #metrics-hud { display: none; }
   #hud {
+    top: 12px;
     max-width: calc(100vw - 24px);
   }
   #hud h1 { font-size: 13px; }
@@ -1128,6 +1012,7 @@ canvas { touch-action: none; }
   @media ${MOBILE_MEDIA_QUERY} {
     #rex-controls { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
     #hud-row { left: max(12px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom)); }
+    #hud { top: max(12px, env(safe-area-inset-top)); }
   }
 }
 

@@ -111,22 +111,38 @@
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
     }
-    .cv-back {
-      font-family: var(--rex-font-mono);
-      font-size: 10.5px;
-      font-weight: 400;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--rex-ivory-2);
-      padding: 8px 14px 8px 10px;
+    /* RH switch button — same geometry as the playground's .rex-toggle but
+       inverted for the light CV theme. Clicking returns to the playground. */
+    .cv-rh {
+      width: 44px;
+      height: 44px;
+      background: var(--rex-ink-2);
       border: 1px solid var(--rex-rule-strong);
-      background: rgba(255, 255, 255, 0.6);
-      transition: color 180ms ease, border-color 180ms ease, background 180ms ease, padding-left 220ms cubic-bezier(.2,.8,.2,1);
+      color: var(--rex-ivory);
+      font-family: var(--rex-font-serif);
+      font-size: 20px;
+      font-style: italic;
+      letter-spacing: 0.02em;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
+      padding: 0;
+      text-decoration: none;
+      position: relative;
+      transition: background 220ms ease, border-color 220ms ease, color 220ms ease;
     }
-    .cv-back:hover { color: var(--rex-amber); border-color: var(--rex-amber); padding-left: 14px; }
+    .cv-rh::before {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border: 1px solid var(--rex-rule);
+      pointer-events: none;
+    }
+    .cv-rh:hover {
+      background: var(--rex-ink-3);
+      border-color: var(--rex-amber);
+      color: var(--rex-amber);
+    }
     .cv-topnav-right {
       display: inline-flex;
       align-items: center;
@@ -138,6 +154,48 @@
       font-size: 18px;
       color: var(--rex-ivory);
       letter-spacing: 0.02em;
+    }
+
+    /* ── Contents (inline numbered TOC) ─────────────────────────────── */
+    .cv-toc {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--rex-font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .cv-toc li {
+      display: inline-flex;
+      align-items: baseline;
+    }
+    .cv-toc li:not(:last-child)::after {
+      content: "·";
+      margin: 0 12px;
+      color: var(--rex-ivory-3);
+      opacity: 0.55;
+    }
+    .cv-toc a {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      color: var(--rex-ivory-2);
+      text-decoration: none;
+      padding: 4px 0;
+      transition: color 160ms ease;
+    }
+    .cv-toc a:hover { color: var(--rex-amber); }
+    .cv-toc a.is-active { color: var(--rex-amber); }
+    .cv-toc a.is-active .cv-toc-num { opacity: 1; }
+    .cv-toc-num {
+      font-size: 9px;
+      color: var(--rex-amber);
+      opacity: 0.7;
+      letter-spacing: 0.1em;
+      font-variant-numeric: tabular-nums;
     }
     .cv-social {
       display: inline-flex;
@@ -486,14 +544,32 @@
       text-transform: uppercase;
       margin: 0 0 14px;
     }
-    .pc-desc {
+    .pc-bullets {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .pc-bullets li {
       font-family: var(--rex-font-mono);
       font-weight: 300;
       font-size: 12.5px;
-      line-height: 1.7;
+      line-height: 1.55;
       color: var(--rex-ivory-2);
-      margin: 0 0 16px;
-      flex: 1;
+      position: relative;
+      padding-left: 15px;
+    }
+    .pc-bullets li::before {
+      content: "·";
+      position: absolute;
+      left: 2px;
+      top: -1px;
+      color: var(--rex-amber);
+      font-size: 17px;
+      line-height: 1;
     }
     .pc-tags {
       display: flex;
@@ -618,10 +694,18 @@
       .hobbies { grid-template-columns: repeat(2, 1fr); }
     }
 
+    /* ─── Mid-width — TOC collapses names to numerals only ─── */
+    @media (max-width: 1080px) {
+      .cv-toc-name { display: none; }
+      .cv-toc li:not(:last-child)::after { margin: 0 10px; }
+    }
+
     /* ─── Mobile ─── */
     @media (max-width: 760px) {
       .cv-shell { padding: 0 20px; }
       .cv-topnav { padding: 14px 20px; }
+      /* Mark hides on phones so TOC + LinkedIn keep breathing room */
+      .cv-topnav-mark { display: none; }
       .hero { padding: 110px 0 48px; }
       .block-header { flex-wrap: wrap; }
       .block-rule { display: none; }
@@ -655,7 +739,8 @@
       .project-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
       .project-card { background: #fff; border-color: #ccc; padding: 12px; }
       .pc-title { font-size: 13pt; color: #000; }
-      .pc-desc { font-size: 9.5pt; color: #000; }
+      .pc-bullets li { font-size: 9.5pt; color: #000; }
+      .pc-bullets li::before { color: #000; }
       .pc-tag { border-color: #999; color: #333; }
       .hobbies { grid-template-columns: repeat(3, 1fr); }
       .hobby { border-color: #ccc; color: #000; padding: 10px 12px 10px 0; }
@@ -704,7 +789,15 @@
 <body>
 
   <nav class="cv-topnav" aria-label="Primary">
-    <a href="/" class="cv-back">← Playground</a>
+    <a href="/" class="cv-rh" aria-label="Back to playground">RH</a>
+
+    <ol class="cv-toc" aria-label="Contents">
+      <li><a href="#education-heading"><span class="cv-toc-num">01</span><span class="cv-toc-name">Education</span></a></li>
+      <li><a href="#work-heading"><span class="cv-toc-num">02</span><span class="cv-toc-name">Work</span></a></li>
+      <li><a href="#projects-heading"><span class="cv-toc-num">03</span><span class="cv-toc-name">Projects</span></a></li>
+      <li><a href="#hobbies-heading"><span class="cv-toc-num">04</span><span class="cv-toc-name">Hobbies</span></a></li>
+    </ol>
+
     <div class="cv-topnav-right">
       <span class="cv-topnav-mark">Rex Heng</span>
       <a class="cv-social" href="https://linkedin.com/in/rexheng" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn — Rex Heng">
@@ -892,8 +985,11 @@
             <h3 class="pc-title">Susquehanna × LSE Mathematics Datathon</h3>
             <span class="pc-meta">1st · SIG Datathon 2026</span>
           </div>
-          <p class="pc-subtitle">London Underground network modelling</p>
-          <p class="pc-desc">Proposed siting for a new Underground station at Wembley. Constructed a composite need score across all 4,994 London LSOAs incorporating TfL crowding, Census 2021, PTAL, and IMD inputs. Modelled the rail network as a weighted graph and validated the recommendation through a 10,000-iteration Monte Carlo simulation; Brent 035C ranked first in every iteration.</p>
+          <p class="pc-subtitle">New Underground station siting · Wembley</p>
+          <ul class="pc-bullets">
+            <li>Composite need score across 4,994 London LSOAs (TfL crowding, Census 2021, PTAL, IMD)</li>
+            <li>Weighted rail-graph model validated by a 10,000-iteration Monte Carlo simulation</li>
+          </ul>
           <div class="pc-tags">
             <span class="pc-tag">Python</span>
             <span class="pc-tag">GeoPandas</span>
@@ -913,7 +1009,10 @@
             <span class="pc-meta">2nd · Cursor Hack 2026</span>
           </div>
           <p class="pc-subtitle">MCP deliberation server</p>
-          <p class="pc-desc">Coordinates four AI agents with distinct reasoning archetypes through structurally isolated debate rounds before synthesising consensus. Designed to surface adversarial weaknesses in planning artefacts. Exposed as a Model Context Protocol server for Cursor, Claude Code, and any compatible client.</p>
+          <ul class="pc-bullets">
+            <li>Four reasoning agents (GStack, Superpowers, etc.) load any skills.md, then synthesise a PRD brief</li>
+            <li>Drop-in MCP server — Cursor, Claude Code, any compatible client</li>
+          </ul>
           <div class="pc-tags">
             <span class="pc-tag">TypeScript</span>
             <span class="pc-tag">MCP SDK</span>
@@ -932,8 +1031,11 @@
             <h3 class="pc-title">Manusman</h3>
             <span class="pc-meta">Most Commercial · Manus 2026</span>
           </div>
-          <p class="pc-subtitle">AI meeting-preparation platform</p>
-          <p class="pc-desc">Six-stage workflow compressing approximately 30 minutes of pre-call research into a single briefing. Three parallel research agents streamed over Server-Sent Events generate company, contact, and industry analyses; a Google Meet-style overlay surfaces MEDDPICC, BANT, and SPIN qualification cards in real time during the call.</p>
+          <p class="pc-subtitle">Cluely, but for consulting</p>
+          <ul class="pc-bullets">
+            <li>3 parallel agents launch — company data, client information, internal notes</li>
+            <li>Live in-call briefing overlay streamed over Server-Sent Events</li>
+          </ul>
           <div class="pc-tags">
             <span class="pc-tag">React</span>
             <span class="pc-tag">Manus AI</span>
@@ -951,13 +1053,17 @@
             <h3 class="pc-title">Outreach</h3>
             <span class="pc-meta">Top 8 · Claude Imperial 2026</span>
           </div>
-          <p class="pc-subtitle">Mental-health policy mapping tool</p>
-          <p class="pc-desc">Solo build delivered within a single hackathon day. Engineered a Composite Need Index across 120 variables drawn from IMD 2019, SAMHI v5, Census 2021, and community-service directories, presented on a nine-layer choropleth. The AI policy advisor pairs Claude for narrative briefs with Groq for streaming dialogue grounded in borough-level entities.</p>
+          <p class="pc-subtitle">Mental-health policy mapping tool · solo build</p>
+          <ul class="pc-bullets">
+            <li>Composite Need Index over 120 variables (IMD, SAMHI, Census) on a 9-layer choropleth</li>
+            <li>Queryable datasets via RAG, grounded in processed borough-level data</li>
+          </ul>
           <div class="pc-tags">
             <span class="pc-tag">FastAPI</span>
             <span class="pc-tag">geopandas</span>
             <span class="pc-tag">Leaflet</span>
-            <span class="pc-tag">Claude / Groq</span>
+            <span class="pc-tag">Claude</span>
+            <span class="pc-tag">RAG</span>
           </div>
           <div class="pc-links">
             <a href="https://outreach-london.vercel.app/" target="_blank" rel="noopener noreferrer">Live</a>
@@ -972,7 +1078,10 @@
             <span class="pc-meta">LSE Claude Builder · 2026</span>
           </div>
           <p class="pc-subtitle">NHS cancer waiting-time comparison</p>
-          <p class="pc-desc">Enables patients to exercise their statutory right to choose between 20+ London trusts across four cancer pathways. Multi-factor ranking integrates postcode proximity with FDS, 31-day, and 62-day waiting times. Claude generates formal GP transfer letters citing the relevant clauses of the NHS Constitution.</p>
+          <ul class="pc-bullets">
+            <li>Ranks 20+ London trusts across 4 cancer pathways by proximity + FDS / 31-day / 62-day waits</li>
+            <li>Claude drafts formal GP transfer letters citing the relevant NHS Constitution clauses</li>
+          </ul>
           <div class="pc-tags">
             <span class="pc-tag">Next.js 16</span>
             <span class="pc-tag">Leaflet</span>
@@ -991,7 +1100,10 @@
             <span class="pc-meta">Hedera × LSE · 2026</span>
           </div>
           <p class="pc-subtitle">Tokenised food-waste marketplace</p>
-          <p class="pc-desc">Autonomous AI kitchen agents negotiate surplus-inventory trades over the Hedera Consensus Service and settle on the Hedera Token Service across four tokenised commodities. Sole technical lead within a team of five. A three-panel live viewer streams agent reasoning and on-chain settlement in real time.</p>
+          <ul class="pc-bullets">
+            <li>Autonomous kitchen agents trade surplus inventory over HCS, settle on HTS across 4 tokenised commodities</li>
+            <li>Sole technical lead (team of 5); 3-panel live viewer streams agent reasoning + on-chain settlement</li>
+          </ul>
           <div class="pc-tags">
             <span class="pc-tag">TypeScript</span>
             <span class="pc-tag">hedera-agent-kit</span>
@@ -1011,7 +1123,10 @@
             <span class="pc-meta">Hack London 2026</span>
           </div>
           <p class="pc-subtitle">Soil &amp; water infrastructure dashboard</p>
-          <p class="pc-desc">Fuses NASA GIBS satellite imagery with IoT sensor telemetry to monitor soil and water conditions across Sub-Saharan Africa, South Asia, and Southeast Asia. Paired a $30 per-unit STM32 and LoRaWAN sensor concept with a Solana-anchored audit trail, providing policymakers with tamper-evident telemetry suitable for grant attestation.</p>
+          <ul class="pc-bullets">
+            <li>Fuses NASA GIBS satellite imagery with IoT telemetry for soil/water across three regions</li>
+            <li>$30 STM32 + LoRaWAN sensor concept with a Solana-anchored, tamper-evident audit trail</li>
+          </ul>
           <div class="pc-tags">
             <span class="pc-tag">Next.js 16</span>
             <span class="pc-tag">Mapbox GL</span>
@@ -1030,7 +1145,10 @@
             <span class="pc-meta">LSE Build 2026</span>
           </div>
           <p class="pc-subtitle">Private AI inference marketplace</p>
-          <p class="pc-desc">Trusted-execution-environment-gated inference in which neither model owner nor data owner can observe the other party's inputs. A Phala dstack enclave performs encrypted inference, a Solidity escrow contract releases payment upon attestation, and a Next.js frontend handles client-side encryption and on-chain proof display.</p>
+          <ul class="pc-bullets">
+            <li>TEE-gated inference — neither model owner nor data owner sees the other party's inputs</li>
+            <li>Phala dstack enclave + Solidity escrow that releases payment on attestation</li>
+          </ul>
           <div class="pc-tags">
             <span class="pc-tag">Solidity</span>
             <span class="pc-tag">Phala dstack</span>
@@ -1049,7 +1167,10 @@
             <span class="pc-meta">ETH Oxford 2026</span>
           </div>
           <p class="pc-subtitle">Decentralised research graph</p>
-          <p class="pc-desc">Blockchain-based knowledge graph for academic publishing addressing the approximately $2B annual unpaid peer-review market. The Flare Data Connector verifies DOIs, citations, and replication studies on-chain; USDC on Plasma settles reviewer compensation immediately while a RESEARCH governance token manages long-term alignment.</p>
+          <ul class="pc-bullets">
+            <li>On-chain knowledge graph targeting the ~$2B/yr unpaid peer-review market</li>
+            <li>Flare Data Connector verifies DOIs/citations; USDC on Plasma pays reviewers instantly</li>
+          </ul>
           <div class="pc-tags">
             <span class="pc-tag">Solidity</span>
             <span class="pc-tag">Flare FDC</span>
@@ -1069,7 +1190,10 @@
             <span class="pc-meta">Music theory tool</span>
           </div>
           <p class="pc-subtitle">Interactive harmony visualisation</p>
-          <p class="pc-desc">Two-mode interactive tool. Transformation mode demonstrates P/L/R chord operations; Negative Harmony mode reflects chords through their tonal axis. Built as a teaching aid for an under-served pedagogical area.</p>
+          <ul class="pc-bullets">
+            <li>Transformation mode visualises P/L/R chord operations</li>
+            <li>Negative Harmony mode reflects chords through their tonal axis — built as a teaching aid</li>
+          </ul>
           <div class="pc-tags">
             <span class="pc-tag">React</span>
             <span class="pc-tag">Vite</span>
@@ -1086,7 +1210,10 @@
             <span class="pc-meta">Encode AI Hackathon 2026</span>
           </div>
           <p class="pc-subtitle">MIDI-driven procedural city</p>
-          <p class="pc-desc">Real-time procedural cityscape driven by live MIDI input. Chord events spawn buildings, melodic content enriches them through spectral analysis, and interval distance governs the placement of connective infrastructure. GLTF asset pipelines support Jazz, Christmas, and Rock palettes.</p>
+          <ul class="pc-bullets">
+            <li>Live MIDI drives a procedural cityscape — chords spawn buildings, melody enriches them</li>
+            <li>Interval distance places connective infrastructure; Jazz / Christmas / Rock GLTF palettes</li>
+          </ul>
           <div class="pc-tags">
             <span class="pc-tag">Three.js / R3F</span>
             <span class="pc-tag">Zustand</span>
@@ -1106,7 +1233,10 @@
             <span class="pc-meta">Word game · PWA</span>
           </div>
           <p class="pc-subtitle">Mobile-first word puzzle</p>
-          <p class="pc-desc">Swipe, tap, or type across 280+ pre-generated letter sets governed by a 10-second SVG timer. Streak-based scoring offers multipliers up to 10×, with LocalStorage-backed high-score persistence. Designed mobile-first as a Progressive Web App.</p>
+          <ul class="pc-bullets">
+            <li>280+ letter sets, 10-second SVG timer, streak scoring with up to 10× multipliers</li>
+            <li>Mobile-first PWA with LocalStorage high-score persistence</li>
+          </ul>
           <div class="pc-tags">
             <span class="pc-tag">React 19</span>
             <span class="pc-tag">PWA</span>
@@ -1193,6 +1323,47 @@
         }
       }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
       document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    })();
+
+    /* TOC scroll-spy — highlights the section closest to the viewport's
+       upper third. Falls back silently if IntersectionObserver is unavailable. */
+    (() => {
+      if (!('IntersectionObserver' in window)) return;
+      const links = Array.from(document.querySelectorAll('.cv-toc a'));
+      if (!links.length) return;
+      const linkByHash = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+      const sections = Array.from(document.querySelectorAll('section[aria-labelledby]'))
+        .map(sec => ({ sec, hid: sec.getAttribute('aria-labelledby') }))
+        .filter(({ hid }) => linkByHash.has(hid));
+      if (!sections.length) return;
+
+      const visible = new Set();
+      const setActive = (hid) => {
+        for (const a of links) a.classList.toggle('is-active', a.getAttribute('href') === '#' + hid);
+      };
+      const update = () => {
+        if (!visible.size) return;
+        // Pick the visible section whose top is highest (closest to nav).
+        let best = null, bestTop = Infinity;
+        for (const hid of visible) {
+          const sec = sections.find(s => s.hid === hid)?.sec;
+          if (!sec) continue;
+          const t = sec.getBoundingClientRect().top;
+          if (t < bestTop) { bestTop = t; best = hid; }
+        }
+        if (best) setActive(best);
+      };
+
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          const hid = e.target.getAttribute('aria-labelledby');
+          if (e.isIntersecting) visible.add(hid);
+          else visible.delete(hid);
+        }
+        update();
+      }, { rootMargin: '-80px 0px -55% 0px', threshold: [0, 0.1, 0.5] });
+
+      for (const { sec } of sections) io.observe(sec);
     })();
   </script>
 

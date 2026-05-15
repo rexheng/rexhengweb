@@ -47,25 +47,31 @@ export class ControlsPanel {
     root.innerHTML = `
       <header class="rex-panel-title">
         <div class="rex-panel-title-main">Controls</div>
-        <div class="rex-panel-title-tag">Rex Heng · Playground</div>
-        <button class="rex-panel-collapse" type="button" aria-label="Collapse controls">−</button>
+        <button class="rex-panel-collapse" type="button" aria-label="Minimise controls" title="Minimise controls">[−]</button>
       </header>
     `;
     root.querySelector(".rex-panel-collapse").addEventListener("click", (e) => {
       e.stopPropagation();
       const collapsed = root.classList.toggle("is-collapsed");
       try { localStorage.setItem("rex-controls-collapsed", collapsed ? "1" : "0"); } catch {}
-      root.querySelector(".rex-panel-collapse").textContent = collapsed ? "+" : "−";
+      const btn = root.querySelector(".rex-panel-collapse");
+      btn.textContent = collapsed ? "[+]" : "[−]";
+      btn.setAttribute("aria-label", collapsed ? "Expand controls" : "Minimise controls");
+      btn.setAttribute("title", collapsed ? "Expand controls" : "Minimise controls");
     });
     // Restore previous state
     try {
       if (localStorage.getItem("rex-controls-collapsed") === "1") {
         root.classList.add("is-collapsed");
-        root.querySelector(".rex-panel-collapse").textContent = "+";
+        const btn = root.querySelector(".rex-panel-collapse");
+        btn.textContent = "[+]";
+        btn.setAttribute("aria-label", "Expand controls");
+        btn.setAttribute("title", "Expand controls");
       }
     } catch {}
 
-    // Physics section — toggles + segmented controls + sliders + compass.
+    // Physics section — Paused + Gravity only. Wind/Force/Heading live in
+    // their own section below; Timescale lives in Scene at the bottom.
     const phys = this._sectionShell("Physics");
     phys.dataset.section = "physics";
     phys.appendChild(this._row("Paused", this._toggle("paused", (v) => this._set("paused", v))));
@@ -76,19 +82,6 @@ export class ControlsPanel {
       if (this.app.model) this.app.model.opt.gravity[2] = opt.value;
       this.app.setEnvironmentForGravity?.(opt.label);
     }));
-
-    phys.appendChild(this._labelLine("Timescale"));
-    phys.appendChild(this._segmented("timescale", TIMESCALE_OPTIONS, (opt) => {
-      this.app.params.timescaleLabel = opt.key;
-      // Clear the physics accumulator + clock so a scale change starts clean.
-      this.app._simAccumMs = 0;
-      this.app.clock?.getDelta?.();
-    }));
-
-    phys.appendChild(this._row("Wind", this._toggle("windEnabled", (v) => this._set("windEnabled", v))));
-    phys.appendChild(this._sliderRow("Force", "wind", 0, 40, 0.5, (v) => `${v.toFixed(1)} N`));
-    phys.appendChild(this._labelLine("Heading"));
-    phys.appendChild(this._compass());
 
     root.appendChild(phys);
 
@@ -123,14 +116,29 @@ export class ControlsPanel {
     })));
     root.appendChild(fx);
 
-    // Scene section — sits at the bottom so destructive actions
-    // (Reset, Random Perturb) are out of the way of normal browsing.
-    const scene = this._section("Scene", [
-      this._button("Reset", () => this.app.resetSim()),
-      this._button("Random Perturb", () => this.app.randomPerturb()),
-    ]);
+    // Scene section — bottom of the panel. Timescale + destructive actions
+    // (Reset, Random Perturb) live here, away from the per-scene controls.
+    const scene = this._sectionShell("Scene");
     scene.dataset.section = "scene";
+    scene.appendChild(this._labelLine("Timescale"));
+    scene.appendChild(this._segmented("timescale", TIMESCALE_OPTIONS, (opt) => {
+      this.app.params.timescaleLabel = opt.key;
+      this.app._simAccumMs = 0;
+      this.app.clock?.getDelta?.();
+    }));
+    scene.appendChild(this._button("Reset", () => this.app.resetSim()));
+    scene.appendChild(this._button("Random Perturb", () => this.app.randomPerturb()));
     root.appendChild(scene);
+
+    // Wind section — Wind toggle, Force slider, Heading compass grouped
+    // together. Sits at the bottom of the panel.
+    const wind = this._sectionShell("Wind");
+    wind.dataset.section = "wind";
+    wind.appendChild(this._row("Wind", this._toggle("windEnabled", (v) => this._set("windEnabled", v))));
+    wind.appendChild(this._sliderRow("Force", "wind", 0, 40, 0.5, (v) => `${v.toFixed(1)} N`));
+    wind.appendChild(this._labelLine("Heading"));
+    wind.appendChild(this._compass());
+    root.appendChild(wind);
 
     document.body.appendChild(root);
     this.el = root;

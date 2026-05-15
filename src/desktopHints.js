@@ -1,248 +1,315 @@
-// Desktop ghost-overlay first-run hints. Mirrors mobileHints.js shape:
-// idempotent, localStorage-gated to first visit, dismisses on first
-// interaction. Bails out on mobile layouts (mobileHints handles those).
+// Desktop first-run tutorial. Four ambient looping hints, dismissed
+// individually as the user performs each action. Hints ①③④ track per-hint
+// state in localStorage so the tutorial fades as the user learns the
+// controls; ② is a persistent affordance shown every session (no gate).
 //
-// Four anchored callouts:
-//   01  Professional CTA      (top-left, pointer up)
-//   02  Figure                (centre, pointer down — anchored to viewport,
-//                              not the WebGL figure, since the humanoid moves)
-//   03  Projects section      (right panel, pointer right)
-//   04  Abilities (stub)      (bottom-centre, no pointer — placeholder until
-//                              we wire real anchoring to the project card)
+//   ① drag-humanoid     — cursor fades in/out over scene centre, dismisses on canvas pointerdown
+//   ② switch view (CV)  — amber pulse on the RH toggle + label, every session; fades on RH click within the load
+//   ③ add a project     — text margin-annotation on the Projects section head
+//   ④ double-click      — top-of-screen text, mounts only after first spawn
+//
+// Visual language matches mobileHints + the rest of the editorial chrome:
+// IBM Plex Mono small-caps, ivory text with layered drop-shadow, translucent
+// ivory AssistiveTouch-style cursor (16px outer ring, 8px inner dot).
 
 import { isMobileLayout } from "./ui.js";
 
-const STORAGE_KEY = "rex.desktopHintsSeen";
 const STYLE_ID = "rex-desktop-hints-style";
-const OVERLAY_ID = "rex-desktop-hints";
-const POINTER_GAP = 14;
-const SHOW_DELAY_MS = 400;
-const FADE_OUT_MS = 280;
+const ROOT_ID  = "rex-desktop-hints";
+const STORAGE  = "rex.desktopHints.";
 
-const HINTS = [
-  {
-    id: "rex-hint-pro",
-    eyebrow: "01 · Top-left",
-    body: "Switch to my professional view",
-    pointer: "up",
-    anchor() {
-      const el = document.querySelector("#rex-portfolio-overlay .rex-cta");
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      if (!r.width || !r.height) return null;
-      return { kind: "below", x: r.left + 8, y: r.bottom + POINTER_GAP };
-    },
-  },
-  {
-    id: "rex-hint-figure",
-    eyebrow: "02 · Drag",
-    body: "Grab and toss me around",
-    pointer: "down",
-    anchor() {
-      // Figure is in the WebGL canvas and moves under physics. Anchor to a
-      // viewport-relative point above where the head sits at scene-rest.
-      return { kind: "above", x: window.innerWidth / 2, yTarget: window.innerHeight * 0.5 };
-    },
-  },
-  {
-    id: "rex-hint-projects",
-    eyebrow: "03 · Right panel",
-    body: "Drop projects into the scene",
-    pointer: "right",
-    anchor() {
-      const el = document.querySelector('#rex-controls [data-section="projects"]');
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      if (!r.width || !r.height) return null; // hidden (panel collapsed)
-      return { kind: "left-of", xTarget: r.left, y: r.top + 8 };
-    },
-  },
-  {
-    id: "rex-hint-abilities",
-    eyebrow: "04 · Abilities",
-    body: "Each project has its own ability",
-    pointer: "none",
-    anchor() {
-      return { kind: "bottom-center", bottom: 56 };
-    },
-  },
-];
+const KEY = {
+  drag:     STORAGE + "drag",
+  project:  STORAGE + "project",
+  dblclick: STORAGE + "dblclick",
+};
 
+function getFlag(k) {
+  try { return localStorage.getItem(k) === "1"; } catch { return false; }
+}
+function setFlag(k) {
+  try { localStorage.setItem(k, "1"); } catch { /* private mode etc. */ }
+}
+
+function fadeAndRemove(el) {
+  if (!el || !el.isConnected) return;
+  el.classList.add("rex-hint-out");
+  window.setTimeout(() => el.remove(), 420);
+}
+
+// ─── styles ───────────────────────────────────────────────────────────
 function ensureStyle() {
   if (document.getElementById(STYLE_ID)) return;
   const s = document.createElement("style");
   s.id = STYLE_ID;
   s.textContent = `
-    #${OVERLAY_ID} {
-      position: fixed;
-      inset: 0;
-      z-index: 70;
-      pointer-events: none;
-    }
-    #${OVERLAY_ID}.is-out .rex-desktop-hint {
-      opacity: 0;
-      transform: translate3d(0, 4px, 0);
-    }
-    .rex-desktop-hint {
-      position: absolute;
-      background: rgba(11, 14, 22, 0.78);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid var(--rex-rule-strong, rgba(214,207,188,0.42));
-      padding: 12px 14px 11px;
-      max-width: 220px;
-      color: var(--rex-ivory, #efe8d8);
-      font-family: var(--rex-font-mono, ui-monospace, monospace);
-      font-size: 11px;
-      line-height: 1.45;
-      letter-spacing: 0.01em;
-      box-shadow: 0 12px 32px rgba(0,0,0,0.5);
-      opacity: 1;
-      transform: translate3d(0, 0, 0);
-      transition: opacity 220ms ease, transform 220ms ease;
-    }
-    .rex-desktop-hint .rex-hint-eyebrow {
-      font-size: 9px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--rex-amber, #d4a05a);
-      margin-bottom: 5px;
-    }
-    .rex-desktop-hint .rex-hint-body {
-      font-family: var(--rex-font-serif, "Newsreader", Georgia, serif);
-      font-style: italic;
-      font-size: 15px;
-      color: var(--rex-ivory, #efe8d8);
-      line-height: 1.3;
-    }
-    .rex-desktop-hint::before {
-      content: "";
-      position: absolute;
-      width: 0;
-      height: 0;
-      border: 7px solid transparent;
-    }
-    .rex-desktop-hint[data-pointer="up"]::before {
-      top: -14px;
-      left: 28px;
-      border-bottom-color: rgba(11, 14, 22, 0.78);
-    }
-    .rex-desktop-hint[data-pointer="down"]::before {
-      bottom: -14px;
-      left: 50%;
-      margin-left: -7px;
-      border-top-color: rgba(11, 14, 22, 0.78);
-    }
-    .rex-desktop-hint[data-pointer="right"]::before {
-      right: -14px;
-      top: 18px;
-      border-left-color: rgba(11, 14, 22, 0.78);
-    }
-    .rex-desktop-hint[data-pointer="none"] {
-      text-align: center;
-      max-width: 280px;
-    }
+#${ROOT_ID} { position: fixed; inset: 0; z-index: 18; pointer-events: none; }
+
+.rex-hint,
+.rex-hint-cursor,
+.rex-hint-pulse {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* AssistiveTouch-style cursor: 16px translucent ring + 8px inner dot */
+.rex-hint-cursor {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: rgba(239,232,216,0.22);
+  border: 1px solid rgba(239,232,216,0.55);
+  box-shadow: 0 0 8px rgba(0,0,0,0.35), inset 0 0 1px rgba(0,0,0,0.25);
+  transform-origin: 50% 50%;
+}
+.rex-hint-cursor::after {
+  content: ""; position: absolute; inset: 4px; border-radius: 50%;
+  background: rgba(239,232,216,0.95);
+  box-shadow: 0 0 4px rgba(255,236,200,0.35);
+}
+
+/* bare hint text — matches .title-row .keys typography */
+.rex-hint-label {
+  position: absolute;
+  font-family: var(--rex-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--rex-ivory);
+  text-shadow:
+    0 1px 2px rgba(0,0,0,0.9),
+    0 0 8px rgba(0,0,0,0.6),
+    0 0 1px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* amber pulse ring around an anchor */
+.rex-hint-pulse {
+  border: 1px solid var(--rex-amber);
+  opacity: 0;
+}
+
+/* fade-out animation when a hint is dismissed */
+.rex-hint-out { opacity: 0 !important; transition: opacity 400ms ease; }
+
+/* ──── HINT ①: drag humanoid — cursor hovers in place and fades in/out ─ */
+.rex-hint-drag .rex-hint-cursor {
+  left: 50%; top: 62%;
+  animation: rexHintCenterFade 3.4s ease-in-out infinite;
+}
+@keyframes rexHintCenterFade {
+  0%   { opacity: 0; transform: scale(0.88); }
+  35%  { opacity: 1; transform: scale(1);    }
+  65%  { opacity: 1; transform: scale(1);    }
+  100% { opacity: 0; transform: scale(0.88); }
+}
+.rex-hint-drag .rex-hint-label {
+  left: 50%; top: 78%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+/* ──── HINT ②: RH toggle (switch view) — pulse + label only ──────────── */
+.rex-hint-cv .rex-hint-pulse {
+  /* sits over the 52×52 RH button, anchored 1px outside */
+  animation: rexHintPulseRect 2.4s ease-out infinite;
+}
+@keyframes rexHintPulseRect {
+  0%   { transform: scale(1);    opacity: 0.7; }
+  80%  { transform: scale(1.25); opacity: 0;   }
+  100% { transform: scale(1.25); opacity: 0;   }
+}
+
+/* ──── HINT ③: add a project (mounted inside Projects section head) ─ */
+/* Renders as a sibling of the section-head's children so it scrolls with
+   the panel. Positioned to the left of the panel via negative offset. */
+.rex-hint-project-label {
+  position: absolute;
+  right: calc(100% + 16px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--rex-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--rex-ivory);
+  text-shadow:
+    0 1px 2px rgba(0,0,0,0.9),
+    0 0 8px rgba(0,0,0,0.6),
+    0 0 1px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 400ms ease;
+}
+.rex-hint-project-label.rex-hint-out { opacity: 0; }
+
+/* ──── HINT ④: double-click prompt (top-of-screen) ─────────────────── */
+.rex-hint-dblclick {
+  left: 50%;
+  top: 100px;
+  transform: translateX(-50%);
+  font-family: var(--rex-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--rex-ivory);
+  text-shadow:
+    0 1px 2px rgba(0,0,0,0.9),
+    0 0 8px rgba(0,0,0,0.6),
+    0 0 1px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: rexHintDblFade 600ms ease-in;
+}
+@keyframes rexHintDblFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
   `;
   document.head.appendChild(s);
 }
 
-function buildOverlay() {
-  const overlay = document.createElement("div");
-  overlay.id = OVERLAY_ID;
-  overlay.setAttribute("role", "region");
-  overlay.setAttribute("aria-label", "First-time hints");
-  for (const def of HINTS) {
-    const hint = document.createElement("div");
-    hint.id = def.id;
-    hint.className = "rex-desktop-hint";
-    hint.dataset.pointer = def.pointer;
-    hint.innerHTML = `
-      <div class="rex-hint-eyebrow">${def.eyebrow}</div>
-      <div class="rex-hint-body">${def.body}</div>
-    `;
-    overlay.appendChild(hint);
-  }
-  document.body.appendChild(overlay);
-  return overlay;
+// ─── per-hint builders ────────────────────────────────────────────────
+function mountHintDrag(root) {
+  const wrap = document.createElement("div");
+  wrap.className = "rex-hint rex-hint-drag";
+  wrap.style.inset = "0";
+  wrap.innerHTML = `
+    <div class="rex-hint-cursor"></div>
+    <div class="rex-hint-label">Drag to move me around</div>
+  `;
+  root.appendChild(wrap);
+  return wrap;
 }
 
-function positionAll(overlay) {
-  for (const def of HINTS) {
-    const el = overlay.querySelector(`#${def.id}`);
-    if (!el) continue;
-    const a = def.anchor();
-    if (!a) {
-      el.style.display = "none";
-      continue;
-    }
-    el.style.display = "";
-    if (a.kind === "below") {
-      el.style.left = `${a.x}px`;
-      el.style.top = `${a.y}px`;
-      el.style.transform = "";
-    } else if (a.kind === "above") {
-      el.style.left = `${a.x}px`;
-      el.style.transform = "translateX(-50%)";
-      requestAnimationFrame(() => {
-        el.style.top = `${a.yTarget - el.offsetHeight - POINTER_GAP}px`;
-      });
-    } else if (a.kind === "left-of") {
-      el.style.top = `${a.y}px`;
-      el.style.transform = "";
-      requestAnimationFrame(() => {
-        el.style.left = `${a.xTarget - el.offsetWidth - POINTER_GAP}px`;
-      });
-    } else if (a.kind === "bottom-center") {
-      el.style.left = "50%";
-      el.style.transform = "translateX(-50%)";
-      el.style.bottom = `${a.bottom}px`;
-      el.style.top = "";
-    }
-  }
+function mountHintCV(root, rhEl) {
+  const wrap = document.createElement("div");
+  wrap.className = "rex-hint rex-hint-cv";
+  wrap.style.inset = "0";
+
+  const pulse = document.createElement("div");
+  pulse.className = "rex-hint-pulse";
+
+  const label = document.createElement("div");
+  label.className = "rex-hint-label";
+  label.textContent = "Switch view";
+
+  wrap.appendChild(pulse);
+  wrap.appendChild(label);
+  root.appendChild(wrap);
+
+  const place = () => {
+    const r = rhEl.getBoundingClientRect();
+    pulse.style.left   = `${r.left - 1}px`;
+    pulse.style.top    = `${r.top  - 1}px`;
+    pulse.style.width  = `${r.width + 2}px`;
+    pulse.style.height = `${r.height + 2}px`;
+    label.style.left = `${r.left - 4}px`;
+    label.style.top  = `${r.bottom + 14}px`;
+  };
+  place();
+  window.addEventListener("resize", place);
+
+  return wrap;
 }
 
-/**
- * Mount the desktop hints overlay. Call once after `injectUI()`,
- * `initMobileShell()`, and `initMobileHints()`. Idempotent.
- */
+function mountHintProject(projectsHead) {
+  // Ensure the head is its own containing block so the absolute label resolves
+  // to it instead of escaping up to #rex-controls. Section heads ship as
+  // position:static by default.
+  const prev = projectsHead.style.position;
+  if (!prev) projectsHead.style.position = "relative";
+
+  const label = document.createElement("div");
+  label.className = "rex-hint-project-label";
+  label.textContent = "Add a Project";
+  projectsHead.appendChild(label);
+  return label;
+}
+
+function mountHintDblclick(root) {
+  if (root.querySelector(".rex-hint-dblclick")) return null;
+  const el = document.createElement("div");
+  el.className = "rex-hint rex-hint-dblclick";
+  el.textContent = "Double click on the project and see what happens";
+  root.appendChild(el);
+  return el;
+}
+
+// ─── lifecycle ────────────────────────────────────────────────────────
 export function initDesktopHints() {
   if (typeof document === "undefined") return;
-  if (document.getElementById(OVERLAY_ID)) return;
   if (isMobileLayout()) return;
-
-  let seen = false;
-  try { seen = localStorage.getItem(STORAGE_KEY) === "1"; } catch (_) { /* ignore */ }
-  if (seen) return;
+  if (document.getElementById(ROOT_ID)) return;
 
   ensureStyle();
 
-  let overlay = null;
-  let dismissed = false;
+  const root = document.createElement("div");
+  root.id = ROOT_ID;
+  document.body.appendChild(root);
 
-  const onResize = () => { if (overlay) positionAll(overlay); };
+  // HINT ① — drag humanoid
+  let dragHint = null;
+  if (!getFlag(KEY.drag)) {
+    dragHint = mountHintDrag(root);
+    const canvas = document.querySelector("canvas");
+    if (canvas) {
+      const onDown = () => {
+        setFlag(KEY.drag);
+        fadeAndRemove(dragHint);
+        canvas.removeEventListener("pointerdown", onDown);
+      };
+      canvas.addEventListener("pointerdown", onDown, { once: false });
+    }
+  }
 
-  const dismiss = () => {
-    if (dismissed) return;
-    dismissed = true;
-    try { localStorage.setItem(STORAGE_KEY, "1"); } catch (_) { /* ignore */ }
-    document.removeEventListener("mousedown", dismiss, { capture: true });
-    document.removeEventListener("keydown", dismiss, { capture: true });
-    window.removeEventListener("resize", onResize);
-    if (!overlay) return;
-    overlay.classList.add("is-out");
-    window.setTimeout(() => {
-      if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-    }, FADE_OUT_MS);
+  // HINT ② — switch view (RH toggle). Persistent affordance: shows every
+  // session (no localStorage gate) so visitors always discover the CV view.
+  // Dismisses within the current load when the RH button is clicked.
+  {
+    const rh = document.querySelector("#rex-portfolio-overlay .rex-toggle");
+    if (rh) {
+      const cvHint = mountHintCV(root, rh);
+      const onDown = () => {
+        fadeAndRemove(cvHint);
+        rh.removeEventListener("mousedown", onDown);
+      };
+      rh.addEventListener("mousedown", onDown);
+    }
+  }
+
+  // HINT ③ — add a project (annotation on the Projects sect-head)
+  // HINT ④ — double-click (mounts on first spawn)
+  const projectsHead = document.querySelector(
+    '[data-section="projects"] .rex-section-head'
+  );
+  let projectHint = null;
+  if (!getFlag(KEY.project) && projectsHead) {
+    projectHint = mountHintProject(projectsHead);
+  }
+
+  // One delegated listener handles both ③ (dismiss) and ④ (mount).
+  const onAnyClick = (e) => {
+    const tile = e.target.closest(".rex-project-tile");
+    if (!tile) return;
+    if (projectHint) {
+      setFlag(KEY.project);
+      fadeAndRemove(projectHint);
+      projectHint = null;
+    }
+    if (!getFlag(KEY.dblclick)) {
+      // Defer one frame so the spawn animation kicks off first.
+      requestAnimationFrame(() => {
+        const dblHint = mountHintDblclick(root);
+        if (!dblHint) return;
+        const onDbl = () => {
+          setFlag(KEY.dblclick);
+          fadeAndRemove(dblHint);
+          document.removeEventListener("dblclick", onDbl);
+        };
+        document.addEventListener("dblclick", onDbl);
+      });
+    }
   };
-
-  // Brief delay so the scene has time to paint before the hints fade in.
-  window.setTimeout(() => {
-    if (dismissed) return;
-    if (isMobileLayout()) return; // viewport may have flipped during the delay
-    overlay = buildOverlay();
-    positionAll(overlay);
-    document.addEventListener("mousedown", dismiss, { capture: true });
-    document.addEventListener("keydown", dismiss, { capture: true });
-    window.addEventListener("resize", onResize);
-  }, SHOW_DELAY_MS);
+  document.addEventListener("click", onAnyClick, true);
 }
