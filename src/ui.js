@@ -929,7 +929,9 @@ canvas { touch-action: none; }
     max-width: calc(100vw - 24px);
   }
   #hud h1 { font-size: 13px; }
-  #hud p { font-size: 8.5px; }
+  /* Keycap hint bar is keyboard-only guidance — useless on touch, so hide it
+     on mobile. Desktop keeps it (see #hud p in the base block). */
+  #hud p { display: none; }
 
   /* Pause chip moves above the controls handle. */
   #pause-chip { right: 12px; bottom: 52px; }
