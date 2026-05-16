@@ -3,9 +3,13 @@
 
 import * as THREE from "three";
 import { modelCache } from "../../assets.js";
+import { decoupleMaterials } from "../../materialClone.mjs";
 
 export function buildMesh() {
   const cached = modelCache.amogus;
   if (!cached) return new THREE.Group();   // graceful fallback on load failure
-  return cached.clone(true);
+  // clone(true) shares materials with the prototype and every sibling
+  // clone; decoupleMaterials gives this instance its own so per-body
+  // emissive highlight doesn't bleed across all spawned copies.
+  return decoupleMaterials(cached.clone(true));
 }
