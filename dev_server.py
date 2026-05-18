@@ -12,6 +12,16 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 
 class NoCacheHandler(SimpleHTTPRequestHandler):
+    def send_head(self):
+        # SimpleHTTPRequestHandler honours If-Modified-Since / If-None-Match
+        # and replies 304, so the browser keeps stale ES modules even with
+        # no-store. Strip the conditional headers so every request is a
+        # fresh 200 with the current file body.
+        for h in ("If-Modified-Since", "If-None-Match"):
+            if h in self.headers:
+                del self.headers[h]
+        return super().send_head()
+
     def end_headers(self):
         self.send_header("Cache-Control", "no-store, must-revalidate")
         self.send_header("Pragma", "no-cache")
