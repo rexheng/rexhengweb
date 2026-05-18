@@ -13,6 +13,10 @@ export default {
   subtitle: "2026 · AI policy simulation",
   meta: "Mistral · agentic · simulation",
   accent: "#ff7138",
+  icon:
+    '<circle cx="12" cy="12" r="9"/>'
+    + '<circle cx="12" cy="12" r="5.5"/>'
+    + '<circle cx="12" cy="12" r="2.5"/>',
   description:
     "Simulacra is an AI-powered social simulation engine: drop a policy change in, populate a city with diverse AI personas, and watch how households, small businesses, and public services respond to it in aggregate. Finalist at the Mistral AI Hackathon.",
   links: [

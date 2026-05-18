@@ -70,6 +70,10 @@ function validate(def, path) {
     console.error(`[projects] ${path}: onSpawn must be a function`);
     return false;
   }
+  if (def.icon != null && (typeof def.icon !== "string" || !def.icon)) {
+    console.error(`[projects] ${path}: icon must be a non-empty string if present`);
+    return false;
+  }
   if (def.fbx != null) {
     if (typeof def.fbx.url !== "string"
         || !def.fbx.target

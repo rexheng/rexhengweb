@@ -13,6 +13,13 @@ export default {
   subtitle: "2026 · graph-theoretic station siting",
   meta: "datathon · graph theory · Monte Carlo",
   accent: "#dc241f",
+  icon:
+    '<circle cx="10" cy="12" r="5"/>'
+    + '<circle cx="10" cy="12" r="2.5"/>'
+    + '<path d="M14 9 L18 5"/>'
+    + '<path d="M14 15 L18 19"/>'
+    + '<circle cx="19" cy="4.5" r="1.4"/>'
+    + '<circle cx="19" cy="19.5" r="1.4"/>',
   description:
     "A new tube station, sited by graph theory rather than planning politics. Given a 358-node underground network, the model treats every candidate Olympic Way interchange as a shortest-path shift across the system and runs Monte Carlo over passenger flow to score which location relieves the most load with the fewest dominoes. Took 1st place at the Susquehanna Datathon 2026.",
   links: [

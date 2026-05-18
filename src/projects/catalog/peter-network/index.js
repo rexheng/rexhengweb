@@ -16,6 +16,11 @@ export default {
   subtitle: "agentic Instagram education",
   meta: "instagram · agentic pipeline",
   accent: "#ef7d00", // NUS orange — matches initial outfit; cycle overwrites
+  icon:
+    '<ellipse cx="12" cy="12" rx="6.5" ry="8.5"/>'
+    + '<circle cx="10" cy="11" r="1.4"/>'
+    + '<circle cx="14" cy="11" r="1.4"/>'
+    + '<path d="M11.4 11 H12.6"/>',
   description:
     "Educational-content network on Instagram spanning NUS, LSE, and McKinsey handles — reached 500K+ views and 2K followers in 3-4 months (~200% monthly growth), with agentic AI pipelines producing law, finance, and consulting content. Peter slowly rotates through the six outfits, and Cycle jumps to the next one.",
   links: [

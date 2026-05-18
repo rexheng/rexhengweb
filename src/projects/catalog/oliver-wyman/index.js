@@ -32,6 +32,13 @@ export default {
   subtitle: "marathon performance · 14-variable regression",
   meta: "datathon · regression · endurance",
   accent: "#1f4ba5",
+  icon:
+    '<path d="M3 19 L21 5"/>'
+    + '<circle cx="6" cy="16" r="1"/>'
+    + '<circle cx="10" cy="14" r="1"/>'
+    + '<circle cx="13" cy="9" r="1"/>'
+    + '<circle cx="15" cy="14" r="1"/>'
+    + '<circle cx="18" cy="7" r="1"/>',
   description:
     "A 14-variable linear regression on marathon performance data — splits, pace, elevation, weather, fuelling, sleep — teasing out which signals actually move finish time and which are just gym folklore. Took 1st place at the Oliver Wyman Datathon.",
   links: [],

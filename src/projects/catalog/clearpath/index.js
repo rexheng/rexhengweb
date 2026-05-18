@@ -13,6 +13,10 @@ export default {
   subtitle: "2026 · NHS cancer waiting-time reduction",
   meta: "NHS · Right to Choose · Claude",
   accent: "#005eb8",
+  icon:
+    '<path d="M3 6 L9 12 L3 18"/>'
+    + '<path d="M10 8 L14 12 L10 16"/>'
+    + '<path d="M16 9.5 L18.5 12 L16 14.5"/>',
   description:
     "ClearPath shortens NHS cancer waiting times by activating the patient's right to choose. A user tells the app where they're stuck on a referral; Claude drafts the GP transfer letter, cites the NHS Constitution right to choose, and produces a signed PDF the patient can hand back to their surgery. Built at the Claude Hackathon @ LSE.",
   links: [

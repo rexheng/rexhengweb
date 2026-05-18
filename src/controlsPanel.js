@@ -236,7 +236,25 @@ export class ControlsPanel {
 
       const swatch = document.createElement("span");
       swatch.className = "rex-tile-swatch";
-      swatch.textContent = this._monogram(def);
+      if (typeof def.icon === "string" && def.icon) {
+        // Inline SVG glyph. Wrapper attributes are uniform across all icons
+        // (see project-tile-icons-design spec): 24x24 viewBox, stroke-only,
+        // hairline 1.4, round caps/joins, sized 18x18 inside the 30x30 swatch.
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("width", "18");
+        svg.setAttribute("height", "18");
+        svg.setAttribute("fill", "none");
+        svg.setAttribute("stroke", "var(--rex-ink)");
+        svg.setAttribute("stroke-width", "1.4");
+        svg.setAttribute("stroke-linecap", "round");
+        svg.setAttribute("stroke-linejoin", "round");
+        svg.setAttribute("aria-hidden", "true");
+        svg.innerHTML = def.icon;
+        swatch.appendChild(svg);
+      } else {
+        swatch.textContent = this._monogram(def);
+      }
 
       const name = document.createElement("span");
       name.className = "rex-tile-name";
