@@ -1,421 +1,602 @@
-<!DOCTYPE html>
-<html lang="en-GB">
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Writing | Rex Heng</title>
-    <meta name="description" content="Articles and essays by Rex Heng on policy, technology, and social impact.">
-    <link rel="stylesheet" href="../style.css">
-    <style>
-        /* Writing Page Styles */
-        .writing-section {
-            margin-top: 80px;
-            padding: 4rem 2rem;
-            min-height: calc(100vh - 80px);
-            background: var(--white);
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Writing — Rex Heng</title>
+  <meta name="description" content="Essays and field notes by Rex Heng on technology, policy, and social impact." />
+  <meta name="author" content="Rex Heng" />
+  <meta name="robots" content="index,follow" />
 
-        .writing-header {
-            text-align: center;
-            max-width: 800px;
-            margin: 0 auto 4rem;
-        }
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Writing — Rex Heng" />
+  <meta property="og:description" content="Essays and field notes on technology, policy, and social impact." />
+  <meta property="og:url" content="https://rexheng.com/writing/" />
 
-        .writing-header h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            color: var(--text-dark);
-        }
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Writing — Rex Heng" />
+  <meta name="twitter:description" content="Essays and field notes on technology, policy, and social impact." />
 
-        .writing-header p {
-            font-size: 1.2rem;
-            color: var(--text-light);
-            line-height: 1.6;
-        }
+  <link rel="canonical" href="https://rexheng.com/writing/" />
 
-        .articles-grid {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-            gap: 2.5rem;
-        }
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
-        .article-card {
-            background: var(--white);
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 5px 20px var(--soft-shadow);
-            transition: all 0.3s ease;
-            border: 1px solid rgba(145, 188, 148, 0.2);
-            display: flex;
-            flex-direction: column;
-        }
+  <style>
+    :root {
+      --rex-ink: #f7f3e9;
+      --rex-ink-2: #efe8d8;
+      --rex-ink-3: #e6dec8;
+      --rex-ink-4: #ddd4ba;
+      --rex-ivory: #1a1814;
+      --rex-ivory-2: #3a352c;
+      --rex-ivory-3: #6b6353;
+      --rex-amber: #b07a2a;
+      --rex-amber-2: #c89544;
+      --rex-rule: rgba(26, 24, 20, 0.14);
+      --rex-rule-strong: rgba(26, 24, 20, 0.32);
+      --rex-font-serif: "Instrument Serif", "Iowan Old Style", "Palatino", serif;
+      --rex-font-mono: "JetBrains Mono", "SF Mono", "Menlo", ui-monospace, monospace;
+      --max-w: 1080px;
+    }
 
-        .article-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 10px 30px var(--hover-shadow);
-            border-color: var(--medium-green);
-        }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--rex-ink);
+      color: var(--rex-ivory);
+      font-family: var(--rex-font-mono);
+      font-weight: 300;
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(176, 122, 42, 0.05), transparent 60%),
+        radial-gradient(ellipse 60% 50% at 100% 100%, rgba(176, 122, 42, 0.03), transparent 50%);
+    }
 
-        .article-image {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-            background: linear-gradient(135deg, var(--lightest-green) 0%, var(--light-green) 100%);
-        }
+    a { color: var(--rex-ivory); text-decoration: none; transition: color 180ms ease; }
+    a:hover { color: var(--rex-amber); }
 
-        .article-content {
-            padding: 2rem;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
+    /* ─── Top nav ─── */
+    .cv-topnav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 28px;
+      background: linear-gradient(to bottom, rgba(247, 243, 233, 0.94), rgba(247, 243, 233, 0.78) 70%, transparent);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .cv-rh {
+      width: 44px;
+      height: 44px;
+      background: var(--rex-ink-2);
+      border: 1px solid var(--rex-rule-strong);
+      color: var(--rex-ivory);
+      font-family: var(--rex-font-serif);
+      font-size: 20px;
+      font-style: italic;
+      letter-spacing: 0.02em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      text-decoration: none;
+      position: relative;
+      transition: background 220ms ease, border-color 220ms ease, color 220ms ease;
+    }
+    .cv-rh::before {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border: 1px solid var(--rex-rule);
+      pointer-events: none;
+    }
+    .cv-rh:hover {
+      background: var(--rex-ink-3);
+      border-color: var(--rex-amber);
+      color: var(--rex-amber);
+    }
+    .cv-topnav-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .cv-topnav-mark {
+      font-family: var(--rex-font-serif);
+      font-style: italic;
+      font-size: 18px;
+      color: var(--rex-ivory);
+      letter-spacing: 0.02em;
+    }
 
-        .article-meta {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
+    /* ── Contents (inline numbered TOC) ── */
+    .cv-toc {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--rex-font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .cv-toc li { display: inline-flex; align-items: baseline; }
+    .cv-toc li:not(:last-child)::after {
+      content: "·";
+      margin: 0 12px;
+      color: var(--rex-ivory-3);
+      opacity: 0.55;
+    }
+    .cv-toc a {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      color: var(--rex-ivory-2);
+      text-decoration: none;
+      padding: 4px 0;
+      transition: color 160ms ease;
+    }
+    .cv-toc a:hover { color: var(--rex-amber); }
+    .cv-toc a.is-active { color: var(--rex-amber); }
+    .cv-toc a.is-active .cv-toc-num { opacity: 1; }
+    .cv-toc-num {
+      font-size: 9px;
+      color: var(--rex-amber);
+      opacity: 0.7;
+      letter-spacing: 0.1em;
+      font-variant-numeric: tabular-nums;
+    }
+    .cv-social {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      color: var(--rex-ivory-2);
+      border: 1px solid var(--rex-rule-strong);
+      background: rgba(255, 255, 255, 0.6);
+      transition: color 180ms ease, border-color 180ms ease, background 180ms ease, transform 220ms cubic-bezier(.2,.8,.2,1);
+    }
+    .cv-social svg { display: block; }
+    .cv-social:hover {
+      color: var(--rex-amber);
+      border-color: var(--rex-amber);
+      transform: translateY(-1px);
+    }
 
-        .article-category {
-            background: var(--lightest-green);
-            color: var(--medium-green);
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+    /* ─── Shell ─── */
+    .cv-shell {
+      position: relative;
+      z-index: 2;
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 0 32px;
+    }
 
-        .article-date {
-            color: var(--text-light);
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-        }
+    /* ─── Hero ─── */
+    .hero { padding: 140px 0 64px; border-bottom: 1px solid var(--rex-rule); }
+    .hero-name {
+      font-family: var(--rex-font-serif);
+      font-weight: 400;
+      font-size: clamp(56px, 10vw, 128px);
+      line-height: 0.92;
+      letter-spacing: -0.015em;
+      margin: 0 0 24px;
+      color: var(--rex-ivory);
+    }
+    .hero-name em { font-style: italic; color: var(--rex-amber); }
+    .hero-intro {
+      font-family: var(--rex-font-serif);
+      font-size: clamp(18px, 2.1vw, 22px);
+      line-height: 1.5;
+      color: var(--rex-ivory-2);
+      max-width: 680px;
+      margin: 0 0 12px;
+    }
+    .hero-intro em { font-style: italic; color: var(--rex-amber); }
 
-        .article-title {
-            font-size: 1.6rem;
-            color: var(--text-dark);
-            margin-bottom: 1rem;
-            line-height: 1.3;
-            font-weight: bold;
-        }
+    /* ─── Sections ─── */
+    section.block { padding: 72px 0; border-bottom: 1px solid var(--rex-rule); }
+    section.block:last-of-type { border-bottom: none; }
 
-        .article-title a {
-            color: inherit;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
+    .block-header {
+      display: flex;
+      align-items: baseline;
+      gap: 20px;
+      margin-bottom: 36px;
+    }
+    .block-num {
+      font-family: var(--rex-font-mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      color: var(--rex-amber);
+    }
+    .block-title {
+      font-family: var(--rex-font-serif);
+      font-weight: 400;
+      font-size: clamp(32px, 4.5vw, 48px);
+      line-height: 1;
+      letter-spacing: -0.01em;
+      color: var(--rex-ivory);
+      margin: 0;
+    }
+    .block-rule {
+      flex: 1;
+      height: 1px;
+      background: var(--rex-rule);
+      margin-left: 8px;
+    }
 
-        .article-title a:hover {
-            color: var(--medium-green);
-        }
+    /* ─── Entry list ─── */
+    .entries { display: flex; flex-direction: column; position: relative; }
+    .entry {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 40px;
+      padding: 26px 0;
+      border-top: 1px solid var(--rex-rule);
+      position: relative;
+      transition: background 240ms ease;
+    }
+    .entry:last-child { border-bottom: 1px solid var(--rex-rule); }
+    .entry:hover { background: rgba(176, 122, 42, 0.06); }
+    .entry::before {
+      content: "";
+      position: absolute;
+      left: -16px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--rex-amber);
+      opacity: 0;
+      transition: opacity 240ms ease;
+    }
+    .entry:hover::before { opacity: 1; }
 
-        .article-excerpt {
-            color: var(--text-light);
-            line-height: 1.7;
-            margin-bottom: 1.5rem;
-            flex: 1;
-        }
+    .entry-meta {
+      font-family: var(--rex-font-mono);
+      font-size: 10.5px;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--rex-ivory-3);
+      padding-top: 6px;
+    }
+    .entry-meta .dates { display: block; color: var(--rex-amber); font-weight: 500; margin-bottom: 6px; }
+    .entry-meta .place { display: block; color: var(--rex-ivory-3); font-size: 10px; letter-spacing: 0.12em; }
 
-        .article-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-        }
+    .entry-body { padding-top: 2px; }
+    .entry-org {
+      font-family: var(--rex-font-serif);
+      font-weight: 400;
+      font-size: 26px;
+      line-height: 1.15;
+      color: var(--rex-ivory);
+      margin: 0 0 4px;
+    }
+    .entry-org a { color: inherit; }
+    .entry-org a:hover { color: var(--rex-amber); }
+    .entry-role {
+      font-family: var(--rex-font-mono);
+      font-size: 11.5px;
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      color: var(--rex-ivory-2);
+      margin: 0 0 12px;
+    }
+    .entry-role .sep { color: var(--rex-ivory-3); margin: 0 8px; opacity: 0.5; }
+    .entry-text {
+      font-family: var(--rex-font-mono);
+      font-weight: 300;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--rex-ivory-2);
+      margin: 8px 0 0;
+      max-width: 640px;
+    }
+    .entry-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 16px 0 0;
+    }
+    .entry-tag {
+      font-family: var(--rex-font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--rex-ivory-3);
+      padding: 4px 9px;
+      border: 1px solid var(--rex-rule);
+      transition: color 220ms ease, border-color 220ms ease, background 220ms ease;
+    }
+    .entry:hover .entry-tag {
+      color: var(--rex-ivory-2);
+      border-color: var(--rex-rule-strong);
+      background: rgba(176, 122, 42, 0.04);
+    }
 
-        .article-tag {
-            background: var(--bg-light);
-            color: var(--text-light);
-            padding: 0.3rem 0.8rem;
-            border-radius: 15px;
-            font-size: 0.8rem;
-        }
+    /* Read affordance */
+    .entry-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--rex-rule);
+      font-family: var(--rex-font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--rex-ivory-2);
+    }
+    .entry-link::after {
+      content: "↗";
+      color: var(--rex-amber);
+      transition: transform 180ms ease;
+    }
+    .entry-link:hover { color: var(--rex-amber); }
+    .entry-link:hover::after { transform: translate(2px, -2px); }
 
-        .article-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--bg-light);
-        }
+    /* ─── Footer ─── */
+    .cv-footer {
+      padding: 48px 0 64px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-family: var(--rex-font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--rex-ivory-3);
+      border-top: 1px solid var(--rex-rule);
+      margin-top: 40px;
+    }
+    .cv-footer a { color: var(--rex-ivory-3); }
+    .cv-footer a:hover { color: var(--rex-amber); }
 
-        .article-source {
-            color: var(--text-light);
-            font-size: 0.9rem;
-            font-style: italic;
-        }
+    /* ─── Reveal ─── */
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal { opacity: 0; transform: translateY(12px); transition: opacity 600ms ease, transform 600ms cubic-bezier(.2,.8,.2,1); }
+      .reveal.in { opacity: 1; transform: translateY(0); }
+    }
 
-        .read-more {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--medium-green);
-            text-decoration: none;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
+    /* ─── Mid-width — TOC collapses names to numerals only ─── */
+    @media (max-width: 1080px) {
+      .cv-toc-name { display: none; }
+      .cv-toc li:not(:last-child)::after { margin: 0 10px; }
+    }
 
-        .read-more:hover {
-            color: var(--accent-pink);
-            gap: 0.75rem;
-        }
+    /* ─── Mobile ─── */
+    @media (max-width: 760px) {
+      .cv-shell { padding: 0 20px; }
+      .cv-topnav { padding: 14px 20px; }
+      .cv-topnav-mark { display: none; }
+      .hero { padding: 110px 0 48px; }
+      .block-header { flex-wrap: wrap; }
+      .block-rule { display: none; }
+      .entry { grid-template-columns: 1fr; gap: 12px; padding: 22px 0; }
+      .entry-meta { padding-top: 0; }
+      .entry-org { font-size: 22px; }
+      .cv-footer { flex-direction: column; align-items: flex-start; }
+    }
 
-        .read-more svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .writing-header h1 {
-                font-size: 2.5rem;
-            }
-
-            .articles-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .article-image {
-                height: 200px;
-            }
-
-            .article-content {
-                padding: 1.5rem;
-            }
-
-            .article-title {
-                font-size: 1.4rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .writing-header h1 {
-                font-size: 2rem;
-            }
-
-            .article-footer {
-                flex-direction: column;
-                gap: 1rem;
-                align-items: flex-start;
-            }
-        }
-    </style>
+    /* ─── Print ─── */
+    @media print {
+      body { background: #fff; color: #000; }
+      body::before, .cv-topnav, .cv-footer { display: none; }
+      .cv-shell { max-width: none; padding: 0 0.4in; }
+      .hero { padding: 0.3in 0 0.2in; border-bottom: 1px solid #999; }
+      .hero-name { font-size: 30pt; color: #000; }
+      .hero-intro { color: #333; font-size: 11pt; }
+      .block-num, .entry-meta .dates { color: #000 !important; }
+      section.block { padding: 0.18in 0; border-color: #ccc; }
+      .entry { grid-template-columns: 130px 1fr; gap: 20px; padding: 0.12in 0; page-break-inside: avoid; border-color: #ccc; }
+      .entry-org { font-size: 13pt; color: #000; }
+      .entry-role, .entry-text { font-size: 9.5pt; color: #000; }
+      .block-title { font-size: 20pt; color: #000; }
+      .entry::before { display: none; }
+      .entry-tag { color: #333; border-color: #999; padding: 2pt 6pt; font-size: 7.5pt; }
+      .entry-link { color: #000; border-color: #ccc; }
+      .entry-link::after { color: #000; }
+    }
+  </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav>
-        <div class="nav-container">
-            <a href="/" class="logo">R.H.</a>
-            <ul class="nav-links" id="navLinks">
-                <li><a href="/">Home</a></li>
-                <li><a href="/experience/">Experience</a></li>
-                <li><a href="/writing/">Writing</a></li>
-                <li><a href="/projects/">Projects</a></li>
-            </ul>
-            <div class="menu-toggle" id="menuToggle">
-                <span></span>
-                <span></span>
-                <span></span>
+
+  <nav class="cv-topnav" aria-label="Primary">
+    <a href="/" class="cv-rh" aria-label="Back to playground">RH</a>
+
+    <ol class="cv-toc" aria-label="Contents">
+      <li><a href="/cv/"><span class="cv-toc-num">CV</span><span class="cv-toc-name">Curriculum</span></a></li>
+      <li><a href="#essays-heading"><span class="cv-toc-num">01</span><span class="cv-toc-name">Essays</span></a></li>
+      <li><a href="#notes-heading"><span class="cv-toc-num">02</span><span class="cv-toc-name">Field Notes</span></a></li>
+    </ol>
+
+    <div class="cv-topnav-right">
+      <span class="cv-topnav-mark">Rex Heng</span>
+      <a class="cv-social" href="https://linkedin.com/in/rexheng" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn — Rex Heng">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/>
+          <rect x="2" y="9" width="4" height="12"/>
+          <circle cx="4" cy="4" r="2"/>
+        </svg>
+      </a>
+    </div>
+  </nav>
+
+  <div class="cv-shell">
+
+    <header class="hero">
+      <h1 class="hero-name">Writing</h1>
+      <p class="hero-intro">Essays and field notes on <em>technology</em>, policy, and social impact — from research, scholarship, and time spent in the field.</p>
+    </header>
+
+    <!-- ─── Essays ─── -->
+    <section class="block" aria-labelledby="essays-heading">
+      <div class="block-header reveal">
+        <span class="block-num">01</span>
+        <h2 class="block-title" id="essays-heading">Essays</h2>
+        <span class="block-rule"></span>
+      </div>
+
+      <div class="entries">
+        <article class="entry reveal">
+          <div class="entry-meta">
+            <span class="dates">2026</span>
+            <span class="place">Essay · PDF, 7pp</span>
+          </div>
+          <div class="entry-body">
+            <h3 class="entry-org">
+              <a href="/writing/do-artifacts-have-politics.pdf" target="_blank" rel="noopener noreferrer">Do Machine Learning Artefacts Have Politics?</a>
+            </h3>
+            <p class="entry-role">Philosophy of technology<span class="sep">·</span>Autonomy, alignment, and emergent political orientation in LLMs</p>
+            <p class="entry-text">Extending Langdon Winner's 1980 thesis to large language models. Argues that machine learning artefacts cannot be apolitical: autonomy shifts technology from passive instrument to active co-principal, and the alignment process embeds emergent political orientation through persona selection. Proposes a linear model of an artefact's political influence, supported by an empirical LLM debate simulation.</p>
+            <div class="entry-tags">
+              <span class="entry-tag">Philosophy of Technology</span>
+              <span class="entry-tag">Large Language Models</span>
+              <span class="entry-tag">AI Alignment</span>
+              <span class="entry-tag">Political Theory</span>
             </div>
-        </div>
-    </nav>
+            <a class="entry-link" href="/writing/do-artifacts-have-politics.pdf" target="_blank" rel="noopener noreferrer">Read the essay</a>
+          </div>
+        </article>
 
-    <!-- Writing Section -->
-    <section class="writing-section">
-        <div class="writing-header fade-in">
-            <h1>Writing</h1>
-            <p>
-                Essays and reflections on policy, technology, social impact, and lived experiences 
-                from internships and research programs.
-            </p>
-        </div>
-
-        <div class="articles-grid">
-            <!-- Article 1: Cryptocurrency -->
-            <article class="article-card fade-in">
-                <img src="https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=800&q=80" 
-                     alt="Cryptocurrency blockchain illustration" 
-                     class="article-image">
-                <div class="article-content">
-                    <div class="article-meta">
-                        <span class="article-category">Policy Analysis</span>
-                        <span class="article-date">📅 2024</span>
-                    </div>
-                    <h2 class="article-title">
-                        <a href="https://www.maju.sg/post/rich-and-naive-building-singapore-s-cryptocurrency-scene-block-by-block" 
-                           target="_blank" rel="noopener noreferrer">
-                            Rich and Naive: Building Singapore's Cryptocurrency Scene Block by Block
-                        </a>
-                    </h2>
-                    <p class="article-excerpt">
-                        An in-depth analysis of Singapore's evolving cryptocurrency landscape, examining 
-                        regulatory frameworks, market dynamics, and the country's strategic positioning 
-                        as a digital asset hub in Southeast Asia. Explores the balance between innovation 
-                        and consumer protection in the crypto ecosystem.
-                    </p>
-                    <div class="article-tags">
-                        <span class="article-tag">Cryptocurrency</span>
-                        <span class="article-tag">Singapore Policy</span>
-                        <span class="article-tag">Financial Regulation</span>
-                        <span class="article-tag">Blockchain</span>
-                    </div>
-                    <div class="article-footer">
-                        <span class="article-source">Published on Maju</span>
-                        <a href="https://www.maju.sg/post/rich-and-naive-building-singapore-s-cryptocurrency-scene-block-by-block" 
-                           target="_blank" rel="noopener noreferrer" class="read-more">
-                            Read Full Article
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                                <polyline points="12 5 19 12 12 19"></polyline>
-                            </svg>
-                        </a>
-                    </div>
-                </div>
-            </article>
-
-            <!-- Article 2: Blackfriars Settlement -->
-            <article class="article-card fade-in">
-                <img src="../assets/images/bfs-writing-card.jpg" 
-                     alt="Blackfriars Settlement community work" 
-                     class="article-image">
-                <div class="article-content">
-                    <div class="article-meta">
-                        <span class="article-category">Reflection</span>
-                        <span class="article-date">📅 Laidlaw Scholarship</span>
-                    </div>
-                    <h2 class="article-title">
-                        <a href="https://laidlawscholars.network/posts/blackfriars-settlement-reflection" 
-                           target="_blank" rel="noopener noreferrer">
-                            Blackfriars Settlement: A Reflection on Community Development
-                        </a>
-                    </h2>
-                    <p class="article-excerpt">
-                        A personal reflection on working with Blackfriars Settlement, a 130-year-old 
-                        community charity in Southwark. Discusses lessons learned about grassroots 
-                        community development, fundraising challenges in the non-profit sector, and 
-                        the intersection of policy and practice in addressing social inequality.
-                    </p>
-                    <div class="article-tags">
-                        <span class="article-tag">Community Development</span>
-                        <span class="article-tag">Non-Profit</span>
-                        <span class="article-tag">Social Impact</span>
-                        <span class="article-tag">Laidlaw</span>
-                    </div>
-                    <div class="article-footer">
-                        <span class="article-source">Laidlaw Scholars Network</span>
-                        <a href="https://laidlawscholars.network/posts/blackfriars-settlement-reflection" 
-                           target="_blank" rel="noopener noreferrer" class="read-more">
-                            Read Full Article
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                                <polyline points="12 5 19 12 12 19"></polyline>
-                            </svg>
-                        </a>
-                    </div>
-                </div>
-            </article>
-
-            <!-- Article 3: Do Machine Learning Artefacts Have Politics? -->
-            <article class="article-card fade-in">
-                <div class="article-image"></div>
-                <div class="article-content">
-                    <div class="article-meta">
-                        <span class="article-category">Essay</span>
-                        <span class="article-date">📅 2026</span>
-                    </div>
-                    <h2 class="article-title">
-                        <a href="/writing/do-artifacts-have-politics.pdf"
-                           target="_blank" rel="noopener noreferrer">
-                            Do Machine Learning Artefacts Have Politics?
-                        </a>
-                    </h2>
-                    <p class="article-excerpt">
-                        Extending Langdon Winner's 1980 thesis to large language models. Argues that
-                        machine learning artefacts cannot be apolitical: autonomy shifts technology
-                        from passive instrument to active co-principal, and the alignment process
-                        embeds emergent political orientation through persona selection. Includes a
-                        proposed linear model of an artefact's political influence and an empirical
-                        LLM debate simulation.
-                    </p>
-                    <div class="article-tags">
-                        <span class="article-tag">Philosophy of Technology</span>
-                        <span class="article-tag">Large Language Models</span>
-                        <span class="article-tag">AI Alignment</span>
-                        <span class="article-tag">Political Theory</span>
-                    </div>
-                    <div class="article-footer">
-                        <span class="article-source">PDF, 7 pages</span>
-                        <a href="/writing/do-artifacts-have-politics.pdf"
-                           target="_blank" rel="noopener noreferrer" class="read-more">
-                            Read Full Essay
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                                <polyline points="12 5 19 12 12 19"></polyline>
-                            </svg>
-                        </a>
-                    </div>
-                </div>
-            </article>
-        </div>
+        <article class="entry reveal">
+          <div class="entry-meta">
+            <span class="dates">2024</span>
+            <span class="place">Published on Maju</span>
+          </div>
+          <div class="entry-body">
+            <h3 class="entry-org">
+              <a href="https://www.maju.sg/post/rich-and-naive-building-singapore-s-cryptocurrency-scene-block-by-block" target="_blank" rel="noopener noreferrer">Rich and Naive: Building Singapore's Cryptocurrency Scene Block by Block</a>
+            </h3>
+            <p class="entry-role">Policy analysis<span class="sep">·</span>Financial regulation</p>
+            <p class="entry-text">An analysis of Singapore's evolving cryptocurrency landscape — regulatory frameworks, market dynamics, and the country's strategic positioning as a digital asset hub in Southeast Asia. Examines the balance between innovation and consumer protection in the crypto ecosystem.</p>
+            <div class="entry-tags">
+              <span class="entry-tag">Cryptocurrency</span>
+              <span class="entry-tag">Singapore Policy</span>
+              <span class="entry-tag">Financial Regulation</span>
+              <span class="entry-tag">Blockchain</span>
+            </div>
+            <a class="entry-link" href="https://www.maju.sg/post/rich-and-naive-building-singapore-s-cryptocurrency-scene-block-by-block" target="_blank" rel="noopener noreferrer">Read on Maju</a>
+          </div>
+        </article>
+      </div>
     </section>
 
-    <!-- Footer -->
-    <footer>
-        <div class="footer-links">
-            <a href="/">Home</a>
-            <a href="/experience/">Experience</a>
-            <a href="/writing/">Writing</a>
-            <a href="/projects/">Projects</a>
-        </div>
-        <p class="footer-copyright">
-            Rex Heng
-        </p>
+    <!-- ─── Field Notes ─── -->
+    <section class="block" aria-labelledby="notes-heading">
+      <div class="block-header reveal">
+        <span class="block-num">02</span>
+        <h2 class="block-title" id="notes-heading">Field Notes</h2>
+        <span class="block-rule"></span>
+      </div>
+
+      <div class="entries">
+        <article class="entry reveal">
+          <div class="entry-meta">
+            <span class="dates">Laidlaw</span>
+            <span class="place">Scholars Network</span>
+          </div>
+          <div class="entry-body">
+            <h3 class="entry-org">
+              <a href="https://laidlawscholars.network/posts/blackfriars-settlement-reflection" target="_blank" rel="noopener noreferrer">Blackfriars Settlement: A Reflection on Community Development</a>
+            </h3>
+            <p class="entry-role">Reflection<span class="sep">·</span>Community development &amp; the non-profit sector</p>
+            <p class="entry-text">A reflection on working with Blackfriars Settlement, a 130-year-old community charity in Southwark. Lessons on grassroots community development, fundraising challenges in the non-profit sector, and the intersection of policy and practice in addressing social inequality.</p>
+            <div class="entry-tags">
+              <span class="entry-tag">Community Development</span>
+              <span class="entry-tag">Non-Profit</span>
+              <span class="entry-tag">Social Impact</span>
+              <span class="entry-tag">Laidlaw</span>
+            </div>
+            <a class="entry-link" href="https://laidlawscholars.network/posts/blackfriars-settlement-reflection" target="_blank" rel="noopener noreferrer">Read on Laidlaw Scholars Network</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <footer class="cv-footer">
+      <div>Rex Heng · 2026</div>
+      <div><a href="/cv/">View CV →</a><span style="margin:0 14px;opacity:.45;">·</span><a href="/">↑ Return to playground</a></div>
     </footer>
 
-    <script>
-        const menuToggle = document.getElementById('menuToggle');
-        const navLinks = document.getElementById('navLinks');
+  </div>
 
-        menuToggle.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-        });
+  <script>
+    (() => {
+      if (!('IntersectionObserver' in window)) {
+        document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+        return;
+      }
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+        }
+      }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+      document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    })();
 
-        document.querySelectorAll('.nav-links a').forEach(link => {
-            link.addEventListener('click', () => {
-                navLinks.classList.remove('active');
-            });
-        });
+    /* TOC scroll-spy — highlights the in-page section closest to the nav. */
+    (() => {
+      if (!('IntersectionObserver' in window)) return;
+      const links = Array.from(document.querySelectorAll('.cv-toc a[href^="#"]'));
+      if (!links.length) return;
+      const linkByHash = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+      const sections = Array.from(document.querySelectorAll('section[aria-labelledby]'))
+        .map(sec => ({ sec, hid: sec.getAttribute('aria-labelledby') }))
+        .filter(({ hid }) => linkByHash.has(hid));
+      if (!sections.length) return;
 
-        // Fade-in animation
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
+      const visible = new Set();
+      const setActive = (hid) => {
+        for (const a of links) a.classList.toggle('is-active', a.getAttribute('href') === '#' + hid);
+      };
+      const update = () => {
+        if (!visible.size) return;
+        let best = null, bestTop = Infinity;
+        for (const hid of visible) {
+          const sec = sections.find(s => s.hid === hid)?.sec;
+          if (!sec) continue;
+          const t = sec.getBoundingClientRect().top;
+          if (t < bestTop) { bestTop = t; best = hid; }
+        }
+        if (best) setActive(best);
+      };
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '0';
-                    entry.target.style.transform = 'translateY(20px)';
-                    setTimeout(() => {
-                        entry.target.style.transition = 'all 0.6s ease';
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0)';
-                    }, 100);
-                    observer.unobserve(entry.target);
-                }
-            });
-        }, observerOptions);
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          const hid = e.target.getAttribute('aria-labelledby');
+          if (e.isIntersecting) visible.add(hid);
+          else visible.delete(hid);
+        }
+        update();
+      }, { rootMargin: '-80px 0px -55% 0px', threshold: [0, 0.1, 0.5] });
 
-        document.querySelectorAll('.fade-in').forEach(el => {
-            observer.observe(el);
-        });
-    </script>
+      for (const { sec } of sections) io.observe(sec);
+    })();
+  </script>
+
 </body>
 </html>
