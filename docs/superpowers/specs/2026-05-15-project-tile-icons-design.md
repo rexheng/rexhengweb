@@ -56,8 +56,8 @@ changes from text to an inline SVG.
 | oliver-wyman | Oliver Wyman Datathon | regression line through scatter points |
 | olympic-way | Olympic Way | transit node (ringed dot) on a graph edge |
 | outreach | Outreach | concentric reach rings radiating from a single figure |
-| peel | Peel | a curling citrus peel spiral |
-| peter-network | Peter Network | linked nodes whose edges trace a "P" |
+| peel | Peel | a simple apple with a short stem and one leaf |
+| peter-network | Peter Network | Peter Griffin (Family Guy) head: minimalist outline |
 | republic | Republic | classical column with a simple pediment |
 | simulacra | Simulacra | nested mirrored faces (recursion, two or three deep) |
 
@@ -108,9 +108,34 @@ simplifies to the fewest strokes that still signify.
 > readable at very small sizes — minimum number of strokes, no fine interior
 > detail.
 
-`{SUBJECT}` is replaced per project with the subject text from the table
-above (e.g. "the Among Us crewmate silhouette: rounded body with a single
-oval visor and two short leg stubs").
+`{SUBJECT}` is replaced per project with the subject line below. These are
+the authoritative generation strings (save file names in parentheses):
+
+- amogus (`amogus.png`): the Among Us crewmate: rounded capsule body, one
+  oval visor, two short leg stubs, small backpack bump
+- arrow (`arrow.png`): a straight arrow passing through the center of a shield
+- clearpath (`clearpath.png`): three forward chevrons receding along a clear
+  path
+- musicity (`musicity.png`): an eighth note whose stem rises into three
+  simple building rooftops
+- oliver-wyman (`oliver-wyman.png`): a rising straight regression line
+  through five scattered dots
+- olympic-way (`olympic-way.png`): a ringed transit node connected by an edge
+  to two smaller dots
+- outreach (`outreach.png`): a single standing figure with three concentric
+  signal rings around it
+- peel (`peel.png`): a simple apple with a short stem and one leaf
+- peter-network (`peter-network.png`): Peter Griffin from Family Guy, a
+  minimalist single-line outline of his head: receding hairline, round
+  glasses, prominent rounded chin
+- republic (`republic.png`): one classical column with a simple triangular
+  pediment on top
+- simulacra (`simulacra.png`): three nested simple face outlines, each inside
+  the previous (recursion)
+
+Note: every committed glyph is a single ink-color stroke on its pastel
+swatch, matching the rest of the set. "Apple" specifies the shape only; the
+glyph is not rendered green. The system stays monochrome for consistency.
 
 ## Out of Scope
 
