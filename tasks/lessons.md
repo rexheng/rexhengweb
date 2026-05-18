@@ -126,3 +126,40 @@ the answer is "no problem, but Y is more modern," the answer is keep X.
   flagpoles will get bbox-derived hitboxes that exceed their visual
   silhouette. If a sprite has a thin tall feature on top, consider
   cropping the bbox at a fraction of its height before deriving.
+
+## 2026-05-15 — Confirm the live code is actually running before trusting browser tests
+
+**Mistake.** Spent many iterations "fixing" FOV spawn placement against a
+Playwright browser, watching pass rates wobble (70% → 78% → 70%) and
+re-architecting the algorithm three times. The real problem: the dev server
+(`SimpleHTTPRequestHandler`) answered `If-Modified-Since` with `304`, so the
+browser served stale ES modules. Every browser run silently measured the
+ORIGINAL pre-edit code. The wobble was just RNG on unchanged behavior.
+
+**Reality.** `Cache-Control: no-store` does not stop a browser from reusing
+a module when the server returns `304`. Caught only by reading
+`ps.spawn.toString()` in the page and seeing the original `const ang =
+Math.random() * Math.PI * 2`.
+
+**Rule.** Before trusting any browser/live verification of a code change,
+assert the running code is the new code: read a unique token from the live
+source (`fn.toString()` includes a new identifier, or fetch the module with
+`{cache:'reload'}` and diff length/markers). If they differ, the test
+environment is stale — fix that FIRST, before touching the algorithm. A
+moving pass rate that never crosses a threshold is a tell that the change
+isn't deployed, not that the fix is "almost there."
+
+## 2026-05-15 — Validate the core geometric assumption before committing to an approach
+
+**Mistake.** Brainstorming recommended a screen-space→ground raycast
+(reusing an existing idiom) as the primary spawn-placement method. Built it,
+then found it numerically unstable: the scene camera orbits the avatar
+near-horizontally, so the central ray grazes the ground at the horizon and
+hits land behind the camera or far off-axis.
+
+**Rule.** When an approach depends on a geometric assumption (here: "a screen
+ray reliably meets the ground at a sane point"), sanity-check that assumption
+against the actual camera/scene constraints before implementing. Raycast-to-
+ground is stable only for a camera looking DOWN at terrain; for an orbit
+camera framing a subject, anchor on the look point and derive distance from
+zoom instead.
