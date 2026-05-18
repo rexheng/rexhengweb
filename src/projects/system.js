@@ -5,12 +5,117 @@ import * as THREE from "three";
 import { PROJECTS } from "./index.js";
 import { findBody } from "./abilities/impulse.js";
 import { parkSlotBody, setBodyCollision } from "./slotParking.mjs";
+import { clearNdcBandX, yawQuatFacing } from "./spawnPlacement.mjs";
 
 const SLOT_COUNT = 8;
 const PARKED_Z = 60;                  // matches the XML park position
-const SPAWN_RING_MIN = 1.2;           // nearest radius (MJ) from humanoid
-const SPAWN_RING_MAX = 2.4;           // farthest radius (MJ)
+const SPAWN_RING_MIN = 1.2;           // legacy/fallback nearest radius (MJ)
+const SPAWN_RING_MAX = 2.4;           // ring floor for the far guard (MJ)
+const SPAWN_ANTI_OVERLAP = 0.4;       // min spawn dist so it clears the avatar
+const RING_MAX_HARD = 14;             // absolute far cap (low-angle ray guard)
 const SPAWN_HEIGHT = 0.9;             // drop height above ground so they land naturally
+const NDC_CAP = 0.55;                 // GUI-bias clear-band cap
+const BIAS_MAG = 0.35;                // lateral shove away from the UI panel
+
+const _fwd = new THREE.Vector3();
+
+// Widest clear NDC.x band given the canvas and the #rex-controls panel,
+// queried live so it stays correct if the panel moves or differs on mobile.
+function clearBandFor(app) {
+  const canvas = app.renderer?.domElement;
+  if (!canvas) return { min: -NDC_CAP, max: NDC_CAP };
+  const c = canvas.getBoundingClientRect();
+  const panelEl = document.getElementById("rex-controls");
+  let panelRect = null;
+  if (panelEl && panelEl.offsetParent !== null) {
+    const p = panelEl.getBoundingClientRect();
+    if (p.width > 0 && p.right > c.left && p.left < c.right) {
+      panelRect = { left: p.left, right: p.right };
+    }
+  }
+  return clearNdcBandX({ left: c.left, width: c.width }, panelRect, NDC_CAP);
+}
+
+// Camera-azimuth placement. The scene camera orbits the avatar roughly
+// horizontally, so a screen-point→ground raycast grazes the horizon and is
+// numerically unstable (hits land behind the camera or kilometres away).
+// Instead, place along the camera's forward ground azimuth at a distance
+// scaled to the current zoom — deterministic and always in frame. Returns
+// null only when there is no camera (caller falls back to legacy random).
+function pickSpawnPoint(app, torsoX, torsoY) {
+  const camera = app.camera;
+  if (!camera) return null;
+
+  const camGX = camera.position.x, camGY = -camera.position.z;
+
+  // Anchor on where the camera is AIMED, not the avatar. The orbit target is
+  // screen-centre by construction, so a point there is always visible and
+  // scales with zoom for free. The avatar can wander off the look point;
+  // visibility must not depend on where it went.
+  const tgt = app.controls?.target;
+  let lookX, lookY;
+  if (tgt) { lookX = tgt.x; lookY = -tgt.z; }
+  else {
+    camera.getWorldDirection(_fwd);
+    lookX = camGX + _fwd.x * 4; lookY = camGY - _fwd.z * 4;
+  }
+
+  // Ground direction from camera toward the look point.
+  let fx = lookX - camGX, fy = lookY - camGY;
+  let lookDist = Math.hypot(fx, fy);
+  if (lookDist < 1e-3) {
+    camera.getWorldDirection(_fwd);
+    fx = _fwd.x; fy = -_fwd.z;
+    lookDist = Math.hypot(fx, fy) || 1;
+  }
+  fx /= lookDist; fy /= lookDist;
+  const rx = fy, ry = -fx;            // ground vector perpendicular to forward
+
+  // Sit at the look point, nudged slightly past it (lower in frame) so the
+  // avatar at the look point and the new project don't perfectly overlap.
+  const fwdOff = lookDist * (0.05 + Math.random() * 0.18);
+
+  // Lateral: shove away from the UI panel (clear-band sign) plus jitter,
+  // scaled by zoom so spread shrinks as you zoom in.
+  const band = clearBandFor(app);
+  const biasSign = (band.min + band.max) >= 0 ? 1 : -1;
+  const lat = (biasSign * BIAS_MAG + (Math.random() - 0.5) * 0.5)
+            * Math.min(1.2, Math.max(0.25, lookDist * 0.25));
+
+  let px = lookX + fx * fwdOff + rx * lat;
+  let py = lookY + fy * fwdOff + ry * lat;
+
+  // Anti-overlap with the avatar: if we landed on the torso, push deeper
+  // along the view direction (stays in frame) rather than radially.
+  const dT = Math.hypot(px - torsoX, py - torsoY);
+  if (dT < SPAWN_ANTI_OVERLAP) {
+    const need = SPAWN_ANTI_OVERLAP - dT;
+    px += fx * need; py += fy * need;
+  }
+
+  // Far guard: never spawn implausibly far from the camera.
+  const dCamPt = Math.hypot(px - camGX, py - camGY);
+  if (dCamPt > RING_MAX_HARD) {
+    px = camGX + (px - camGX) / dCamPt * RING_MAX_HARD;
+    py = camGY + (py - camGY) / dCamPt * RING_MAX_HARD;
+  }
+
+  const face = yawQuatFacing(px, py, camGX, camGY);
+  return { mjX: px, mjY: py, ...face };
+}
+
+// Last resort if there is no camera at all: preserve the original
+// full-circle random placement rather than failing to spawn.
+function legacyRandomPlacement(anchorX, anchorY) {
+  const ang = Math.random() * Math.PI * 2;
+  const r = SPAWN_RING_MIN + Math.random() * (SPAWN_RING_MAX - SPAWN_RING_MIN);
+  const halfYaw = ang * 0.5;
+  return {
+    mjX: anchorX + Math.cos(ang) * r,
+    mjY: anchorY + Math.sin(ang) * r,
+    qw: Math.cos(halfYaw), qx: 0, qy: 0, qz: Math.sin(halfYaw),
+  };
+}
 
 export class ProjectSystem {
   constructor(app) {
@@ -308,10 +413,13 @@ export class ProjectSystem {
       anchorX = p.x;
       anchorY = -p.z;
     }
-    const ang = Math.random() * Math.PI * 2;
-    const r = SPAWN_RING_MIN + Math.random() * (SPAWN_RING_MAX - SPAWN_RING_MIN);
-    const mjX = anchorX + Math.cos(ang) * r;
-    const mjY = anchorY + Math.sin(ang) * r;
+    // FOV-aware placement: aim into the visible, panel-clear frame so the
+    // project always appears in front at walking distance, framed for the
+    // current zoom. See docs/superpowers/specs/2026-05-15-fov-aware-project-spawn-design.md.
+    const place = pickSpawnPoint(this.app, anchorX, anchorY)
+                ?? legacyRandomPlacement(anchorX, anchorY);
+    const mjX = place.mjX;
+    const mjY = place.mjY;
     const mjZ = SPAWN_HEIGHT;
 
     const model = this.app.model, data = this.app.data;
@@ -322,12 +430,11 @@ export class ProjectSystem {
     data.qpos[qposAdr + 0] = mjX;
     data.qpos[qposAdr + 1] = mjY;
     data.qpos[qposAdr + 2] = mjZ;
-    // Random yaw so successive spawns aren't all facing +x.
-    const halfYaw = ang * 0.5;
-    data.qpos[qposAdr + 3] = Math.cos(halfYaw);
-    data.qpos[qposAdr + 4] = 0;
-    data.qpos[qposAdr + 5] = 0;
-    data.qpos[qposAdr + 6] = Math.sin(halfYaw);
+    // Face the camera so the project reads as arriving toward the viewer.
+    data.qpos[qposAdr + 3] = place.qw;
+    data.qpos[qposAdr + 4] = place.qx;
+    data.qpos[qposAdr + 5] = place.qy;
+    data.qpos[qposAdr + 6] = place.qz;
     for (let k = 0; k < 6; k++) data.qvel[dofAdr + k] = 0;
     this.app.mujoco.mj_forward(model, data);
 
