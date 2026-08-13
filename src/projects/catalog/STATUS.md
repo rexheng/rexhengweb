@@ -17,6 +17,8 @@ resume's project list rather than the pre-refactor scrape of
 | arrow | Arrow | built | 2026-04-24 | null | LSE Build. Phala TEE inference marketplace. Sprite is a glowing purple arrow. |
 | musicity | Musicity | built | 2026-04-24 | null | Encode AI Hackathon. Sprite is a 3-block skyline + floating music note. |
 | peter-network | NUS · @nus.peter (cycles) | built | 2026-04-24 | cycle | Collapsed from 6 Peter entries into one. 6 outfits (3 unis + 3 themes). Cycle ability advances the outfit ring, hot-swaps body colours and emblem, and updates the floating label text. |
+| manusman | Manusman | built | 2026-08-13 | launch | Manus Vibecoding Hackathon 2026, Most Commercial Product (1st of 60). Briefing-card stack + live-call overlay. CV card left unchanged. |
+| cultivate | Cultivate | built | 2026-08-13 | pulse | Pop the Bubble (London, June 2026). tryattend: QR scan, enrichment, graph of who you met. Sprite is a QR plate + four graph nodes. |
 
 ## Infrastructure changes
 

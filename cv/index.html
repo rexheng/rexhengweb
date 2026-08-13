@@ -477,7 +477,10 @@
       margin: 0;
     }
     .entry-extension-role .sep { color: var(--rex-ivory-3); margin: 0 8px; opacity: 0.5; }
-    .entry-extension .entry-text { margin-top: 8px; }
+    .entry-extension .pc-links {
+      margin-top: 12px;
+      padding-top: 12px;
+    }
 
     /* ─── Project cards ─── */
     .project-grid {
@@ -771,6 +774,7 @@
     .entry-logo[data-logo="ccn"]         { height: 48px; }
     .entry-logo[data-logo="saf"]         { height: 48px; }
     .entry-logo[data-logo="blackfriars"] { height: 48px; }
+    .entry-logo[data-logo="boeing"]      { height: 28px; }
 
     /* ─── Project card logos ─── */
     .pc-logo {
@@ -784,6 +788,7 @@
     /* Wide wordmarks: reduced height to maintain ~400px² visual weight */
     .pc-logo[data-logo="sig"] { height: 12px; }
     .pc-logo[data-logo="nhs"] { height: 12px; }
+    .pc-logo[data-logo="yc"]  { height: 16px; }
   </style>
 </head>
 <body>
@@ -814,7 +819,7 @@
 
     <header class="hero">
       <h1 class="hero-name">Rex Heng</h1>
-      <p class="hero-intro">Philosophy, Politics and Economics at LSE | UC Berkeley<br>6× Hackathon wins · Laidlaw Scholar<br>Experience at PwC, DBS, and Lieutenant in Singapore Armed Forces</p>
+      <p class="hero-intro">Philosophy, Politics and Economics at LSE | UC Berkeley<br>6× Hackathon wins · Laidlaw Scholar<br>Experience at Boeing, PwC, DBS, and Lieutenant in Singapore Armed Forces</p>
     </header>
 
     <!-- ─── Education ─── -->
@@ -865,6 +870,36 @@
       </div>
 
       <div class="entries entries--timeline">
+        <article class="entry reveal">
+          <div class="entry-meta">
+            <span class="dates">Jul — Aug 2026</span>
+            <span class="place">Singapore</span>
+            <img class="entry-logo" data-logo="boeing" src="logos/boeing.svg" alt="Boeing" height="28" loading="lazy">
+          </div>
+          <div class="entry-body">
+            <h3 class="entry-org">Boeing</h3>
+            <p class="entry-role">AI Technical Lead <span class="sep">·</span> Government Relations and Business Development</p>
+            <div class="entry-tags">
+              <span class="entry-tag">Government relations</span>
+              <span class="entry-tag">Business development</span>
+              <span class="entry-tag">Stakeholder briefings</span>
+              <span class="entry-tag">Southeast Asia</span>
+            </div>
+            <p class="entry-text">Supported the USABC Philippines Business Mission. Built Boeing Helper for stakeholder meeting prep, covering event briefing, biographies, and procurement context. Updated the organisational chart using AI tooling.</p>
+
+            <div class="entry-extension">
+              <p class="entry-extension-label">↳ Internal tool</p>
+              <h4 class="entry-extension-title">Boeing Helper</h4>
+              <p class="entry-extension-role">Stakeholder meeting prep</p>
+              <p class="entry-text">Three research agents produce a synthesised briefing (event, biography, procurement) with PDF export and a live meeting overlay.</p>
+              <div class="pc-links">
+                <a href="https://boeing-helper.vercel.app/" target="_blank" rel="noopener noreferrer">Live</a>
+                <a class="gh" href="https://github.com/rexheng/boeing-helper" target="_blank" rel="noopener noreferrer">GitHub</a>
+              </div>
+            </div>
+          </div>
+        </article>
+
         <article class="entry reveal">
           <div class="entry-meta">
             <span class="dates">Jul — Sep 2025</span>
@@ -1045,6 +1080,26 @@
           <div class="pc-links">
             <a href="https://manusman.manus.space" target="_blank" rel="noopener noreferrer">Live Demo</a>
             <img class="pc-logo" src="logos/manus.png" alt="Manus" height="20" loading="lazy" style="margin-left: auto">
+          </div>
+        </article>
+
+        <article class="project-card reveal">
+          <div class="pc-head">
+            <h3 class="pc-title">Y Combinator Startup School</h3>
+            <span class="pc-meta">Selected · Paris 2026</span>
+          </div>
+          <p class="pc-subtitle">Invitation-only programme · Station F</p>
+          <ul class="pc-bullets">
+            <li>Selected for the hand-picked European cohort of technical builders</li>
+            <li>Founder sessions with AMI, Datadog, PostHog, and Supabase</li>
+          </ul>
+          <div class="pc-tags">
+            <span class="pc-tag">Startups</span>
+            <span class="pc-tag">YC</span>
+            <span class="pc-tag">Station F</span>
+          </div>
+          <div class="pc-links">
+            <img class="pc-logo" data-logo="yc" src="logos/yc.svg" alt="Y Combinator" height="16" loading="lazy" style="margin-left: auto">
           </div>
         </article>
 

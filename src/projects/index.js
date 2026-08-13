@@ -16,6 +16,8 @@ import { ABILITIES } from "./abilities/index.js";
 import amogus from "./catalog/amogus/index.js";
 import arrow from "./catalog/arrow/index.js";
 import clearpath from "./catalog/clearpath/index.js";
+import cultivate from "./catalog/cultivate/index.js";
+import manusman from "./catalog/manusman/index.js";
 import musicity from "./catalog/musicity/index.js";
 import oliverWyman from "./catalog/oliver-wyman/index.js";
 import olympicWay from "./catalog/olympic-way/index.js";
@@ -29,6 +31,8 @@ const ENTRIES = [
   ["catalog/amogus/index.js", amogus],
   ["catalog/arrow/index.js", arrow],
   ["catalog/clearpath/index.js", clearpath],
+  ["catalog/cultivate/index.js", cultivate],
+  ["catalog/manusman/index.js", manusman],
   ["catalog/musicity/index.js", musicity],
   ["catalog/oliver-wyman/index.js", oliverWyman],
   ["catalog/olympic-way/index.js", olympicWay],
