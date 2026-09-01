@@ -720,6 +720,27 @@
       .cv-footer { flex-direction: column; align-items: flex-start; }
     }
 
+    .entry-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--rex-rule);
+      font-family: var(--rex-font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--rex-ivory-2);
+    }
+    .entry-link::after {
+      content: "↗";
+      color: var(--rex-amber);
+      transition: transform 180ms ease;
+    }
+    .entry-link:hover { color: var(--rex-amber); }
+    .entry-link:hover::after { transform: translate(2px, -2px); }
+
     /* ─── Print ─── */
     @media print {
       body { background: #fff; color: #000; }
@@ -750,6 +771,8 @@
       .entries.entries--timeline::before,
       .entries--timeline .entry::after { display: none; }
       .entry-tag { color: #333; border-color: #999; padding: 2pt 6pt; font-size: 7.5pt; }
+      .entry-link { color: #000; border-color: #ccc; }
+      .entry-link::after { color: #000; }
       .entry-logo, .pc-logo { filter: none; }
     }
 
@@ -771,6 +794,7 @@
     .entry-logo[data-logo="ccn"]         { height: 48px; }
     .entry-logo[data-logo="saf"]         { height: 48px; }
     .entry-logo[data-logo="blackfriars"] { height: 48px; }
+    .entry-logo[data-logo="boeing"]      { height: 28px; }
 
     /* ─── Project card logos ─── */
     .pc-logo {
@@ -814,7 +838,7 @@
 
     <header class="hero">
       <h1 class="hero-name">Rex Heng</h1>
-      <p class="hero-intro">Philosophy, Politics and Economics at LSE | UC Berkeley<br>6× Hackathon wins · Laidlaw Scholar<br>Experience at PwC, DBS, and Lieutenant in Singapore Armed Forces</p>
+      <p class="hero-intro">Philosophy, Politics and Economics at LSE | UC Berkeley<br>6× Hackathon wins · Laidlaw Scholar<br>Experience at Boeing, PwC, DBS, and Lieutenant in Singapore Armed Forces</p>
     </header>
 
     <!-- ─── Education ─── -->
@@ -865,6 +889,37 @@
       </div>
 
       <div class="entries entries--timeline">
+        <article class="entry reveal">
+          <div class="entry-meta">
+            <span class="dates">Jul — Aug 2026</span>
+            <span class="place">Singapore</span>
+            <img class="entry-logo" data-logo="boeing" src="logos/boeing.svg" alt="Boeing" height="28" loading="lazy">
+          </div>
+          <div class="entry-body">
+            <h3 class="entry-org">Boeing</h3>
+            <p class="entry-role">AI Technical Lead <span class="sep">·</span> Government Relations and Business Development</p>
+            <div class="entry-tags">
+              <span class="entry-tag">Government relations</span>
+              <span class="entry-tag">Business development</span>
+              <span class="entry-tag">AI adoption</span>
+              <span class="entry-tag">Southeast Asia</span>
+            </div>
+            <p class="entry-text">Interned with Boeing Singapore under Travis J. Sullivan, President, Boeing Southeast Asia. Spearheaded AI adoption across government relations and business development in ASEAN, mapped Boeing's AI ecosystem with IT, DevOps, and the Chief Artificial Intelligence Office, and supported the USABC Philippines Business Mission and American Chambers of Commerce.</p>
+            <a class="entry-link" href="/cv/boeing-testimonial.pdf" target="_blank" rel="noopener noreferrer">Read the testimonial</a>
+
+            <div class="entry-extension">
+              <p class="entry-extension-label">↳ Internal tool</p>
+              <h4 class="entry-extension-title">Boeing Helper</h4>
+              <p class="entry-extension-role">Stakeholder meeting prep</p>
+              <p class="entry-text">Three research agents produce a synthesised briefing (event, biography, procurement) with PDF export and a live meeting overlay — prototypes that cut airshow administrative work from weeks to hours.</p>
+              <div class="pc-links">
+                <a href="https://boeing-helper.vercel.app/" target="_blank" rel="noopener noreferrer">Live</a>
+                <a class="gh" href="https://github.com/rexheng/boeing-helper" target="_blank" rel="noopener noreferrer">GitHub</a>
+              </div>
+            </div>
+          </div>
+        </article>
+
         <article class="entry reveal">
           <div class="entry-meta">
             <span class="dates">Jul — Sep 2025</span>
