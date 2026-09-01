@@ -720,6 +720,27 @@
       .cv-footer { flex-direction: column; align-items: flex-start; }
     }
 
+    .entry-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--rex-rule);
+      font-family: var(--rex-font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--rex-ivory-2);
+    }
+    .entry-link::after {
+      content: "↗";
+      color: var(--rex-amber);
+      transition: transform 180ms ease;
+    }
+    .entry-link:hover { color: var(--rex-amber); }
+    .entry-link:hover::after { transform: translate(2px, -2px); }
+
     /* ─── Print ─── */
     @media print {
       body { background: #fff; color: #000; }
@@ -774,27 +795,6 @@
     .entry-logo[data-logo="saf"]         { height: 48px; }
     .entry-logo[data-logo="blackfriars"] { height: 48px; }
     .entry-logo[data-logo="boeing"]      { height: 28px; }
-
-    .entry-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 18px;
-      padding-top: 14px;
-      border-top: 1px solid var(--rex-rule);
-      font-family: var(--rex-font-mono);
-      font-size: 10.5px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--rex-ivory-2);
-    }
-    .entry-link::after {
-      content: "↗";
-      color: var(--rex-amber);
-      transition: transform 180ms ease;
-    }
-    .entry-link:hover { color: var(--rex-amber); }
-    .entry-link:hover::after { transform: translate(2px, -2px); }
 
     /* ─── Project card logos ─── */
     .pc-logo {
