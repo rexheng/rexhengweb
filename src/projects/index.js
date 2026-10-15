@@ -24,6 +24,7 @@ import peel from "./catalog/peel/index.js";
 import peterNetwork from "./catalog/peter-network/index.js";
 import republic from "./catalog/republic/index.js";
 import simulacra from "./catalog/simulacra/index.js";
+import worldLabs from "./catalog/world-labs/index.js";
 
 const ENTRIES = [
   ["catalog/amogus/index.js", amogus],
@@ -37,6 +38,7 @@ const ENTRIES = [
   ["catalog/peter-network/index.js", peterNetwork],
   ["catalog/republic/index.js", republic],
   ["catalog/simulacra/index.js", simulacra],
+  ["catalog/world-labs/index.js", worldLabs],
 ];
 
 const REQUIRED_STRING_FIELDS = ["id", "label", "title"];

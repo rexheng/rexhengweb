@@ -1,0 +1,61 @@
+// World Labs × Cesium — Spatial Intelligence Hackathon 2026.
+// Sprite: a textured Earth with drifting clouds; double-click to spin it.
+
+import { buildMesh } from "./build.js";
+
+// Idle turn rates (rad/s). Clouds drift a touch faster than the surface.
+const IDLE_RATE = 0.22;
+const CLOUD_RATE = 0.29;
+const TAU = Math.PI * 2;
+
+export default {
+  id: "world-labs",
+  label: "World Labs",
+  title: "World Labs × Cesium — Spatial Intelligence Hackathon 2026",
+  subtitle: "2026 · Photos into 3D worlds on a globe",
+  meta: "CesiumJS · World Labs Marble · Gaussian splats",
+  accent: "#1a93b8",
+  icon:
+    '<circle cx="12" cy="12" r="9"/>'
+    + '<ellipse cx="12" cy="12" rx="4" ry="9"/>'
+    + '<path d="M3 12 H21"/>'
+    + '<path d="M4.6 7.5 Q12 9.8 19.4 7.5"/>'
+    + '<path d="M4.6 16.5 Q12 14.2 19.4 16.5"/>',
+  description:
+    "Turns geotagged photos into AI-generated 3D worlds and pins them where they were taken. A Python service reads GPS, altitude, time and compass bearing from each photo; a prompt builder computes the sun's position for that place and moment so World Labs' Marble generates a scene with matching light; the resulting Gaussian splat is converted, uploaded to Cesium ion and rendered on a CesiumJS 3D globe. Built at the Spatial Intelligence Hackathon in San Francisco (September 2026). Double-click the Earth to give it a spin.",
+  links: [
+    { label: "Source", href: "https://github.com/rexheng/world-labs-cesium-integration" },
+  ],
+  abilityLabel: "Spin!",
+  ability: "spin",
+  // Hitbox + footprintOffset auto-derived (§3.9): the bbox is the cloud
+  // shell's sphere, so the body is a cube the globe sits inside.
+  buildMesh: () => buildMesh(),
+
+  // Idle: slow west-to-east turn about the tilted axis, clouds drifting a
+  // little faster. Rotates the visual meshes only, never the physics body.
+  // The `spin` ability adds rig.spinBoost on top of the base rate.
+  onSpawn(slot, ctx) {
+    const rig = ctx.mesh?.userData?.worldLabs;
+    if (!rig) return null;
+    // Random starting longitude so repeat spawns don't all show one face.
+    // Safe here: the hitbox was derived from the un-rotated sphere already.
+    rig.angle = Math.random() * TAU;
+    rig.cloudAngle = Math.random() * TAU;
+    rig.apply();
+    return {
+      tick(dtMs) {
+        const dt = dtMs / 1000;
+        const boost = rig.spinBoost || 0;
+        rig.angle = (rig.angle + (IDLE_RATE + boost) * dt) % TAU;
+        rig.cloudAngle = (rig.cloudAngle + (CLOUD_RATE + boost) * dt) % TAU;
+        rig.apply();
+        return true;     // run forever (cancelled by _park)
+      },
+      cancel() {
+        rig.spinHandle?.cancel();
+        rig.spinBoost = 0;
+      },
+    };
+  },
+};
