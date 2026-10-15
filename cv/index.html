@@ -40,6 +40,11 @@
         "sameAs": "https://www.lse.ac.uk/"
       },
       {
+        "@type": "CollegeOrUniversity",
+        "name": "University of California, Berkeley",
+        "sameAs": "https://www.berkeley.edu/"
+      },
+      {
         "@type": "HighSchool",
         "name": "Raffles Institution"
       }
@@ -795,6 +800,10 @@
     .entry-logo[data-logo="saf"]         { height: 48px; }
     .entry-logo[data-logo="blackfriars"] { height: 48px; }
     .entry-logo[data-logo="boeing"]      { height: 28px; }
+    .entry-logo[data-logo="berkeley"]    { height: 26px; }
+    /* Paired logos (LSE | UC Berkeley) sit side by side; wrap if the column is too narrow */
+    .entry-logos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 12px; }
+    .entry-logos .entry-logo { margin-top: 0; }
 
     /* ─── Project card logos ─── */
     .pc-logo {
@@ -854,10 +863,13 @@
           <div class="entry-meta">
             <span class="dates">2024 — 2027</span>
             <span class="place">London</span>
-            <img class="entry-logo" data-logo="lse" src="logos/lse.svg" alt="London School of Economics" height="28" loading="lazy">
+            <div class="entry-logos">
+              <img class="entry-logo" data-logo="lse" src="logos/lse.svg" alt="London School of Economics" height="28" loading="lazy">
+              <img class="entry-logo" data-logo="berkeley" src="logos/berkeley.svg" alt="UC Berkeley" height="28" loading="lazy">
+            </div>
           </div>
           <div class="entry-body">
-            <h3 class="entry-org">London School of Economics</h3>
+            <h3 class="entry-org">London School of Economics | UC Berkeley</h3>
             <p class="entry-role">BSc Philosophy, Politics &amp; Economics</p>
             <p class="entry-note">First-Class Honours · First Year</p>
             <p class="entry-text">95th percentile in Quantitative Statistics and Climate Futures; 90th percentile in Quantitative Mathematics and Microeconomics. Awarded the Raymond Huang Prize for the highest-ranked submission on precision agriculture in the soybean industry. Selected as one of 18 Laidlaw Scholars across the cohort — $6,000 research grant alongside a two-year leadership and research curriculum.</p>
