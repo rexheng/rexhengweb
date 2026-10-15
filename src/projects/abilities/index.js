@@ -14,6 +14,7 @@ import { roomba } from "./roomba.js";
 import { duneWorm } from "./dune-worm.js";
 import { spin } from "./spin.js";
 import { morph } from "./morph.js";
+import { fly } from "./fly.js";
 
 export const ABILITIES = {
   stab, topple, pulse, swarm, cycle,
@@ -21,5 +22,6 @@ export const ABILITIES = {
   roomba,
   spin,
   morph,
+  fly,
   "dune-worm": duneWorm,
 };
