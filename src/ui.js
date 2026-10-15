@@ -603,6 +603,52 @@ const CSS = `
   transform: translate(2px, -2px);
 }
 
+/* Spawn hint: a small passive pill under a freshly spawned sprite. The outer
+   element is positioned per frame (transform) and fades; the inner pill
+   breathes, so the two transforms never fight. */
+.rex-project-hint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 11;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+.rex-project-hint.is-visible { opacity: 1; }
+.rex-project-hint-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 7px;
+  border-radius: 999px;
+  background: rgba(11, 14, 22, 0.55);
+  border: 1px solid var(--rex-rule);
+  color: var(--rex-ivory-2);
+  font-family: var(--rex-font-mono);
+  font-size: 9px;
+  line-height: 1.4;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  backdrop-filter: blur(3px);
+  animation: rexHintBreathe 2.8s ease-in-out infinite;
+}
+.rex-project-hint-dot {
+  flex: none;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent, var(--rex-amber));
+}
+@keyframes rexHintBreathe {
+  0%, 100% { opacity: 0.72; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.035); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rex-project-hint-pill { animation: none; }
+}
+
 /* ─── Project card ─────────────────────────────────────────────────────── */
 #project-card {
   position: fixed;

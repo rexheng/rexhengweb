@@ -24,6 +24,13 @@ const SPAWN_HEIGHT = 0.9;             // drop height above ground so they land n
 const NDC_CAP = 0.55;                 // GUI-bias clear-band cap
 const BIAS_MAG = 0.35;                // lateral shove away from the UI panel
 
+// Spawn hint ("double-click me" pill under a freshly spawned sprite;
+// "tap the label" on touch, where double-tapping a sprite can't work).
+const HINT_DELAY_MS = 500;            // fade in this long after spawn
+const HINT_TTL_MS = 6000;             // then start fading out after this long
+const HINT_FADE_MS = 450;             // matches the .rex-project-hint opacity transition
+const HINT_GAP_PX = 10;               // space between the sprite's lowest point and the pill
+
 const _fwd = new THREE.Vector3();
 
 // Widest clear NDC.x band given the canvas and the #rex-controls panel,
@@ -127,7 +134,7 @@ function legacyRandomPlacement(anchorX, anchorY) {
 export class ProjectSystem {
   constructor(app) {
     this.app = app;
-    // Slot pool: each entry is { bodyID, name, group, project: def|null, labelEl|null, meshGroup|null }
+    // Slot pool: each entry is { bodyID, name, group, project: def|null, labelEl|null, meshGroup|null, hint|null, ... }
     this.slots = [];
     this.activeCard = null;
     this._activeAbilities = []; // {tick, ttlMs}
@@ -215,6 +222,7 @@ export class ProjectSystem {
     // Clean any prior mounts.
     for (const slot of this.slots) {
       slot.labelEl?.remove();
+      this._removeHint(slot);
       if (slot.meshGroup?.parent) slot.meshGroup.parent.remove(slot.meshGroup);
     }
     this.slots = [];
@@ -240,6 +248,8 @@ export class ProjectSystem {
             project: null,
             meshGroup: null,
             labelEl: null,
+            hint: null,          // spawn hint { el, timers, fading, viaLabel } while shown
+            halfExtents: null,   // collider half-extents of the mounted sprite
             // Compiled box geom/inertia, restored on park and before each
             // box spawn so a slot that last held a sphere is a box again.
             colliderDefaults: this.app.model
@@ -382,6 +392,7 @@ export class ProjectSystem {
     }
     slot.group.add(mesh);
     slot.meshGroup = mesh;
+    slot.halfExtents = hb;
     slot.group.visible = true;
 
     this.app._rebuildGrabbables?.();
@@ -486,8 +497,10 @@ export class ProjectSystem {
 
     slot.labelEl?.remove();
     slot.labelEl = null;
+    this._removeHint(slot);
     if (slot.meshGroup?.parent) slot.meshGroup.parent.remove(slot.meshGroup);
     slot.meshGroup = null;
+    slot.halfExtents = null;
     slot.project = null;
     slot.group.visible = false;
 
@@ -519,7 +532,7 @@ export class ProjectSystem {
       });
     }
 
-    // Update label positions for mounted slots.
+    // Update label (and spawn hint) positions for mounted slots.
     if (!this.slots.length) return;
     const { camera, renderer } = this.app;
     if (!camera || !renderer) return;
@@ -527,9 +540,11 @@ export class ProjectSystem {
     const halfH = renderer.domElement.clientHeight / 2;
 
     for (const slot of this.slots) {
-      if (!slot.project || !slot.labelEl) continue;
-      if (this._labelsHidden) { slot.labelEl.style.display = "none"; continue; }
+      if (!slot.project) continue;
       slot.group.updateWorldMatrix(true, false);
+      if (slot.hint) this._placeHint(slot, camera, halfW, halfH);
+      if (!slot.labelEl) continue;
+      if (this._labelsHidden) { slot.labelEl.style.display = "none"; continue; }
       this._worldPos.setFromMatrixPosition(slot.group.matrixWorld);
       this._screenVec.copy(this._worldPos);
       this._screenVec.y += 0.55;
@@ -547,10 +562,85 @@ export class ProjectSystem {
     }
   }
 
+  // ── Spawn hint ─────────────────────────────────────────────────────────
+  /**
+   * Show a small "double-click me" pill under the slot's sprite (called when
+   * a project is spawned from its tile). Purely visual: no pointer events.
+   * It fades in after HINT_DELAY_MS and fades out after HINT_TTL_MS, on the
+   * slot's first ability fire, or (touch) when the slot's card opens;
+   * parking the slot removes it at once.
+   */
+  showSpawnHint(slot) {
+    if (!slot?.project) return;
+    this._removeHint(slot);
+    // Touch can't double-tap a sprite: the grabber preventDefault()s the
+    // touch pointerdown, so the browser never builds a dblclick from the two
+    // taps. There the way to the ability is label → card → ability button,
+    // so point at the label instead (and fade once its card opens).
+    const viaLabel = matchMedia("(pointer: coarse)").matches;
+    const text = viaLabel ? "tap the label ↑" : "double-click me";
+    const el = document.createElement("div");
+    el.className = "rex-project-hint";
+    el.setAttribute("aria-hidden", "true");
+    el.style.setProperty("--accent", slot.project.accent || "#d4a05a");
+    el.innerHTML =
+      `<span class="rex-project-hint-pill"><span class="rex-project-hint-dot"></span>${text}</span>`;
+    this._host.appendChild(el);
+    const hint = { el, timers: [], fading: false, viaLabel };
+    hint.timers.push(
+      setTimeout(() => el.classList.add("is-visible"), HINT_DELAY_MS),
+      setTimeout(() => this._fadeHint(slot), HINT_TTL_MS),
+    );
+    slot.hint = hint;
+  }
+
+  _fadeHint(slot) {
+    const hint = slot.hint;
+    if (!hint || hint.fading) return;
+    hint.fading = true;
+    for (const t of hint.timers) clearTimeout(t);
+    hint.el.classList.remove("is-visible");
+    hint.timers = [setTimeout(() => this._removeHint(slot), HINT_FADE_MS)];
+  }
+
+  _removeHint(slot) {
+    const hint = slot.hint;
+    if (!hint) return;
+    for (const t of hint.timers) clearTimeout(t);
+    hint.el.remove();
+    slot.hint = null;
+  }
+
+  // Sit the pill just below the sprite's lowest on-screen point: project the
+  // eight corners of the slot's collider box (which hugs the mesh) so it never
+  // covers the model, whatever its size, tumble or the camera angle.
+  _placeHint(slot, camera, halfW, halfH) {
+    const el = slot.hint.el;
+    const ext = slot.halfExtents;
+    const m = slot.group.matrixWorld;
+    const v = this._screenVec;
+    v.setFromMatrixPosition(m).project(camera);
+    if (!ext || v.z > 1) { el.style.display = "none"; return; }
+    const sx = halfW + v.x * halfW;
+    let bottom = -Infinity;
+    for (let i = 0; i < 8; i++) {
+      // Three frame is y-up: hx → x, hz → y (vertical), hy → z (depth).
+      v.set(i & 1 ? ext.hx : -ext.hx, i & 2 ? ext.hz : -ext.hz, i & 4 ? ext.hy : -ext.hy)
+        .applyMatrix4(m)
+        .project(camera);
+      if (v.z <= 1) bottom = Math.max(bottom, halfH - v.y * halfH);
+    }
+    if (bottom === -Infinity) { el.style.display = "none"; return; }
+    el.style.display = "";
+    el.style.transform =
+      `translate(calc(${sx.toFixed(1)}px - 50%), ${(bottom + HINT_GAP_PX).toFixed(1)}px)`;
+  }
+
   // ── Card UI ────────────────────────────────────────────────────────────
   showCard(slot) {
     const def = slot.project;
     if (!def) return;
+    if (slot.hint?.viaLabel) this._fadeHint(slot);   // touch hint: label was tapped
     this.activeCard = { slot, def };
     const linksHTML = (def.links || [])
       .map((l) => `<a href="${l.href}" target="_blank" rel="noopener noreferrer">${l.label}</a>`)
@@ -594,6 +684,7 @@ export class ProjectSystem {
   _fireAbility(slot) {
     const def = slot.project;
     if (!def?.ability) return;
+    this._fadeHint(slot);   // the hint has done its job
     // Ability context includes the slot's mesh group so tick-based abilities
     // (pulse, swarm, cycle) can add child meshes, rotate satellite children,
     // or hot-swap materials/emblems without going through the slot object.

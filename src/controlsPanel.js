@@ -266,6 +266,7 @@ export class ControlsPanel {
       tile.addEventListener("click", () => {
         const slot = this.app.projectSystem?.spawn(def.id);
         if (slot) {
+          this.app.projectSystem.showSpawnHint(slot);
           showSpawnToast(`Added ${def.label} · drag to grab`);
         } else {
           showSpawnToast("All slots full — clear one to add another");
