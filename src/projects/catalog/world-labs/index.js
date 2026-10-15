@@ -1,7 +1,7 @@
 // World Labs × Cesium — Spatial Intelligence Hackathon 2026.
 // Sprite: a textured Earth with drifting clouds; double-click to spin it.
 
-import { buildMesh } from "./build.js";
+import { buildMesh, EARTH_RADIUS } from "./build.js";
 
 // Idle turn rates (rad/s). Clouds drift a touch faster than the surface.
 const IDLE_RATE = 0.22;
@@ -28,12 +28,15 @@ export default {
   ],
   abilityLabel: "Spin!",
   ability: "spin",
-  // Hitbox + footprintOffset auto-derived (§3.9): the bbox is the cloud
-  // shell's sphere, so the body is a cube the globe sits inside.
+  // Ball collider matching the visible Earth (the cloud shell sits 3 mm
+  // proud of it), so the globe rolls when pushed, punted or thrown and its
+  // surface rests exactly on the floor. The mesh is centred on the body.
+  collider: { type: "sphere", radius: EARTH_RADIUS },
   buildMesh: () => buildMesh(),
 
   // Idle: slow west-to-east turn about the tilted axis, clouds drifting a
-  // little faster. Rotates the visual meshes only, never the physics body.
+  // little faster. This is a local rotation of the visual meshes on top of
+  // whatever the rolling body is doing; it never touches the physics.
   // The `spin` ability adds rig.spinBoost on top of the base rate.
   onSpawn(slot, ctx) {
     const rig = ctx.mesh?.userData?.worldLabs;

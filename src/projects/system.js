@@ -5,6 +5,13 @@ import * as THREE from "three";
 import { PROJECTS } from "./index.js";
 import { findBody } from "./abilities/impulse.js";
 import { parkSlotBody, setBodyCollision } from "./slotParking.mjs";
+import {
+  applyBoxCollider,
+  applySphereCollider,
+  captureSlotCollider,
+  normalizeCollider,
+  restoreSlotCollider,
+} from "./slotCollider.mjs";
 import { clearNdcBandX, yawQuatFacing } from "./spawnPlacement.mjs";
 
 const SLOT_COUNT = 8;
@@ -279,6 +286,11 @@ export class ProjectSystem {
             project: null,
             meshGroup: null,
             labelEl: null,
+            // Compiled box geom/inertia, restored on park and before each
+            // box spawn so a slot that last held a sphere is a box again.
+            colliderDefaults: this.app.model
+              ? captureSlotCollider(this.app.model, Number(id))
+              : null,
           });
           break;
         }
@@ -333,10 +345,22 @@ export class ProjectSystem {
     // mesh DOWN by hitbox.hz (so its bottom sits at slot-local y = -hitbox.hz,
     // which is the floor in world space). Then we further compensate for
     // the mesh's own bbox-min so the geometric bottom aligns.
+    //
+    // Collider shape: the slot's box by default. `def.collider: "sphere"`
+    // (or { type: "sphere", radius }) swaps in a ball centred on the mesh
+    // bbox; radius defaults to half the bbox's largest extent.
+    let collider = normalizeCollider(def.collider);
+    if (!collider) {
+      console.warn(`[projects] ${def.id}: unknown collider ${JSON.stringify(def.collider)}; using box`);
+      collider = { type: "box" };
+    }
+    const isSphere = collider.type === "sphere";
     let hb = def.hitbox;
     let explicitOffset = def.footprintOffset;
     let boxMinY = 0;
-    if (!hb || explicitOffset == null) {
+    let boxSize = null;
+    let boxCenter = null;
+    if (!hb || explicitOffset == null || isSphere) {
       // Compute bbox in MESH-LOCAL frame. We zero mesh.position before
       // updateMatrixWorld so children's world positions equal their
       // mesh-local positions — i.e. box.min.y is the bbox bottom relative
@@ -363,6 +387,8 @@ export class ProjectSystem {
       if (!any) box.setFromObject(mesh);
       const size = box.getSize(new THREE.Vector3());
       boxMinY = box.min.y;
+      boxSize = size;
+      boxCenter = box.getCenter(new THREE.Vector3());
       // Restore original position; the y component is overwritten below.
       mesh.position.copy(savedPos);
       mesh.updateMatrixWorld(true);
@@ -373,24 +399,29 @@ export class ProjectSystem {
       if (!hb) hb = { hx: size.x / 2, hy: size.z / 2, hz: size.y / 2 };
     }
 
+    if (isSphere) {
+      const r = collider.radius ?? Math.max(boxSize.x, boxSize.y, boxSize.z) / 2;
+      hb = { hx: r, hy: r, hz: r };
+    }
+
     // Per-project hitbox override. Each slot has a default 0.30×0.30×0.45
     // box geom; resize it so collision matches the actual silhouette
-    // instead of the one-size-fits-all default.
+    // instead of the one-size-fits-all default (or swap in a sphere).
     if (hb && this.app.model) {
       const model = this.app.model;
-      const geomAdr = model.body_geomadr[slot.bodyID];
-      if (geomAdr >= 0) {
-        const base = geomAdr * 3;
-        model.geom_size[base + 0] = hb.hx;
-        model.geom_size[base + 1] = hb.hy;
-        model.geom_size[base + 2] = hb.hz;
-      }
+      slot.colliderDefaults ??= captureSlotCollider(model, slot.bodyID);
+      if (isSphere) applySphereCollider(model, slot.bodyID, slot.colliderDefaults, hb.hx);
+      else applyBoxCollider(model, slot.bodyID, slot.colliderDefaults, hb);
     }
 
     // Position mesh so its bottom sits on the floor when the body settles.
+    // - Sphere: centre the mesh bbox on the body origin (a ball rolls about
+    //   its centre; the body rests at z = radius).
     // - Auto-derived: shift down by hitbox.hz, then up by -boxMinY.
     // - Explicit: legacy convention preserved (mesh.position.y = -offset).
-    if (explicitOffset != null) {
+    if (isSphere) {
+      mesh.position.set(-boxCenter.x, -boxCenter.y, -boxCenter.z);
+    } else if (explicitOffset != null) {
       if (explicitOffset !== 0) mesh.position.y = -explicitOffset;
     } else if (hb) {
       mesh.position.y = -hb.hz - boxMinY;
@@ -508,6 +539,8 @@ export class ProjectSystem {
 
     // Teleport the body back far below the floor.
     const model = this.app.model, data = this.app.data;
+    // Back to the compiled box (undoes a sphere collider, resets the size).
+    if (slot.colliderDefaults) restoreSlotCollider(model, slot.bodyID, slot.colliderDefaults);
     parkSlotBody(model, data, slot.bodyID, slot.parkedZ);
     this.app.mujoco.mj_forward(model, data);
   }
