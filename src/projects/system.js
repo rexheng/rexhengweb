@@ -182,18 +182,36 @@ export class ProjectSystem {
 
     // Sprite mesh click → open card. Required so labels-hidden users can
     // still open project cards. Click vs drag gating: ≤200ms and <4px
-    // qualifies as a click. Mousedown does NOT consume the event — grab
+    // qualifies as a click. This listener does NOT consume the event — grab
     // still receives its pointerdown and starts as normal; if the user
-    // drags, we fail the click test on mouseup. If the user just clicks,
-    // grab releases on mouseup with no displacement and we fire the card.
-    let downX = 0, downY = 0, downT = 0, downBtn = -1;
-    addEventListener("mousedown", (e) => {
-      if (e.button !== 0) return;
-      downX = e.clientX; downY = e.clientY; downT = performance.now(); downBtn = e.button;
+    // drags, we fail the click test on pointerup. If the user just clicks,
+    // grab releases on pointerup with no displacement and we fire the card.
+    //
+    // Pointer events, not mouse events: the grabber preventDefault()s any
+    // pointerdown that hits a body, and per the Pointer Events spec that
+    // suppresses the compatibility mousedown/mouseup for the press — so a
+    // press on a sprite never reached mouse listeners. e.timeStamp (input
+    // time) keeps the 200 ms gate honest when a slow frame delays dispatch.
+    //
+    // The card opens CARD_CLICK_DELAY_MS after the click, not at once: it
+    // covers the middle of the screen, so opening it on the first click of
+    // a double-click would catch the second click and the dblclick ability
+    // would never fire. Any new press or a dblclick cancels the pending card.
+    const CARD_CLICK_DELAY_MS = 300;
+    let pendingCard = 0;
+    let cardFromClickAt = -Infinity;   // performance.now() when a click opened the card
+    let lastPressAt = -Infinity;       // input time of the latest pointerdown
+    const cancelPendingCard = () => { clearTimeout(pendingCard); pendingCard = 0; };
+    let downX = 0, downY = 0, downT = 0, downBtn = -1, downId = -1;
+    addEventListener("pointerdown", (e) => {
+      cancelPendingCard();
+      lastPressAt = e.timeStamp;
+      if (e.button !== 0 || !e.isPrimary) return;
+      downX = e.clientX; downY = e.clientY; downT = e.timeStamp; downBtn = e.button; downId = e.pointerId;
     });
-    addEventListener("mouseup", (e) => {
-      if (e.button !== 0 || downBtn !== 0) return;
-      const dt = performance.now() - downT;
+    addEventListener("pointerup", (e) => {
+      if (e.button !== 0 || downBtn !== 0 || e.pointerId !== downId) return;
+      const dt = e.timeStamp - downT;
       const dx = e.clientX - downX, dy = e.clientY - downY;
       const moved = Math.hypot(dx, dy);
       downBtn = -1;
@@ -222,15 +240,29 @@ export class ProjectSystem {
       if (!bodyID || bodyID < 0) return;
 
       const slot = this.slots.find((s) => s.bodyID === bodyID && s.project);
-      if (slot) this.showCard(slot);
+      if (!slot) return;
+      cancelPendingCard();
+      pendingCard = setTimeout(() => {
+        pendingCard = 0;
+        if (!slot.project) return;            // cleared in the meantime
+        this.showCard(slot);
+        cardFromClickAt = performance.now();
+      }, CARD_CLICK_DELAY_MS);
     });
 
     // Sprite mesh double-click → fire the project's ability directly. Reuses
     // the same raycast-against-grabbables pattern as the single-click path.
-    // Native dblclick fires after the OS double-click time, so any card the
-    // first click opened is dismissed by _fireAbility on the way through.
+    // The first click's card is still pending (see CARD_CLICK_DELAY_MS), so
+    // cancel it. On a slow double-click the card may already be open and
+    // have caught the second click: fire that card's ability instead.
     addEventListener("dblclick", (e) => {
-      if (e.target.closest("#project-card")) return;
+      cancelPendingCard();
+      if (e.target.closest("#project-card")) {
+        if (this.activeCard && lastPressAt - cardFromClickAt < 500) {
+          this._fireAbility(this.activeCard.slot);
+        }
+        return;
+      }
       if (e.target.closest(".rex-project-label")) return;
       if (e.target.closest("#rex-controls")) return;
       const grabbables = this.app.getGrabbables?.() || [];
