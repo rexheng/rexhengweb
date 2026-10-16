@@ -1,0 +1,1017 @@
+{
+  "site": {
+    "ink": {
+      "hex": "#0b0e16",
+      "oklch": [
+        0.1647,
+        0.0176,
+        268.5062
+      ],
+      "role": "panel ground"
+    },
+    "ink-2": {
+      "hex": "#111622",
+      "oklch": [
+        0.2012,
+        0.0254,
+        266.7113
+      ],
+      "role": "hover tile"
+    },
+    "ink-3": {
+      "hex": "#1a2030",
+      "oklch": [
+        0.2455,
+        0.0319,
+        268.2032
+      ],
+      "role": "active tile"
+    },
+    "scene": {
+      "hex": "#121a2a",
+      "oklch": [
+        0.2185,
+        0.0338,
+        263.5043
+      ],
+      "role": "3D background"
+    },
+    "sky mid": {
+      "hex": "#2a3a5c",
+      "oklch": [
+        0.3515,
+        0.0632,
+        264.2417
+      ],
+      "role": "twilight band"
+    },
+    "horizon": {
+      "hex": "#6a5a4a",
+      "oklch": [
+        0.4787,
+        0.0324,
+        66.9226
+      ],
+      "role": "warm horizon"
+    },
+    "ivory": {
+      "hex": "#efe8d8",
+      "oklch": [
+        0.9322,
+        0.0226,
+        87.1535
+      ],
+      "role": "type"
+    },
+    "ivory-2": {
+      "hex": "#d5cdb8",
+      "oklch": [
+        0.8491,
+        0.0298,
+        89.5924
+      ],
+      "role": "secondary type"
+    },
+    "ivory-3": {
+      "hex": "#a69d87",
+      "oklch": [
+        0.6976,
+        0.0328,
+        88.4071
+      ],
+      "role": "labels"
+    },
+    "amber": {
+      "hex": "#d4a05a",
+      "oklch": [
+        0.7403,
+        0.1072,
+        73.0409
+      ],
+      "role": "the one accent"
+    },
+    "amber-2": {
+      "hex": "#e9b976",
+      "oklch": [
+        0.8144,
+        0.1012,
+        74.8111
+      ],
+      "role": "accent hover"
+    },
+    "key light": {
+      "hex": "#fff1d8",
+      "oklch": [
+        0.9627,
+        0.0361,
+        82.1845
+      ],
+      "role": "warm key"
+    },
+    "fill light": {
+      "hex": "#88aaff",
+      "oklch": [
+        0.7477,
+        0.1289,
+        266.7267
+      ],
+      "role": "cool fill"
+    },
+    "rim light": {
+      "hex": "#ff8866",
+      "oklch": [
+        0.7517,
+        0.1526,
+        36.8179
+      ],
+      "role": "warm rim"
+    },
+    "CV paper": {
+      "hex": "#f7f3e9",
+      "oklch": [
+        0.9645,
+        0.0139,
+        88.6834
+      ],
+      "role": "print ground"
+    },
+    "CV amber": {
+      "hex": "#b07a2a",
+      "oklch": [
+        0.6206,
+        0.1149,
+        72.7783
+      ],
+      "role": "print accent"
+    }
+  },
+  "panelOrder": [
+    "amogus",
+    "arrow",
+    "clearpath",
+    "cultivate",
+    "mechanica",
+    "musicity",
+    "oliver-wyman",
+    "olympic-way",
+    "outreach",
+    "peel",
+    "peter-network",
+    "republic",
+    "simulacra",
+    "world-labs"
+  ],
+  "adjacency": [
+    [
+      "amogus",
+      "arrow"
+    ],
+    [
+      "amogus",
+      "cultivate"
+    ],
+    [
+      "arrow",
+      "clearpath"
+    ],
+    [
+      "arrow",
+      "mechanica"
+    ],
+    [
+      "clearpath",
+      "musicity"
+    ],
+    [
+      "cultivate",
+      "mechanica"
+    ],
+    [
+      "cultivate",
+      "oliver-wyman"
+    ],
+    [
+      "mechanica",
+      "musicity"
+    ],
+    [
+      "mechanica",
+      "olympic-way"
+    ],
+    [
+      "musicity",
+      "outreach"
+    ],
+    [
+      "oliver-wyman",
+      "olympic-way"
+    ],
+    [
+      "oliver-wyman",
+      "peel"
+    ],
+    [
+      "olympic-way",
+      "outreach"
+    ],
+    [
+      "olympic-way",
+      "peter-network"
+    ],
+    [
+      "outreach",
+      "republic"
+    ],
+    [
+      "peel",
+      "peter-network"
+    ],
+    [
+      "peel",
+      "simulacra"
+    ],
+    [
+      "peter-network",
+      "republic"
+    ],
+    [
+      "peter-network",
+      "world-labs"
+    ],
+    [
+      "simulacra",
+      "world-labs"
+    ]
+  ],
+  "directions": {
+    "A": {
+      "name": "Harmonised spectrum",
+      "rule": "14 hues spaced 25.7° apart in OKLCH, every one at the site amber's own lightness and chroma (L 74%, C 0.107). Musicity is the amber itself.",
+      "states": {
+        "rest": "project colour",
+        "hover": "brightness ×1.15 + ink-2 tile",
+        "active": "project colour + ink-3 tile + amber pip/label"
+      },
+      "colours": {
+        "amogus": {
+          "hex": "#E18EAD",
+          "oklch": [
+            0.7405,
+            0.1072,
+            356.0726
+          ],
+          "contrastOnInk": 7.97,
+          "previousAccent": "#e25d63"
+        },
+        "arrow": {
+          "hex": "#BA9AE2",
+          "oklch": [
+            0.741,
+            0.1069,
+            304.2889
+          ],
+          "contrastOnInk": 8.09,
+          "previousAccent": "#8a6ad9"
+        },
+        "clearpath": {
+          "hex": "#79AFED",
+          "oklch": [
+            0.7409,
+            0.1069,
+            252.6151
+          ],
+          "contrastOnInk": 8.42,
+          "previousAccent": "#005eb8"
+        },
+        "cultivate": {
+          "hex": "#9CB769",
+          "oklch": [
+            0.7409,
+            0.1081,
+            124.5847
+          ],
+          "contrastOnInk": 8.63,
+          "previousAccent": "#8cc63f"
+        },
+        "mechanica": {
+          "hex": "#44BFC7",
+          "oklch": [
+            0.7407,
+            0.1069,
+            201.3002
+          ],
+          "contrastOnInk": 8.75,
+          "previousAccent": "#5d84a8"
+        },
+        "musicity": {
+          "hex": "#D4A05A",
+          "oklch": [
+            0.7403,
+            0.1072,
+            73.0409
+          ],
+          "contrastOnInk": 8.24,
+          "previousAccent": "#d4a05a"
+        },
+        "oliver-wyman": {
+          "hex": "#9CA4EE",
+          "oklch": [
+            0.7408,
+            0.1071,
+            278.697
+          ],
+          "contrastOnInk": 8.23,
+          "previousAccent": "#1f4ba5"
+        },
+        "olympic-way": {
+          "hex": "#E78F8D",
+          "oklch": [
+            0.7405,
+            0.1075,
+            21.3769
+          ],
+          "contrastOnInk": 8,
+          "previousAccent": "#dc241f"
+        },
+        "outreach": {
+          "hex": "#54C1A8",
+          "oklch": [
+            0.7404,
+            0.1071,
+            175.7504
+          ],
+          "contrastOnInk": 8.79,
+          "previousAccent": "#4a90d9"
+        },
+        "peel": {
+          "hex": "#77BE87",
+          "oklch": [
+            0.7398,
+            0.107,
+            150.2972
+          ],
+          "contrastOnInk": 8.73,
+          "previousAccent": "#2e8b3e"
+        },
+        "peter-network": {
+          "hex": "#D192CB",
+          "oklch": [
+            0.74,
+            0.1066,
+            329.9043
+          ],
+          "contrastOnInk": 7.98,
+          "previousAccent": "#ef7d00"
+        },
+        "republic": {
+          "hex": "#BCAC58",
+          "oklch": [
+            0.7405,
+            0.1068,
+            98.7396
+          ],
+          "contrastOnInk": 8.43,
+          "previousAccent": "#c9b58a"
+        },
+        "simulacra": {
+          "hex": "#E2956F",
+          "oklch": [
+            0.7388,
+            0.1068,
+            46.8641
+          ],
+          "contrastOnInk": 8.05,
+          "previousAccent": "#ff7138"
+        },
+        "world-labs": {
+          "hex": "#57B8DF",
+          "oklch": [
+            0.7396,
+            0.1066,
+            227.2903
+          ],
+          "contrastOnInk": 8.57,
+          "previousAccent": "#1a93b8"
+        }
+      },
+      "audit": {
+        "minContrastOnInk": 7.97,
+        "neighbourMinDeltaE": {
+          "normal": {
+            "min": 9.3,
+            "pair": [
+              "olympic-way",
+              "peter-network"
+            ]
+          },
+          "deutan": {
+            "min": 2.3,
+            "pair": [
+              "arrow",
+              "clearpath"
+            ]
+          },
+          "protan": {
+            "min": 3.5,
+            "pair": [
+              "arrow",
+              "clearpath"
+            ]
+          },
+          "tritan": {
+            "min": 4.5,
+            "pair": [
+              "peter-network",
+              "republic"
+            ]
+          }
+        },
+        "anyPairMinDeltaE": {
+          "normal": {
+            "min": 4.7,
+            "pair": [
+              "clearpath",
+              "world-labs"
+            ]
+          },
+          "deutan": {
+            "min": 0,
+            "pair": [
+              "clearpath",
+              "oliver-wyman"
+            ]
+          },
+          "protan": {
+            "min": 2,
+            "pair": [
+              "arrow",
+              "oliver-wyman"
+            ]
+          },
+          "tritan": {
+            "min": 1.1,
+            "pair": [
+              "mechanica",
+              "outreach"
+            ]
+          }
+        }
+      }
+    },
+    "B": {
+      "name": "Monochrome-first",
+      "rule": "Every mark rests in ivory-2 (#D5CDB8). On hover/active the mark takes a pale tint of the same 14-hue wheel (L 83%, C 0.075); amber stays the only UI accent.",
+      "states": {
+        "rest": "ivory-2 #D5CDB8 for all marks",
+        "hover": "project tint + ink-2 tile",
+        "active": "project tint + ink-3 tile + amber pip/label"
+      },
+      "restColour": "#d5cdb8",
+      "colours": {
+        "amogus": {
+          "hex": "#F0B4C9",
+          "oklch": [
+            0.8308,
+            0.0744,
+            356.0262
+          ],
+          "contrastOnInk": 11.09,
+          "previousAccent": "#e25d63"
+        },
+        "arrow": {
+          "hex": "#D2BCEF",
+          "oklch": [
+            0.8304,
+            0.074,
+            304.462
+          ],
+          "contrastOnInk": 11.19,
+          "previousAccent": "#8a6ad9"
+        },
+        "clearpath": {
+          "hex": "#A5CBF8",
+          "oklch": [
+            0.8304,
+            0.0755,
+            252.9496
+          ],
+          "contrastOnInk": 11.48,
+          "previousAccent": "#005eb8"
+        },
+        "cultivate": {
+          "hex": "#BDD09B",
+          "oklch": [
+            0.8298,
+            0.0741,
+            124.0125
+          ],
+          "contrastOnInk": 11.63,
+          "previousAccent": "#8cc63f"
+        },
+        "mechanica": {
+          "hex": "#8BD6DC",
+          "oklch": [
+            0.8293,
+            0.0747,
+            202.2528
+          ],
+          "contrastOnInk": 11.71,
+          "previousAccent": "#5d84a8"
+        },
+        "musicity": {
+          "hex": "#E6C091",
+          "oklch": [
+            0.8297,
+            0.0754,
+            72.4101
+          ],
+          "contrastOnInk": 11.31,
+          "previousAccent": "#d4a05a"
+        },
+        "oliver-wyman": {
+          "hex": "#BCC3F8",
+          "oklch": [
+            0.8299,
+            0.0747,
+            278.7654
+          ],
+          "contrastOnInk": 11.3,
+          "previousAccent": "#1f4ba5"
+        },
+        "olympic-way": {
+          "hex": "#F5B5B2",
+          "oklch": [
+            0.8313,
+            0.075,
+            21.8504
+          ],
+          "contrastOnInk": 11.15,
+          "previousAccent": "#dc241f"
+        },
+        "outreach": {
+          "hex": "#92D8C5",
+          "oklch": [
+            0.8304,
+            0.0755,
+            175.4855
+          ],
+          "contrastOnInk": 11.8,
+          "previousAccent": "#4a90d9"
+        },
+        "peel": {
+          "hex": "#A5D6AE",
+          "oklch": [
+            0.8309,
+            0.0755,
+            150.025
+          ],
+          "contrastOnInk": 11.79,
+          "previousAccent": "#2e8b3e"
+        },
+        "peter-network": {
+          "hex": "#E4B6DF",
+          "oklch": [
+            0.8297,
+            0.0756,
+            329.8627
+          ],
+          "contrastOnInk": 11.07,
+          "previousAccent": "#ef7d00"
+        },
+        "republic": {
+          "hex": "#D3C990",
+          "oklch": [
+            0.8304,
+            0.0754,
+            99.3877
+          ],
+          "contrastOnInk": 11.51,
+          "previousAccent": "#c9b58a"
+        },
+        "simulacra": {
+          "hex": "#F1B99E",
+          "oklch": [
+            0.8299,
+            0.0749,
+            46.9392
+          ],
+          "contrastOnInk": 11.18,
+          "previousAccent": "#ff7138"
+        },
+        "world-labs": {
+          "hex": "#93D2EE",
+          "oklch": [
+            0.8309,
+            0.075,
+            227.4891
+          ],
+          "contrastOnInk": 11.66,
+          "previousAccent": "#1a93b8"
+        }
+      },
+      "audit": {
+        "minContrastOnInk": 11.07,
+        "neighbourMinDeltaE": {
+          "normal": {
+            "min": 6.5,
+            "pair": [
+              "amogus",
+              "arrow"
+            ]
+          },
+          "deutan": {
+            "min": 1.7,
+            "pair": [
+              "arrow",
+              "clearpath"
+            ]
+          },
+          "protan": {
+            "min": 2.4,
+            "pair": [
+              "arrow",
+              "clearpath"
+            ]
+          },
+          "tritan": {
+            "min": 3.3,
+            "pair": [
+              "peter-network",
+              "republic"
+            ]
+          }
+        },
+        "anyPairMinDeltaE": {
+          "normal": {
+            "min": 3.2,
+            "pair": [
+              "cultivate",
+              "republic"
+            ]
+          },
+          "deutan": {
+            "min": 0,
+            "pair": [
+              "clearpath",
+              "oliver-wyman"
+            ]
+          },
+          "protan": {
+            "min": 1.4,
+            "pair": [
+              "clearpath",
+              "oliver-wyman"
+            ]
+          },
+          "tritan": {
+            "min": 0.6,
+            "pair": [
+              "olympic-way",
+              "simulacra"
+            ]
+          }
+        }
+      }
+    },
+    "C": {
+      "name": "Warm editorial",
+      "rule": "Named earth pigments derived from the site: warm hues pulled toward amber (but never onto it), cool hues toward the twilight navy, chroma held under 0.13, lightness 62–86%.",
+      "states": {
+        "rest": "project pigment",
+        "hover": "brightness ×1.12 + ink-2 tile",
+        "active": "project pigment + ink-3 tile + amber pip/label"
+      },
+      "colours": {
+        "amogus": {
+          "hex": "#DC836F",
+          "oklch": [
+            0.7004,
+            0.1144,
+            33.521
+          ],
+          "contrastOnInk": 6.91,
+          "pigment": "Terracotta",
+          "previousAccent": "#e25d63"
+        },
+        "arrow": {
+          "hex": "#D59CC8",
+          "oklch": [
+            0.7605,
+            0.089,
+            334.8025
+          ],
+          "contrastOnInk": 8.65,
+          "pigment": "Mauve",
+          "previousAccent": "#8a6ad9"
+        },
+        "clearpath": {
+          "hex": "#6B8FB9",
+          "oklch": [
+            0.6396,
+            0.0752,
+            252.767
+          ],
+          "contrastOnInk": 5.75,
+          "pigment": "Dusk blue",
+          "previousAccent": "#005eb8"
+        },
+        "cultivate": {
+          "hex": "#A6CA9B",
+          "oklch": [
+            0.8004,
+            0.0754,
+            138.4292
+          ],
+          "contrastOnInk": 10.6,
+          "pigment": "Sage",
+          "previousAccent": "#8cc63f"
+        },
+        "mechanica": {
+          "hex": "#7790A2",
+          "oklch": [
+            0.6403,
+            0.0393,
+            239.5313
+          ],
+          "contrastOnInk": 5.78,
+          "pigment": "Slate",
+          "previousAccent": "#5d84a8"
+        },
+        "musicity": {
+          "hex": "#A67C5C",
+          "oklch": [
+            0.6198,
+            0.0692,
+            58.3478
+          ],
+          "contrastOnInk": 5.2,
+          "pigment": "Umber",
+          "previousAccent": "#d4a05a",
+          "round4": {
+            "hex": "#D4A05A",
+            "pigment": "Ochre"
+          },
+          "change": "was Ochre #D4A05A = the site amber; now a deep umber at L 62%, 12.8 ΔE from amber/amber-2"
+        },
+        "oliver-wyman": {
+          "hex": "#8595D0",
+          "oklch": [
+            0.6801,
+            0.0894,
+            272.1883
+          ],
+          "contrastOnInk": 6.62,
+          "pigment": "Lapis",
+          "previousAccent": "#1f4ba5"
+        },
+        "olympic-way": {
+          "hex": "#D66F6A",
+          "oklch": [
+            0.6592,
+            0.1303,
+            24.1129
+          ],
+          "contrastOnInk": 5.82,
+          "pigment": "Brick",
+          "previousAccent": "#dc241f"
+        },
+        "outreach": {
+          "hex": "#78BDB6",
+          "oklch": [
+            0.7505,
+            0.0707,
+            187.6382
+          ],
+          "contrastOnInk": 8.96,
+          "pigment": "Verdigris",
+          "previousAccent": "#4a90d9"
+        },
+        "peel": {
+          "hex": "#C5D79C",
+          "oklch": [
+            0.851,
+            0.0806,
+            121.9
+          ],
+          "contrastOnInk": 12.47,
+          "pigment": "Pistachio",
+          "previousAccent": "#2e8b3e",
+          "round4": {
+            "hex": "#CFDD99",
+            "pigment": "Pistachio"
+          },
+          "change": "calmed from L 87% / C 0.090 to L 85% / C 0.080"
+        },
+        "peter-network": {
+          "hex": "#D5A58F",
+          "oklch": [
+            0.7605,
+            0.0648,
+            45.8118
+          ],
+          "contrastOnInk": 8.83,
+          "pigment": "Peach",
+          "previousAccent": "#ef7d00",
+          "round4": {
+            "hex": "#E3B662",
+            "pigment": "Saffron"
+          },
+          "change": "was Saffron #E3B662 ≈ amber-2 and a Minion yellow; now a skin peach"
+        },
+        "republic": {
+          "hex": "#C7D3DE",
+          "oklch": [
+            0.861,
+            0.0201,
+            245.6712
+          ],
+          "contrastOnInk": 12.68,
+          "pigment": "Marble",
+          "previousAccent": "#c9b58a",
+          "round4": {
+            "hex": "#DDD0B4",
+            "pigment": "Parchment"
+          },
+          "change": "was Parchment #DDD0B4 (third pale yellow-green in row 4); now a cool marble grey"
+        },
+        "simulacra": {
+          "hex": "#E38C59",
+          "oklch": [
+            0.7207,
+            0.1253,
+            50.1243
+          ],
+          "contrastOnInk": 7.5,
+          "pigment": "Persimmon",
+          "previousAccent": "#ff7138"
+        },
+        "world-labs": {
+          "hex": "#77B6C8",
+          "oklch": [
+            0.7401,
+            0.0695,
+            217.7786
+          ],
+          "contrastOnInk": 8.55,
+          "pigment": "Atlantic",
+          "previousAccent": "#1a93b8"
+        }
+      },
+      "audit": {
+        "minContrastOnInk": 5.2,
+        "neighbourMinDeltaE": {
+          "normal": {
+            "min": 11,
+            "pair": [
+              "mechanica",
+              "musicity"
+            ]
+          },
+          "deutan": {
+            "min": 9.2,
+            "pair": [
+              "peel",
+              "peter-network"
+            ]
+          },
+          "protan": {
+            "min": 8,
+            "pair": [
+              "peter-network",
+              "world-labs"
+            ]
+          },
+          "tritan": {
+            "min": 9.6,
+            "pair": [
+              "amogus",
+              "arrow"
+            ]
+          }
+        },
+        "anyPairMinDeltaE": {
+          "normal": {
+            "min": 3.8,
+            "pair": [
+              "outreach",
+              "world-labs"
+            ]
+          },
+          "deutan": {
+            "min": 2.1,
+            "pair": [
+              "arrow",
+              "outreach"
+            ]
+          },
+          "protan": {
+            "min": 2,
+            "pair": [
+              "musicity",
+              "olympic-way"
+            ]
+          },
+          "tritan": {
+            "min": 1.1,
+            "pair": [
+              "outreach",
+              "world-labs"
+            ]
+          }
+        },
+        "nearestToAmber": [
+          [
+            "simulacra",
+            5.3
+          ],
+          [
+            "peter-network",
+            6.1
+          ],
+          [
+            "peel",
+            8.3
+          ]
+        ],
+        "round4": {
+          "minContrastOnInk": 5.75,
+          "neighbourMinDeltaE": {
+            "normal": {
+              "min": 9.7,
+              "pair": [
+                "peter-network",
+                "republic"
+              ]
+            },
+            "deutan": {
+              "min": 7.7,
+              "pair": [
+                "peel",
+                "peter-network"
+              ]
+            },
+            "protan": {
+              "min": 8.2,
+              "pair": [
+                "arrow",
+                "clearpath"
+              ]
+            },
+            "tritan": {
+              "min": 8.5,
+              "pair": [
+                "peter-network",
+                "republic"
+              ]
+            }
+          },
+          "anyPairMinDeltaE": {
+            "normal": {
+              "min": 3.8,
+              "pair": [
+                "outreach",
+                "world-labs"
+              ]
+            },
+            "deutan": {
+              "min": 1.7,
+              "pair": [
+                "musicity",
+                "simulacra"
+              ]
+            },
+            "protan": {
+              "min": 3.3,
+              "pair": [
+                "arrow",
+                "world-labs"
+              ]
+            },
+            "tritan": {
+              "min": 1.1,
+              "pair": [
+                "outreach",
+                "world-labs"
+              ]
+            }
+          }
+        }
+      },
+      "revision": {
+        "round": 5,
+        "changed": [
+          "musicity",
+          "peter-network",
+          "peel",
+          "republic"
+        ],
+        "note": "Amber is interaction-only again: Musicity (was exactly #D4A05A) is now 12.8 ΔE from amber/amber-2 and Peter (was ≈ amber-2) 6.1; the nearest pigment to the accent is Simulacra's unchanged persimmon at 5.3 (hue 50° vs 73°). Row 4 (Peel · Peter · Republic) now runs pistachio · peach · marble instead of three pale yellow-greens."
+      }
+    }
+  },
+  "recommendation": {
+    "direction": "C",
+    "summary": "Warm editorial pigments as each project's accent (tiles, 3D labels, cards); amber remains the only interaction colour (B's restraint).",
+    "replaces": "def.accent per project; remove _mutePastel in controlsPanel.js"
+  }
+}
