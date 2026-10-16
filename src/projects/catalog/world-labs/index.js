@@ -14,13 +14,9 @@ export default {
   title: "World Labs × Cesium — Spatial Intelligence Hackathon 2026",
   subtitle: "2026 · Photos into 3D worlds on a globe",
   meta: "CesiumJS · World Labs Marble · Gaussian splats",
-  accent: "#1a93b8",
-  icon:
-    '<circle cx="12" cy="12" r="9"/>'
-    + '<ellipse cx="12" cy="12" rx="4" ry="9"/>'
-    + '<path d="M3 12 H21"/>'
-    + '<path d="M4.6 7.5 Q12 9.8 19.4 7.5"/>'
-    + '<path d="M4.6 16.5 Q12 14.2 19.4 16.5"/>',
+  accent: "#77b6c8", // palette C · Atlantic
+  // Panel mark: one filled path on the 48u grid; source docs/brand/marks/world-labs.svg
+  icon: '<path d="M4 16H8V8H16V4H20V20H4ZM4 24H20V44H16V40H8V32H4ZM24 4A20 20 0 0 1 41.424 14.182A29 29 0 0 1 24 20ZM24 24A33 33 0 0 0 43.06 17.939A20 20 0 0 1 24 44Z"/>',
   description:
     "Turns geotagged photos into AI-generated 3D worlds and pins them where they were taken. A Python service reads GPS, altitude, time and compass bearing from each photo; a prompt builder computes the sun's position for that place and moment so World Labs' Marble generates a scene with matching light; the resulting Gaussian splat is converted, uploaded to Cesium ion and rendered on a CesiumJS 3D globe. Built at the Spatial Intelligence Hackathon in San Francisco (September 2026). Double-click the Earth to give it a spin.",
   links: [

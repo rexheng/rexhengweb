@@ -12,11 +12,9 @@ export default {
   title: "Simulacra — Mistral AI Hackathon · Finalist",
   subtitle: "2026 · AI policy simulation",
   meta: "Mistral · agentic · simulation",
-  accent: "#ff7138",
-  icon:
-    '<circle cx="12" cy="12" r="9"/>'
-    + '<circle cx="12" cy="12" r="5.5"/>'
-    + '<circle cx="12" cy="12" r="2.5"/>',
+  accent: "#e38c59", // palette C · Persimmon
+  // Panel mark: one filled path on the 48u grid; source docs/brand/marks/simulacra.svg
+  icon: '<path d="M4 4H36V26.046A11 11 0 0 0 26.046 36H4ZM13 20A7 7 0 0 0 27 20A7 7 0 0 0 13 20ZM30 37A7 7 0 0 1 44 37A7 7 0 0 1 30 37Z"/>',
   description:
     "Simulacra is an AI-powered social simulation engine: drop a policy change in, populate a city with diverse AI personas, and watch how households, small businesses, and public services respond to it in aggregate. Finalist at the Mistral AI Hackathon.",
   links: [

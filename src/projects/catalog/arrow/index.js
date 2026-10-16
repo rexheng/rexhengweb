@@ -12,12 +12,9 @@ export default {
   title: "Arrow — LSE Build",
   subtitle: "Phala TEE inference marketplace",
   meta: "LSE Build · Phala · TEE",
-  accent: "#8a6ad9",
-  icon:
-    '<path d="M7 5 H17 V11 Q17 16 12 19 Q7 16 7 11 Z"/>'
-    + '<path d="M3 20 L21 4"/>'
-    + '<path d="M17 4 H21 V8"/>'
-    + '<path d="M3 20 L6 18 M3 20 L5 22"/>',
+  accent: "#d59cc8", // palette C · Mauve
+  // Panel mark: one filled path on the 48u grid; source docs/brand/marks/arrow.svg
+  icon: '<path d="M4 16L16 4H44V32L32 44V16ZM4 20H25.172L4 41.172ZM28 22.828V44H6.828Z"/>',
   description:
     "Arrow is a marketplace for confidential inference: Phala's TEE nodes serve model calls that neither the provider nor the operator can inspect, and the marketplace matches buyers who want privacy to providers who can prove isolation. Built at LSE Build.",
   links: [

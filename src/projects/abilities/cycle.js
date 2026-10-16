@@ -10,9 +10,12 @@
 //   1. Advances the outfit index.
 //   2. Updates the body/accent material `.color` on the peterAvatar parts.
 //   3. Disposes the old emblem group, builds and adds a new one.
-//   4. Updates the floating label's text + CSS accent to the new outfit.
-//   5. Updates `slot.project.accent` + `slot.project.label` so the card
-//      sees the new state if the user re-opens it.
+//   4. Updates the floating label's text to the new outfit.
+//   5. Updates `slot.project.label` so the card sees the new state if the
+//      user re-opens it.
+// The label/card accent stays on the def's palette pigment: outfit colours
+// are brand shades for the mesh (some, like the Law charcoal #3a3a3a, vanish
+// on the panel ink), and every project's UI accent comes from one palette.
 //
 // The builder (peter-network/build.js) exposes the swappable pieces as
 // `mesh._peterParts` — { bodyMat, accentMat, emblemParent, rebuildEmblem }.
@@ -53,15 +56,13 @@ export function cycle({ slot, mesh }) {
   parts.emblemParent.add(newEmblem);
   parts.emblemGroup = newEmblem;
 
-  // 3. Update label + card accent.
+  // 3. Update label + card text (the accent stays the def's pigment).
   if (slot?.labelEl) {
     const textEl = slot.labelEl.querySelector(".rex-project-label-text");
     if (textEl) textEl.textContent = outfit.label;
-    slot.labelEl.style.setProperty("--accent", outfit.palette.accent);
   }
   if (slot?.project) {
     slot.project.label = outfit.label;
-    slot.project.accent = outfit.palette.accent;
   }
 
   // Instant — no tick loop needed.

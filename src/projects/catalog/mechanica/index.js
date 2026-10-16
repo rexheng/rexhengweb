@@ -10,13 +10,9 @@ export default {
   title: "Mechanica — HackMIT 2026",
   subtitle: "2026 · Factory-manual copilot for mechanics",
   meta: "Elastic · Transformers.js · HackMIT",
-  accent: "#5d84a8", // steel blue (label tick + card)
-  icon:
-    '<path d="M10.4 5.2 L10.8 2.9 L13.2 2.9 L13.6 5.2 L15.7 6.0 L17.6 4.7 L19.3 6.4 L18.0 8.3'
-    + ' L18.8 10.4 L21.1 10.8 L21.1 13.2 L18.8 13.6 L18.0 15.7 L19.3 17.6 L17.6 19.3 L15.7 18.0'
-    + ' L13.6 18.8 L13.2 21.1 L10.8 21.1 L10.4 18.8 L8.3 18.0 L6.4 19.3 L4.7 17.6 L6.0 15.7'
-    + ' L5.2 13.6 L2.9 13.2 L2.9 10.8 L5.2 10.4 L6.0 8.3 L4.7 6.4 L6.4 4.7 L8.3 6.0 Z"/>'
-    + '<circle cx="12" cy="12" r="3"/>',
+  accent: "#7790a2", // palette C · Slate
+  // Panel mark: one filled path on the 48u grid; source docs/brand/marks/mechanica.svg
+  icon: '<path d="M10 0H38L42 4V12H6V4ZM6 16H42V24H28V33.072A8 8 0 1 1 20 33.072V24H6ZM21 40A3 3 0 0 0 27 40A3 3 0 0 0 21 40Z"/>',
   description:
     "Mechanica is a phone-first copilot for motorcycle mechanics: name your bike and the part, and it opens the exact factory-manual pages for the job, walks you through them in order, and drafts a parts quote to real suppliers. Search runs on Elastic Cloud across five OEM manuals and 74 maintenance jobs, with in-browser question answering (BM25 + DistilBERT via Transformers.js) and offline support. Built at HackMIT 2026. Double-click the part to cycle through the toolbox.",
   links: [

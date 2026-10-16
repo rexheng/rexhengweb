@@ -31,14 +31,9 @@ export default {
   title: "Oliver Wyman Datathon — 1st place",
   subtitle: "marathon performance · 14-variable regression",
   meta: "datathon · regression · endurance",
-  accent: "#1f4ba5",
-  icon:
-    '<path d="M3 19 L21 5"/>'
-    + '<circle cx="6" cy="16" r="1"/>'
-    + '<circle cx="10" cy="14" r="1"/>'
-    + '<circle cx="13" cy="9" r="1"/>'
-    + '<circle cx="15" cy="14" r="1"/>'
-    + '<circle cx="18" cy="7" r="1"/>',
+  accent: "#8595d0", // palette C · Lapis
+  // Panel mark: one filled path on the 48u grid; source docs/brand/marks/oliver-wyman.svg
+  icon: '<path d="M20 4H28A20 20 0 0 1 28 44H20A20 20 0 0 1 20 4ZM20 8A16 16 0 0 0 20 40H28A16 16 0 0 0 28 8ZM20 12H28A12 12 0 0 1 28 36H20A12 12 0 0 1 20 12ZM20 16A8 8 0 0 0 20 32H28A8 8 0 0 0 28 16ZM16.5 27.5A2.5 2.5 0 1 1 21.5 27.5A2.5 2.5 0 1 1 16.5 27.5ZM25 21.5A4 4 0 1 1 33 21.5A4 4 0 1 1 25 21.5Z"/>',
   description:
     "A 14-variable linear regression on marathon performance data — splits, pace, elevation, weather, fuelling, sleep — teasing out which signals actually move finish time and which are just gym folklore. Took 1st place at the Oliver Wyman Datathon.",
   links: [],

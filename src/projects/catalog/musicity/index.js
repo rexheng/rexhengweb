@@ -10,11 +10,9 @@ export default {
   title: "Musicity — Encode AI Hackathon",
   subtitle: "city + music × AI",
   meta: "Encode · hackathon · music",
-  accent: "#d4a05a",
-  icon:
-    '<ellipse cx="7" cy="18" rx="2.3" ry="1.7"/>'
-    + '<path d="M9.3 18 V10"/>'
-    + '<path d="M5 12 L8 9 L11 12 L14 7 L17 12 L20 9 L20 13"/>',
+  accent: "#a67c5c", // palette C · Umber
+  // Panel mark: one filled path on the 48u grid; source docs/brand/marks/musicity.svg
+  icon: '<path d="M4 20H8V16H12V44H4ZM16 4H32V44H16ZM21 15A3 3 0 1 0 27 15A3 3 0 1 0 21 15ZM18.5 31A5.5 5.5 0 1 0 29.5 31A5.5 5.5 0 1 0 18.5 31ZM36 12H40V16H44V44H36Z"/>',
   description:
     "Musicity was an Encode AI Hackathon entry at the intersection of cities and music — the skyline below and the floating note above are the sprite's shorthand. Full project writeup pending.",
   links: [

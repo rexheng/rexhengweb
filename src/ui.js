@@ -813,28 +813,37 @@ const CSS = `
   transition: background 140ms ease;
 }
 .rex-project-tile:hover { background: var(--rex-ink-2); }
+/* The project mark sits straight on the tile: no inner box, flat fill in the
+   project's palette pigment (--accent → currentColor). The box is exactly
+   36px (1 module = 3px on the 48u grid) so the marks stay crisp at 1x. */
 .rex-project-tile .rex-tile-swatch {
-  width: 30px;
-  height: 30px;
-  border-radius: 3px;
+  flex: none;
+  width: 36px;
+  height: 36px;
   margin-bottom: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--rex-ink);
+  color: var(--accent, var(--rex-ivory-3));
   font-weight: 600;
   font-size: 11px;
   letter-spacing: 0.02em;
-  background: var(--accent, var(--rex-ivory-3));
   transition: filter 140ms ease;
 }
-.rex-project-tile:hover .rex-tile-swatch { filter: brightness(1.15); }
+.rex-project-tile .rex-tile-swatch svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* Hover: ink-2 tile + the mark lifted ×1.12 (palette C rule). Amber stays
+   the only interaction colour: label here, label + pip when active. */
+.rex-project-tile:hover .rex-tile-swatch { filter: brightness(1.12); }
 .rex-project-tile .rex-tile-name {
   font-size: 8.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--rex-ivory-2);
-  line-height: 1.25;
+  line-height: 11px;   /* whole px, so the centred mark lands on a whole px */
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -844,6 +853,7 @@ const CSS = `
 }
 .rex-project-tile:hover .rex-tile-name { color: var(--rex-amber); }
 .rex-project-tile .rex-tile-pip {
+  display: none;
   position: absolute;
   top: 6px;
   right: 6px;
@@ -857,6 +867,9 @@ const CSS = `
   background: var(--rex-ink-3);
 }
 .rex-project-tile.is-active .rex-tile-name { color: var(--rex-amber); }
+.rex-project-tile.is-active .rex-tile-pip { display: block; }
+/* Closes the last grid row so empty cells don't show the gap rule colour. */
+.rex-project-filler { background: var(--rex-ink); }
 
 .rex-project-foot {
   display: flex;
@@ -1009,17 +1022,18 @@ canvas { touch-action: none; }
   .rex-project-grid { grid-template-columns: repeat(3, 1fr); }
   .rex-project-tile {
     aspect-ratio: auto;
-    padding: 6px 4px;
+    padding: 9px 4px 8px;
   }
   .rex-project-tile .rex-tile-swatch {
-    width: 22px;
-    height: 22px;
-    margin-bottom: 4px;
+    width: 24px;   /* 1 module = 2px */
+    height: 24px;
+    margin-bottom: 6px;
     font-size: 9px;
   }
   .rex-project-tile .rex-tile-name {
     font-size: 8px;
     letter-spacing: 0.12em;
+    line-height: 10px;   /* even, so 1- and 2-line rows centre on whole px */
   }
 
   /* Bigger toggle / segmented hit areas for fingers. */

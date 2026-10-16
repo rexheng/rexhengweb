@@ -10,15 +10,9 @@ export default {
   title: "Cultivate — Pop the Bubble 2026",
   subtitle: "2026 · LinkedIn for events",
   meta: "Next.js · LLM enrichment · Pop the Bubble London",
-  accent: "#8cc63f",
-  // Hairline biplane, top view: rounded wing, canard on its booms ahead,
-  // twin tail booms behind, and the two pusher propellers.
-  icon:
-    '<path d="M4 9 H20 Q21.5 9 21.5 11 Q21.5 13 20 13 H4 Q2.5 13 2.5 11 Q2.5 9 4 9 Z"/>'
-    + '<path d="M9.5 3.5 H14.5 Q15.5 3.5 15.5 4.5 Q15.5 5.5 14.5 5.5 H9.5 Q8.5 5.5 8.5 4.5 Q8.5 3.5 9.5 3.5 Z"/>'
-    + '<path d="M10.5 5.5 V9 M13.5 5.5 V9"/>'
-    + '<path d="M11 13 V20.5 M13 13 V20.5"/>'
-    + '<path d="M5.5 15.8 H9.5 M14.5 15.8 H18.5"/>',
+  accent: "#a6ca9b", // palette C · Sage
+  // Panel mark: one filled path on the 48u grid; source docs/brand/marks/cultivate.svg
+  icon: '<path d="M4 4H44V24H24V44H4Z M8 8V20H20V8Z M28 8V20H40V8Z M8 28V40H20V28Z M12 12H16V16H12Z M32 12H36V16H32Z M12 32H16V36H12ZM36 28A8 8 0 1 1 36 44A8 8 0 1 1 36 28Z"/>',
   description:
     "Cultivate is LinkedIn for events — one scan, no typing. Attendees join an event by QR or scan each other's badges; profiles are enriched from LinkedIn with Llama-3.3-70B and land in a D3 graph of everyone you've met across events, alongside notes, a People hub, Luma import, Stripe unlocks and CSV / ICS / Obsidian export. Built in 36 hours at Pop the Bubble, London (June 2026). The Wright Flyer is the mascot: double-click it for a test flight.",
   links: [

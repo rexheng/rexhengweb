@@ -85,7 +85,7 @@ export class ControlsPanel {
 
     root.appendChild(phys);
 
-    // Projects — selection grid of accent-tinted monogram tiles.
+    // Projects — selection grid of project-mark tiles.
     // Each tile spawns its project; the footer shows slot usage + Clear.
     const projSection = this._sectionShell("Projects");
     projSection.dataset.section = "projects";
@@ -231,25 +231,23 @@ export class ControlsPanel {
       tile.type = "button";
       tile.className = "rex-project-tile";
       tile.title = def.title || def.label;
-      const tinted = this._mutePastel(def.accent || "#d4a05a");
-      tile.style.setProperty("--accent", tinted);
+      // The palette pigment is used as-is: it is tuned for the panel ink.
+      tile.style.setProperty("--accent", def.accent || "#d4a05a");
 
       const swatch = document.createElement("span");
       swatch.className = "rex-tile-swatch";
       if (typeof def.icon === "string" && def.icon) {
-        // Inline SVG glyph. Wrapper attributes are uniform across all icons
-        // (see project-tile-icons-design spec): 24x24 viewBox, stroke-only,
-        // hairline 1.4, round caps/joins, sized 18x18 inside the 30x30 swatch.
+        // Project mark, straight on the tile (docs/brand/marks/RATIONALE.md):
+        // one filled path on the 48u grid, flat in the accent via
+        // currentColor, no stroke. The CSS box is exactly 36px (24px on
+        // mobile), so every module edge lands on a whole pixel.
         const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.setAttribute("viewBox", "0 0 24 24");
-        svg.setAttribute("width", "18");
-        svg.setAttribute("height", "18");
-        svg.setAttribute("fill", "none");
-        svg.setAttribute("stroke", "var(--rex-ink)");
-        svg.setAttribute("stroke-width", "1.4");
-        svg.setAttribute("stroke-linecap", "round");
-        svg.setAttribute("stroke-linejoin", "round");
+        svg.setAttribute("viewBox", "0 0 48 48");
+        svg.setAttribute("width", "36");
+        svg.setAttribute("height", "36");
+        svg.setAttribute("fill", "currentColor");
         svg.setAttribute("aria-hidden", "true");
+        svg.setAttribute("focusable", "false");
         svg.innerHTML = def.icon;
         swatch.appendChild(svg);
       } else {
@@ -260,8 +258,14 @@ export class ControlsPanel {
       name.className = "rex-tile-name";
       name.textContent = def.label;
 
+      // Active-state pip (shown by .is-active in CSS).
+      const pip = document.createElement("span");
+      pip.className = "rex-tile-pip";
+      pip.setAttribute("aria-hidden", "true");
+
       tile.appendChild(swatch);
       tile.appendChild(name);
+      tile.appendChild(pip);
 
       tile.addEventListener("click", () => {
         const slot = this.app.projectSystem?.spawn(def.id);
@@ -277,6 +281,17 @@ export class ControlsPanel {
 
       tiles.set(def.id, tile);
       grid.appendChild(tile);
+    }
+
+    // Ink filler tiles close the last row, so empty cells don't show the
+    // rule colour the grid uses for its 1px gaps (both layouts are 3-up).
+    const GRID_COLUMNS = 3;
+    const empty = (GRID_COLUMNS - (tiles.size % GRID_COLUMNS)) % GRID_COLUMNS;
+    for (let i = 0; i < empty; i++) {
+      const filler = document.createElement("span");
+      filler.className = "rex-project-filler";
+      filler.setAttribute("aria-hidden", "true");
+      grid.appendChild(filler);
     }
 
     const foot = document.createElement("div");
@@ -343,46 +358,6 @@ export class ControlsPanel {
     if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
     const w = words[0] || "??";
     return (w[0] + (w[1] || w[0])).toUpperCase();
-  }
-
-  // Desaturate + lift toward off-white so accents read pastel against navy.
-  _mutePastel(hex) {
-    const m = hex.replace("#", "").match(/.{2}/g);
-    if (!m) return hex;
-    const [r, g, b] = m.map((x) => parseInt(x, 16) / 255);
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h = 0, s = 0, l = (max + min) / 2;
-    if (max !== min) {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
-      }
-      h /= 6;
-    }
-    const sNew = s * 0.40;       // mute saturation
-    const lNew = 0.78;            // lift to soft pastel
-    const hueToRgb = (p, q, t) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p + (q - p) * 6 * t;
-      if (t < 1 / 2) return q;
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-      return p;
-    };
-    let r2, g2, b2;
-    if (sNew === 0) { r2 = g2 = b2 = lNew; }
-    else {
-      const q = lNew < 0.5 ? lNew * (1 + sNew) : lNew + sNew - lNew * sNew;
-      const p = 2 * lNew - q;
-      r2 = hueToRgb(p, q, h + 1 / 3);
-      g2 = hueToRgb(p, q, h);
-      b2 = hueToRgb(p, q, h - 1 / 3);
-    }
-    const toHex = (v) => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0");
-    return `#${toHex(r2)}${toHex(g2)}${toHex(b2)}`;
   }
 
   _toggle(paramKey, onChange) {

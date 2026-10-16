@@ -13,13 +13,9 @@ export default {
   title: "The Republic — research intelligence platform",
   subtitle: "2026 · ETH Oxford",
   meta: "research · intelligence · ETH Oxford",
-  // Warm sandstone accent.
-  accent: "#c9b58a",
-  icon:
-    '<path d="M5 8 L12 3 L19 8 Z"/>'
-    + '<path d="M5 9 H19 M5.5 10.5 H18.5"/>'
-    + '<path d="M7.5 10.5 V19 M11 10.5 V19 M13 10.5 V19 M16.5 10.5 V19"/>'
-    + '<path d="M5.5 19 H18.5 M5 20.5 H19"/>',
+  accent: "#c7d3de", // palette C · Marble
+  // Panel mark: one filled path on the 48u grid; source docs/brand/marks/republic.svg
+  icon: '<path d="M8 0H44V4L40 8H36V24H32V12H28V24H24V12H20V24H16V8H12L8 4ZM12 28H16V40H20V28H24V40H28V28H32V44H40V48H4V44H12Z"/>',
   description:
     "The Republic is a research intelligence platform built at ETH Oxford — built around the procedural Doric column that reads as both title and landmark. It ingests research literature and synthesises it into navigable briefs, so a user can walk into a new field and leave with a defensible position rather than a tab graveyard.",
   links: [],

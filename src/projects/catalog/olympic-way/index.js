@@ -12,14 +12,9 @@ export default {
   title: "Olympic Way Interchange — Susquehanna Datathon 2026 · 1st place",
   subtitle: "2026 · graph-theoretic station siting",
   meta: "datathon · graph theory · Monte Carlo",
-  accent: "#dc241f",
-  icon:
-    '<circle cx="10" cy="12" r="5"/>'
-    + '<circle cx="10" cy="12" r="2.5"/>'
-    + '<path d="M14 9 L18 5"/>'
-    + '<path d="M14 15 L18 19"/>'
-    + '<circle cx="19" cy="4.5" r="1.4"/>'
-    + '<circle cx="19" cy="19.5" r="1.4"/>',
+  accent: "#d66f6a", // palette C · Brick
+  // Panel mark: one filled path on the 48u grid; source docs/brand/marks/olympic-way.svg
+  icon: '<path d="M7.319 16A18.5 18.5 0 0 1 40.681 16H30A10 10 0 0 0 18 16ZM0 20H48V28H0ZM40.681 32A18.5 18.5 0 0 1 7.319 32H18A10 10 0 0 0 30 32Z"/>',
   description:
     "A new tube station, sited by graph theory rather than planning politics. Given a 358-node underground network, the model treats every candidate Olympic Way interchange as a shortest-path shift across the system and runs Monte Carlo over passenger flow to score which location relieves the most load with the fewest dominoes. Took 1st place at the Susquehanna Datathon 2026.",
   links: [
