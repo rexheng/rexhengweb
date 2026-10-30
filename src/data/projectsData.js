@@ -124,6 +124,17 @@ export const projects = [
     linkText: 'View Project',
     icon: 'research',
     image: '/screenshots/manusman.png'
+  },
+  {
+    id: 14,
+    title: 'Kite',
+    description: 'A guide dog that flies, built at Cal Hacks 13.0. A DJI Tello follows a blind walker from behind while an Arduino UNO Q chest camera watches the ground, and Kite guides them with spatial audio and speech in their AirPods. I built the live GPS routing on Mapbox and the UNO Q pipeline into SpacetimeDB.',
+    tags: ['Python', 'Computer Vision', 'Mapbox GL', 'SpacetimeDB', 'Hardware'],
+    link: 'https://devpost.com/software/kite-od2vmu',
+    linkText: 'View Project',
+    icon: 'research',
+    github: 'https://github.com/KingArthur207/kite',
+    image: '/screenshots/kite.jpg'
   }
 ]
 
